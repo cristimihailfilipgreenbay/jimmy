@@ -1,6 +1,7 @@
 """Runs one Tutor turn and turns it into typed events for the SSE stream."""
 
 import logging
+import re
 import uuid
 from collections.abc import Iterator
 from dataclasses import dataclass, field
@@ -67,7 +68,13 @@ def run_turn(
         )
         for chunk, _meta in stream:
             if isinstance(chunk, ToolMessage):
-                yield Event("tool_call", {"tool": chunk.name, "status": "finished"})
+                found = len(
+                    re.findall(r"^\[\d+\] \(", str(chunk.content), re.MULTILINE)
+                )
+                yield Event(
+                    "tool_call",
+                    {"tool": chunk.name, "status": "finished", "found": found},
+                )
                 continue
             if not isinstance(chunk, AIMessage):
                 continue

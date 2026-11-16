@@ -44,19 +44,21 @@ export function AnswerMessage({
     <article aria-label="Jimmy's answer">
       <div className="mb-2 flex items-center gap-2">
         <JimmyBadge className="size-7" />
-        <span className="text-sm font-semibold">Jimmy</span>
-        {streaming && status && (
-          <span role="status" className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            {status.working && (
-              <span className="flex items-end gap-0.5" aria-hidden>
-                <span className="thinking-dot" />
-                <span className="thinking-dot" />
-                <span className="thinking-dot" />
-              </span>
-            )}
-            {status.label}
-          </span>
-        )}
+        <span className="flex flex-col">
+          <span className="text-sm font-semibold">Jimmy</span>
+          {streaming && status && (
+            <span role="status" className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              {status.label}
+              {status.working && (
+                <span className="flex items-end gap-0.5 pb-0.5" aria-hidden>
+                  <span className="thinking-dot" />
+                  <span className="thinking-dot" />
+                  <span className="thinking-dot" />
+                </span>
+              )}
+            </span>
+          )}
+        </span>
         {tools.length > 0 && (
           <span className="flex flex-wrap gap-1">
             {tools.map((t) => (

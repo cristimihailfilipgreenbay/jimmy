@@ -80,6 +80,7 @@ Document status values: `uploaded`, `extracting`, `rejected`, `awaiting_topic_re
 |---|---|---|
 | GET | `/spaces/{space_id}/topics` | List Topics (merged ones are left out) |
 | PATCH | `/spaces/{space_id}/topics/{id}` | Rename. `409 topic_exists` if the Space has a Topic with that name (ignoring case) |
+| DELETE | `/spaces/{space_id}/topics/{id}` | Delete a Topic (`204`), and any Topics merged into it. The confirmation is a frontend dialog |
 | POST | `/spaces/{space_id}/topics/merge` | Merge several Topics into the first of `ids`, which takes `name`. `409 topic_exists` as above |
 
 Topic review after an upload is not a plain edit; it is a pause in the ingestion run (section 4).

@@ -1,8 +1,8 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends
-from sqlalchemy import func, select, update
+from fastapi import APIRouter, BackgroundTasks, Depends, Response
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 
 from app.chat.dependencies import ThreadDep
@@ -81,6 +81,17 @@ def rename_topic(
     session.commit()
     session.refresh(topic)
     return topic
+
+
+@router.delete("/spaces/{space_id}/topics/{topic_id}", status_code=204)
+def delete_topic(topic_id: uuid.UUID, space: SpaceDep, session: SessionDep):
+    """Delete a Topic, and the Topics that were merged into it (they would otherwise
+    come back as separate Topics)."""
+    topic = _get_topic(session, space, topic_id)
+    session.execute(delete(Topic).where(Topic.merged_into_id == topic.id))
+    session.delete(topic)
+    session.commit()
+    return Response(status_code=204)
 
 
 @router.post("/spaces/{space_id}/topics/merge", response_model=TopicOut)

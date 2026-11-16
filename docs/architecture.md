@@ -157,6 +157,12 @@ frontend/src/
     │   ├── AuthPage.tsx # Sign in / Sign up on one screen
     │   ├── components/  # forms, RequireAuth, UserMenu
     │   └── lib/         # password strength, form errors
+    ├── onboarding/
+    │   ├── schemas/     # Zod schemas (request, response, years, goals, styles)
+    │   ├── queries/     # POST /onboarding
+    │   ├── OnboardingPage.tsx  # five steps, then the finish screen
+    │   ├── components/  # one component per step, RequireOnboarded
+    │   └── lib/         # form state helpers, subject suggestions
     ├── spaces/
     │   ├── schemas/     # Zod schemas and inferred types (Space, Accent)
     │   ├── queries/     # requests, keys, useSpaces, useCreateSpace, ...

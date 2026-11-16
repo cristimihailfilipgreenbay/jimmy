@@ -21,7 +21,7 @@ The HTTP contract between the frontend and the backend. Structure is in [archite
 { "error": { "code": "scanned_document", "message": "This PDF has no readable text...", "details": {} } }
 ```
 
-`message` is written for the Student. `code` is stable for the frontend. *Proposed codes:* `unauthenticated`, `invalid_credentials`, `email_exists`, `space_not_found`, `file_too_large`, `too_many_pages`, `unsupported_type`, `scanned_document`, `guardrail_blocked`, `off_topic`, `step_limit_reached`, `tool_disabled`, `embedding_model_locked`, `nothing_to_resume`, `upstream_unavailable`.
+`message` is written for the Student. `code` is stable for the frontend. *Proposed codes:* `unauthenticated`, `invalid_credentials`, `email_exists`, `already_onboarded`, `space_not_found`, `file_too_large`, `too_many_pages`, `unsupported_type`, `scanned_document`, `guardrail_blocked`, `off_topic`, `step_limit_reached`, `tool_disabled`, `embedding_model_locked`, `nothing_to_resume`, `upstream_unavailable`.
 
 ## 2. Resources
 
@@ -36,7 +36,14 @@ The HTTP contract between the frontend and the backend. Structure is in [archite
 | POST | `/auth/sign-up` | Create an account (`email`, `password` of 8 to 128 characters) and sign in. `201`, sets the session cookie. `409 email_exists` for a taken email (compared ignoring case) |
 | POST | `/auth/sign-in` | Sign in (`email`, `password`, `remember`, default true). `remember` false gives a 12-hour token and a cookie that ends with the browser session. `401 invalid_credentials` for a wrong email or password, the same answer for both |
 | POST | `/auth/sign-out` | Clear the session cookie (`204`) |
-| GET | `/auth/me` | The signed-in Student (`id`, `display_name`, `email`). `display_name` is null until onboarding |
+| GET | `/auth/me` | The signed-in Student (`id`, `display_name`, `email`, `onboarded`). `display_name` is null and `onboarded` false until onboarding is finished |
+
+### Onboarding
+| Method | Path | Purpose |
+|---|---|---|
+| POST | `/onboarding` | Finish setting up the account, once. One transaction sets the Student's `name`, saves their `studies` (`course`, `university`, `year`) and `preferences` (`goals`, `explanation_style` of `short`, `balanced` or `detailed`, `web_search`) in the Profile, and creates the Study Spaces from `subjects` (`name`, optional `course`, `accent`; 1 to 20, names unique ignoring case). Returns `201` with the updated Student and the created Spaces. `409 already_onboarded` if it was done before, `409 space_exists` if a name is taken (nothing is saved), `400` for invalid input |
+
+The app is closed to a Student who has not finished onboarding: the frontend sends them to `/welcome` whenever `onboarded` is false.
 
 ### Profile
 | Method | Path | Purpose |

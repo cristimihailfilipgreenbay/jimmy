@@ -24,6 +24,8 @@ docker compose down               # add -v to delete the database volume
 
 The backend runs `alembic upgrade head` on start; demo data (OpenStax Biology/Physics) is loaded by a separate, idempotent seed command. Backend tooling: uv, Ruff, pytest. Planned layout: `backend/`, `frontend/`, `eval/`, `data/seed/` (uncommitted), `docs/`.
 
+**Folder layout is feature-based on both sides** (see `docs/architecture.md` section 10): `backend/app/<feature>/{models,schemas,router,dependencies}.py` and `frontend/src/features/<feature>/` (api, queries, components). Put new code in its feature, not in a global `routers/`, `models/`, `hooks/` or `pages/` folder. Shared code (`lib/`, `components/ui`, `db.py`, `errors.py`) never imports a feature. A new feature's models must be imported in `backend/migrations/env.py`.
+
 ## Architecture essentials
 
 - **No API versioning:** the browser calls `/api/...`, the dev proxy strips `/api`, and the backend serves from the root (`/spaces`, `/students`, `/health`). Do not add a `/v1` segment.

@@ -136,3 +136,23 @@ jimmy/
 ├── .env.example
 └── LICENSE
 ```
+
+**Code is organised by feature, not by technical layer**, on both sides. A feature owns everything it needs; shared code stays small and has no knowledge of any feature.
+
+```
+backend/app/
+├── main.py, config.py, db.py, errors.py, tracing.py   # app-wide
+├── students/       # models.py, schemas.py, router.py, dependencies.py
+└── spaces/         # models.py, schemas.py, router.py (one package per feature)
+
+frontend/src/
+├── main.tsx, App.tsx
+├── components/     # app shell (Layout) and ui/ (shadcn)
+├── lib/            # http client, current-profile storage, utils (feature-agnostic)
+└── features/
+    ├── students/   # api.ts, provider, ProfileSwitcher
+    ├── spaces/     # api.ts, queries.ts, SpacesPage, dialogs
+    └── health/
+```
+
+A new feature gets its own package or folder. A feature may import another feature (Spaces uses the current Student) but `lib/` and `db.py` never import a feature. Alembic's `env.py` imports each feature's models so their tables are registered.

@@ -84,6 +84,7 @@ def _make_search(
                         hit.page_start, hit.page_end, hit.section
                     ),
                     "passage": hit.text,
+                    "url": hit.url,
                 }
             )
             where = f", {citation.page_or_section}" if citation.page_or_section else ""
@@ -182,4 +183,19 @@ def make_search_web(sources: RunSources) -> StructuredTool:
             "outside the Study Space."
         ),
         none="No web results found.",
+    )
+
+
+def make_search_learned(space_id, sources: RunSources) -> StructuredTool:
+    """`search_learned_material`: web pages saved into this Study Space from earlier chats."""
+    return _make_search(
+        space_id,
+        sources,
+        name="search_learned_material",
+        source_type="learned",
+        doc=(
+            "Search Learned Material: web pages saved into this Study Space from "
+            "earlier conversations. Not reviewed by the Student. Returns numbered passages."
+        ),
+        none="No passages found in Learned Material.",
     )

@@ -13,6 +13,7 @@ from app.chat.schemas import MessageIn, MessageOut, ThreadOut
 from app.db import SessionDep
 from app.errors import ApiError
 from app.guardrails.classify import OFF_TOPIC, check_input
+from app.learned.models import LearnedMaterial
 from app.spaces.dependencies import get_owned_space
 from app.spaces.models import Space
 from app.students.dependencies import StudentDep
@@ -95,6 +96,11 @@ def send_message(
         question=body.content,
         library=bool(space and space.library_enabled),
         web=bool(profile and profile.web_search_enabled),
+        space_name=space.name if space else "",
+        learned=session.query(LearnedMaterial.id)
+        .filter_by(space_id=thread.space_id)
+        .first()
+        is not None,
     )
     return StreamingResponse(
         _sse(events),

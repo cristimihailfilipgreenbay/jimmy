@@ -10,7 +10,11 @@ Search again with different words if the first search does not answer the questi
 _LIBRARY = """If the Notes do not answer it, call `search_library`: it searches the open \
 textbook attached to this Study Space. Say which source an answer comes from."""
 
-_WIKIPEDIA = """If the Notes{library} do not answer it, call `search_wikipedia`. You decide \
+_LEARNED = """This Study Space has Learned Material: web pages saved from earlier \
+conversations, not reviewed by the Student. If the sources above do not answer it, call \
+`search_learned_material`, and say the point comes from an unreviewed web page."""
+
+_WIKIPEDIA = """If the sources above do not answer it, call `search_wikipedia`. You decide \
 whether what you have is enough; do not search further once it is."""
 
 _WEB = """If Wikipedia does not answer it either, call `search_web`. Results from \
@@ -41,7 +45,10 @@ def _join(items: list[str], last: str = "and") -> str:
 
 
 def build_prompt(
-    library: bool = False, wikipedia: bool = False, web: bool = False
+    library: bool = False,
+    wikipedia: bool = False,
+    web: bool = False,
+    learned: bool = False,
 ) -> str:
     steps = [_NOTES]
     tools = ["`search_notes`"]
@@ -50,10 +57,12 @@ def build_prompt(
         steps.append(_LIBRARY)
         tools.append("`search_library`")
         sources.append("Subject Library")
+    if learned:
+        steps.append(_LEARNED)
+        tools.append("`search_learned_material`")
+        sources.append("Learned Material")
     if wikipedia:
-        steps.append(
-            _WIKIPEDIA.format(library=" and Subject Library" if library else "")
-        )
+        steps.append(_WIKIPEDIA)
         tools.append("`search_wikipedia`")
         sources.append("Wikipedia")
     if web:

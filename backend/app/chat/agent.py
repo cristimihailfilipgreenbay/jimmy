@@ -20,6 +20,7 @@ from app.chat.guards import (
 from app.chat.prompt import build_prompt
 from app.chat.tools import (
     RunSources,
+    make_search_learned,
     make_search_library,
     make_search_notes,
     make_search_web,
@@ -99,12 +100,16 @@ def build_agent(
     model=None,
     library: bool = False,
     web: bool = False,
+    learned: bool = False,
 ):
     """`library`: the Space has a Subject Library attached and switched on.
+    `learned`: the Space has Learned Material.
     `web`: the Student allows web search (Wikipedia, and Tavily when it has a key)."""
     tools = [make_search_notes(space_id, sources)]
     if library:
         tools.append(make_search_library(space_id, sources))
+    if learned:
+        tools.append(make_search_learned(space_id, sources))
     use_tavily = web and bool(get_settings().tavily_api_key)
     if web:
         tools.append(make_search_wikipedia(sources))
@@ -113,7 +118,7 @@ def build_agent(
     return create_agent(
         model or make_model(),
         tools=tools,
-        system_prompt=build_prompt(library, web, use_tavily),
+        system_prompt=build_prompt(library, web, use_tavily, learned),
         middleware=[
             ModelCallLimitMiddleware(run_limit=MAX_MODEL_CALLS, exit_behavior="error"),
             doom_loop_stop(),

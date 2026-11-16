@@ -82,7 +82,7 @@ function AccountMenu({ student }: { student: Student }) {
       trigger={({ open, toggle }) => (
         <Button variant="ghost" size="sm" className="gap-2 pl-1.5" onClick={toggle} aria-haspopup="menu" aria-expanded={open} aria-label={`Account menu: ${name}`}>
           <span className={`${avatar} size-7 text-xs`}>{initials(student)}</span>
-          <span className="hidden sm:inline">{name}</span>
+          <span className="hidden font-semibold sm:inline">{name}</span>
           <ChevronDown className="size-3.5 opacity-60" aria-hidden />
         </Button>
       )}

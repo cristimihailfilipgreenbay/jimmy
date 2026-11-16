@@ -63,7 +63,12 @@ class InputVerdict:
 
 def make_guard_model() -> ChatOpenAI | None:
     settings = get_settings()
-    name = settings.guard_model or settings.background_model
+    return openrouter_model(settings.guard_model or settings.background_model)
+
+
+def openrouter_model(name: str) -> ChatOpenAI | None:
+    """A cheap, deterministic classifier model, or None when it cannot be reached."""
+    settings = get_settings()
     if not name or not settings.openrouter_api_key:
         return None
     return ChatOpenAI(
@@ -76,7 +81,7 @@ def make_guard_model() -> ChatOpenAI | None:
     )
 
 
-def _ask(model, policy: str, text: str) -> dict:
+def ask_json(model, policy: str, text: str) -> dict:
     reply = model.invoke([SystemMessage(policy), HumanMessage(text)])
     raw = reply.text if hasattr(reply, "text") else str(reply.content)
     found = re.search(r"\{.*\}", raw, re.DOTALL)
@@ -98,7 +103,7 @@ def check_input(
         space=space_name, course=f" ({course})" if course else ""
     )
     try:
-        data = _ask(model, policy, message[:MAX_INPUT_CHARS])
+        data = ask_json(model, policy, message[:MAX_INPUT_CHARS])
     except Exception:
         log.warning(
             "Input guard unavailable; letting the message through", exc_info=True
@@ -121,7 +126,7 @@ def scan_passages(texts: list[str], model=None) -> set[int]:
         f"[{n}] {texts[i][:MAX_PASSAGE_CHARS]}" for n, i in enumerate(rest, 1)
     )
     try:
-        data = _ask(model, SCAN_POLICY, listing)
+        data = ask_json(model, SCAN_POLICY, listing)
         for n in data.get("flagged", []):
             if isinstance(n, int) and 1 <= n <= len(rest):
                 flagged.add(rest[n - 1])

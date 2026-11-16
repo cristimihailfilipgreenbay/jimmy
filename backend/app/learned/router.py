@@ -31,8 +31,9 @@ def _answer_citations(session, space: Space) -> list[list[dict]]:
 def _out(material: LearnedMaterial, answers: list[list[dict]]) -> LearnedMaterialOut:
     used = sum(any(c.get("url") == material.url for c in answer) for answer in answers)
     fields = LearnedMaterialOut.model_fields.keys() - {"used_in_answers"}
+    values = {f: getattr(material, f) for f in fields - {"excerpt"}}
     return LearnedMaterialOut(
-        **{f: getattr(material, f) for f in fields}, used_in_answers=used
+        **values, excerpt=material.excerpt or "", used_in_answers=used
     )
 
 

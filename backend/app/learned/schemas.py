@@ -10,6 +10,7 @@ class LearnedMaterialOut(BaseModel):
     title: str
     publisher: str | None
     url: str
+    excerpt: str
     reason: str | None
     status: Literal["unreviewed", "approved"]
     fetched_at: str | None

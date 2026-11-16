@@ -23,6 +23,8 @@ class LearnedMaterial(Base):
     # The site it came from, such as en.wikipedia.org.
     publisher: Mapped[str | None] = mapped_column(String(300))
     url: Mapped[str] = mapped_column(Text)
+    # The start of the saved text, for the review list (the full text is in its chunk).
+    excerpt: Mapped[str | None] = mapped_column(Text)
     # Why the Tutor decided to save it.
     reason: Mapped[str | None] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(12), default="unreviewed")

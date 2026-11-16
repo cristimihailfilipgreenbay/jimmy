@@ -30,6 +30,7 @@ WEB_SOURCES = ("wikipedia", "web")
 # A Finding is a duplicate when its nearest chunk in the Space is this close (cosine
 # distance, so a similarity of 0.92 or more). Chosen by hand; revisit with real data.
 DUPLICATE_DISTANCE = 0.08
+EXCERPT_CHARS = 400
 
 DECISION_POLICY = """You are a study tutor deciding whether a web page you just used to answer a \
 Student should be saved in their Study Space "{space}" for later. Judge the page, not the answer.
@@ -116,6 +117,7 @@ def save(
             title=finding.document[:300],
             publisher=finding.page_or_section,
             url=finding.url,
+            excerpt=finding.passage[:EXCERPT_CHARS],
             reason=reason or None,
             status="unreviewed",
             fetched_at=finding.fetched_at,

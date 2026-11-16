@@ -1,15 +1,16 @@
 import { useState, type FormEvent } from 'react'
-import { GitMerge, Pencil, Tag } from 'lucide-react'
+import { GitMerge, Pencil, Tag, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { errorMessage } from '@/lib/http'
 import { cardClass } from '@/lib/styles'
 import { toast } from '@/lib/toast'
 import { cn } from '@/lib/utils'
+import { DeleteTopicDialog } from './components/DeleteTopicDialog'
 import { useMergeTopics } from './queries/useMergeTopics'
 import { useRenameTopic } from './queries/useRenameTopic'
 import { useTopics } from './queries/useTopics'
-import { topicNameSchema } from './schemas/topic'
+import { topicNameSchema, type Topic } from './schemas/topic'
 
 // The Topics tab of a Study Space: the approved Topics, to rename or to merge duplicates.
 export function TopicsTab({ studentId, spaceId }: { studentId: string; spaceId: string }) {
@@ -18,6 +19,7 @@ export function TopicsTab({ studentId, spaceId }: { studentId: string; spaceId: 
   const merge = useMergeTopics(studentId, spaceId)
   const [selected, setSelected] = useState<string[]>([])
   const [renaming, setRenaming] = useState<{ id: string; name: string } | null>(null)
+  const [deleting, setDeleting] = useState<Topic | null>(null)
   const [problem, setProblem] = useState<string | null>(null)
   const error =
     problem ??
@@ -160,11 +162,29 @@ export function TopicsTab({ studentId, spaceId }: { studentId: string; spaceId: 
                 >
                   <Pencil />
                 </Button>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="text-muted-foreground hover:text-destructive"
+                  aria-label={`Delete ${t.name}`}
+                  onClick={() => setDeleting(t)}
+                >
+                  <Trash2 />
+                </Button>
               </>
             )}
           </li>
         ))}
       </ul>
+      <DeleteTopicDialog
+        studentId={studentId}
+        spaceId={spaceId}
+        topic={deleting}
+        onClose={() => {
+          setDeleting(null)
+          setSelected((s) => s.filter((id) => id !== deleting?.id))
+        }}
+      />
     </div>
   )
 }

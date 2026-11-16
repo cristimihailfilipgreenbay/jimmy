@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { documentSchema } from '@/features/notes/schemas/document'
-import { request } from '@/lib/http'
+import { request, requestVoid } from '@/lib/http'
 import { threadDetailSchema, topicReviewPayloadSchema, topicSchema, type TopicDecision } from '../schemas/topic'
 
 export const fetchTopics = (spaceId: string) => request(`/spaces/${spaceId}/topics`, z.array(topicSchema))
@@ -23,3 +23,6 @@ export const answerTopicReview = (threadId: string, interruptId: string, decisio
     method: 'POST',
     body: JSON.stringify({ interrupt_id: interruptId, decision }),
   })
+
+export const deleteTopic = (spaceId: string, topicId: string) =>
+  requestVoid(`/spaces/${spaceId}/topics/${topicId}`, { method: 'DELETE' })

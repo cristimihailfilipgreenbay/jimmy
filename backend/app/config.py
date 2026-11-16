@@ -44,6 +44,11 @@ class Settings(BaseSettings):
     embedding_model: str = "openai/text-embedding-3-small"
     embedding_dimensions: int = 1536
 
+    # A written answer goes to the Student as a Dispute when the grader's confidence is
+    # under the first value, or the score is within the second of the pass line.
+    dispute_confidence_threshold: float = 0.7
+    dispute_margin: float = 0.15
+
     # Where the seed command puts the Subject Library chapters (data/seed in the repo,
     # /data/seed in Docker, where ./data is mounted).
     seed_dir: str = str(Path(__file__).resolve().parents[2] / "data" / "seed")

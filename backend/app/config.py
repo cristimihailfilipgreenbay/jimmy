@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     # on restart. Set JWT_SECRET (e.g. `openssl rand -hex 32`) to keep them.
     jwt_secret: str = ""
     session_hours: int = 24 * 7
+    # Used when the Student does not tick "keep me signed in".
+    short_session_hours: int = 12
     # Turn on when served over HTTPS.
     cookie_secure: bool = False
 

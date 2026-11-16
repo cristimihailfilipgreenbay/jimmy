@@ -19,12 +19,14 @@ from app.students.schemas import StudentOut
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-def _start_session(response: Response, student: Student) -> None:
+def _start_session(response: Response, student: Student, remember: bool = True) -> None:
     settings = get_settings()
+    hours = settings.session_hours if remember else settings.short_session_hours
     response.set_cookie(
         SESSION_COOKIE,
-        create_token(student.id, session_secret(), settings.session_hours),
-        max_age=settings.session_hours * 3600,
+        create_token(student.id, session_secret(), hours),
+        # Without max_age the browser drops the cookie when it closes.
+        max_age=hours * 3600 if remember else None,
         httponly=True,
         samesite="lax",
         secure=settings.cookie_secure,
@@ -41,9 +43,7 @@ def sign_up(body: SignUpIn, response: Response, session: SessionDep):
     email = body.email.lower()
     if session.scalar(select(Student.id).where(Student.email == email)):
         raise _email_taken()
-    student = Student(
-        display_name=body.name, email=email, password_hash=hash_password(body.password)
-    )
+    student = Student(email=email, password_hash=hash_password(body.password))
     session.add(student)
     try:
         session.commit()
@@ -65,7 +65,7 @@ def sign_in(body: SignInIn, response: Response, session: SessionDep):
         raise ApiError(
             401, "invalid_credentials", "That email and password don’t match."
         )
-    _start_session(response, student)
+    _start_session(response, student, body.remember)
     return student
 
 

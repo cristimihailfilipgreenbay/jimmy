@@ -26,8 +26,9 @@ say different things about the same point, call `compare_sources` with the Topic
 two passage numbers before you answer. Never decide a disagreement yourself: if they \
 contradict, the Student is asked and you are told what they chose. Follow that choice."""
 
-_RULES = """{n}. Write the answer in short paragraphs. Every paragraph must be attributed, in \
-one of two ways:
+_RULES = """{n}. Write the answer in short paragraphs, with light Markdown where it helps (bold, \
+lists, `code`). A list is one paragraph: put its attribution after the last item. Every \
+paragraph must be attributed, in one of two ways:
    - From a search: end the paragraph with the numbers of the passages it relies on, like \
 [1] or [2][3]. Use only numbers that {tools} returned in this conversation turn, \
 and only for statements that passage actually supports.

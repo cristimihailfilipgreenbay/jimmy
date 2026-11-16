@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Book, MessageSquare, Pencil, Trash2 } from 'lucide-react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
+import { LibraryCard } from '@/features/library/components/LibraryCard'
 import { NotesTab } from '@/features/notes/NotesTab'
 import { useDocuments } from '@/features/notes/queries/useDocuments'
 import { PROCESSING } from '@/features/notes/schemas/document'
@@ -73,6 +74,7 @@ export function SpaceDashboardPage() {
           </button>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <LibraryCard studentId={student.id} space={space} />
           <Link to={`/spaces/${space.id}/chat`} className={buttonVariants({ variant: 'space' })}>
             <MessageSquare /> Ask Jimmy
           </Link>

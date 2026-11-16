@@ -10,13 +10,16 @@ export function DropdownMenu({
   children,
   align = 'left',
   className,
+  defaultOpen = false,
 }: {
   trigger: (menu: { open: boolean; toggle: () => void }) => ReactNode
   children: ReactNode
   align?: 'left' | 'right'
   className?: string
+  /** Starts open, for a link that points at the menu. */
+  defaultOpen?: boolean
 }) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(defaultOpen)
   const wrapper = useRef<HTMLDivElement>(null)
   return (
     <div ref={wrapper} className="relative">

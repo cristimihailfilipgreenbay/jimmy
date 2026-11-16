@@ -171,3 +171,21 @@
 @media (prefers-reduced-motion: reduce) {
   .peek-jimmy svg, .peek-bubble { animation: none; }
 }
+
+/* Onboarding: the step card slides in from the side we are moving towards, and
+   the finish tiles pop in one after another. */
+@keyframes step-in-next {
+  from { opacity: 0.4; transform: translateX(52%) scale(0.88) rotate(0.8deg); }
+}
+@keyframes step-in-prev {
+  from { opacity: 0.4; transform: translateX(-52%) scale(0.88) rotate(-0.8deg); }
+}
+@keyframes ob-pop {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+}
+.step-next { animation: step-in-next 0.3s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.step-prev { animation: step-in-prev 0.3s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.ob-pop { animation: ob-pop 0.4s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .step-next, .step-prev, .ob-pop { animation: none; }
+}

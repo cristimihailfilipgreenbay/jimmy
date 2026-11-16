@@ -1,5 +1,5 @@
 import uuid
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Response, UploadFile
 from sqlalchemy import select
@@ -75,10 +75,13 @@ def upload_document(
 
 
 @router.get("/spaces/{space_id}/documents", response_model=list[DocumentOut])
-def list_documents(space: SpaceDep, session: SessionDep):
+def list_documents(
+    space: SpaceDep, session: SessionDep, kind: Literal["notes", "library"] = "notes"
+):
+    """Notes by default; `?kind=library` lists the attached Subject Library chapters."""
     return session.scalars(
         select(Document)
-        .where(Document.space_id == space.id)
+        .where(Document.space_id == space.id, Document.kind == kind)
         .order_by(Document.created_at.desc())
     )
 

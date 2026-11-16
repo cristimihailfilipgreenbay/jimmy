@@ -13,6 +13,9 @@ import { useSpaces } from '@/features/spaces/queries/useSpaces'
 export function Layout() {
   const { spaceId } = useParams()
   const { pathname } = useLocation()
+  // The chat keeps its composer at the bottom of the screen, so it needs no room below it
+  // (on a phone, only the space for the bottom bar).
+  const chat = pathname.endsWith('/chat')
   const student = useSignedInStudent()
   const { data: spaces = [] } = useSpaces(student.id)
   const space = spaceId ? spaces.find((s) => s.id === spaceId) : undefined
@@ -30,7 +33,7 @@ export function Layout() {
         Skip to content
       </a>
       <Header student={student} spaces={spaces} space={space} />
-      <main id="main" tabIndex={-1} className="mx-auto max-w-7xl px-4 pb-28 outline-none">
+      <main id="main" tabIndex={-1} className={cn('mx-auto max-w-7xl px-4 outline-none', chat ? 'pb-0 max-md:pb-16' : 'pb-28')}>
         {/* Remounted on every route change so each screen animates in as it arrives. */}
         <div key={pathname} className={cn('overflow-x-clip', motion.dir ? `tab-${motion.dir}` : 'page-in')}>
           <Outlet />

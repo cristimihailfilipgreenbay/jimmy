@@ -14,7 +14,7 @@ import { ChatEmpty } from './components/ChatEmpty'
 import { Composer } from './components/Composer'
 import { SourceGuide } from './components/SourceGuide'
 import { useSpaceEvents } from '@/features/learned/queries/useSpaceEvents'
-import { stepLabel, stepMeta, useChat } from './hooks/useChat'
+import { chatStatus, stepLabel, stepMeta, useChat } from './hooks/useChat'
 
 // A Study Space's chat: cited answers from its Notes, streamed as they are written.
 export function ChatPage() {
@@ -41,7 +41,7 @@ export function ChatPage() {
   const settled = !loadingNotes && !loadingTopics && !loadingLibrary && !loadingWeak
 
   return (
-    <div className="grid gap-6 pt-4 pb-6 lg:grid-cols-[1fr_300px]">
+    <div className="grid gap-6 pt-4 pb-1 lg:grid-cols-[1fr_300px]">
       <div className="flex min-h-[calc(100vh-7.5rem)] flex-col">
         <h1 className="sr-only">Chat · {space.name}</h1>
         <div className="flex-1 space-y-6 pb-4" aria-live="polite" aria-busy={!!chat.pending}>
@@ -66,7 +66,15 @@ export function ChatPage() {
           {chat.pending && (
             <>
               <UserMessage text={chat.pending.question} />
-              <AnswerMessage content={chat.pending.text} citations={chat.pending.citations} spaceId={space.id} conflicts={chat.pending.conflicts} onDecide={chat.decide} streaming />
+              <AnswerMessage
+                content={chat.pending.text}
+                citations={chat.pending.citations}
+                spaceId={space.id}
+                conflicts={chat.pending.conflicts}
+                onDecide={chat.decide}
+                streaming
+                status={chatStatus(chat.pending)}
+              />
             </>
           )}
           {chat.error && (

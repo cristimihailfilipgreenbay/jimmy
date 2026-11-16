@@ -23,6 +23,14 @@ export const stepLabel = (s: Step) => (TOOL_NAMES[s.tool] ?? { run: s.tool, done
 export const stepMeta = (s: Step) =>
   s.state === 'done' && s.found !== undefined ? (s.found === 0 ? 'no match' : `${s.found} passage${s.found === 1 ? '' : 's'}`) : undefined
 
+/** What to say beside Jimmy's avatar while a run is going: the tool at work, else thinking or writing. */
+export function chatStatus(run: Pending): { label: string; working: boolean } {
+  if (run.conflicts.some((c) => !c.decision)) return { label: 'Waiting for your decision', working: false }
+  const step = run.steps.findLast((s) => s.state === 'run')
+  if (step) return { label: stepLabel(step), working: true }
+  return { label: run.text ? 'Writing…' : 'Thinking…', working: true }
+}
+
 /** One Study Space's conversation: its stored messages plus the answer being streamed. */
 export function useChat(studentId: string, spaceId: string) {
   const qc = useQueryClient()
@@ -72,7 +80,8 @@ export function useChat(studentId: string, spaceId: string) {
   }
 
   // Streams one request into the run. A run that ends on a pause stays on screen.
-  async function drive(id: string | undefined, go: (signal: AbortSignal) => Promise<void>) {
+  // `threadOf` is read when the run ends: a first question creates its thread while it runs.
+  async function drive(threadOf: () => string | undefined, go: (signal: AbortSignal) => Promise<void>) {
     abort.current = new AbortController()
     let failed = false
     try {
@@ -84,6 +93,7 @@ export function useChat(studentId: string, spaceId: string) {
       abort.current = null
     }
     if (!failed && run.current?.conflicts.some((c) => !c.decision)) return
+    const id = threadOf()
     if (id) {
       await qc.invalidateQueries({ queryKey: messagesKey(id) })
       await qc.invalidateQueries({ queryKey: threadsKey(studentId, spaceId) })
@@ -98,7 +108,7 @@ export function useChat(studentId: string, spaceId: string) {
     run.current = { question, text: '', citations: [], steps: [], conflicts: [] }
     publish()
     let id = threadId
-    await drive(id, async (signal) => {
+    await drive(() => id, async (signal) => {
       id = id ?? (await createThread.mutateAsync()).id
       setChosenThread(id)
       await send.mutateAsync({ threadId: id, content: question, onEvent: apply, signal })
@@ -111,7 +121,7 @@ export function useChat(studentId: string, spaceId: string) {
     setError(null)
     card.decision = decision
     publish()
-    await drive(threadId, (signal) => resume.mutateAsync({ threadId, interruptId, decision, onEvent: apply, signal }))
+    await drive(() => threadId, (signal) => resume.mutateAsync({ threadId, interruptId, decision, onEvent: apply, signal }))
   }
 
   function stop() {

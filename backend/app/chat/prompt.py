@@ -31,8 +31,9 @@ _FLASHCARDS = """If the Student asks for Flashcards, call `save_flashcards` with
 they wait on the Flashcards screen for the Student to approve. Tell the Student how many \
 were drafted and where to review them. Never write Flashcards yourself in the answer."""
 
-_RULES = """{n}. Write the answer in short paragraphs. Every paragraph must be attributed, in \
-one of two ways:
+_RULES = """{n}. Write the answer in short paragraphs, with light Markdown where it helps (bold, \
+lists, `code`). A list is one paragraph: put its attribution after the last item. Every \
+paragraph must be attributed, in one of two ways:
    - From a search: end the paragraph with the numbers of the passages it relies on, like \
 [1] or [2][3]. Use only numbers that {tools} returned in this conversation turn, \
 and only for statements that passage actually supports.

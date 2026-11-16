@@ -27,7 +27,7 @@ After answering from a Finding, the agent returns a structured decision: save pe
 - **Ask:** cited Q&A in the chat.
 - **Quiz:** short, interactive, feedback after every answer. Multiple choice and short written answers.
 - **Test:** longer, across Topics, results and explanations only at the end.
-- **Flashcards:** drafted from Notes and Library, reviewed by the student.
+- **Flashcards:** drafted from Notes and Library, reviewed by the student. **Known limitation:** in the deck viewer, Again and Hard turn the card back to its front and Got it moves to the next card. Ratings are not stored and do not schedule reviews (the prototype implies spaced repetition: again in 1 minute, hard in 10, got it in 3 days). Adding it needs a stored rating and a due time per card, and a Study deck that shows due cards first.
 - **Essay:** graded against a rubric derived from the Sources. This is the last story.
 
 Weak Topics are weighted into Quiz and Test selection. Questions, answers and flashcards use only Notes, the Subject Library and approved Learned Material.

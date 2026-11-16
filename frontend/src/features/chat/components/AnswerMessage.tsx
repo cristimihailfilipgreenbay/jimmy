@@ -26,6 +26,7 @@ export function AnswerMessage({
   conflicts = [],
   onDecide,
   streaming = false,
+  status,
 }: {
   content: string
   citations: Citation[]
@@ -34,6 +35,8 @@ export function AnswerMessage({
   conflicts?: ConflictCardState[]
   onDecide?: (interruptId: string, decision: ConflictDecision) => void
   streaming?: boolean
+  // What Jimmy is doing while the answer streams, shown beside the avatar.
+  status?: { label: string; working: boolean }
 }) {
   // Rating is not stored yet (the feedback endpoint comes later); it only toggles here.
   const [rating, setRating] = useState<'up' | 'down' | null>(null)
@@ -41,7 +44,21 @@ export function AnswerMessage({
     <article aria-label="Jimmy's answer">
       <div className="mb-2 flex items-center gap-2">
         <JimmyBadge className="size-7" />
-        <span className="text-sm font-semibold">Jimmy</span>
+        <span className="flex flex-col">
+          <span className="text-sm font-semibold">Jimmy</span>
+          {streaming && status && (
+            <span role="status" className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              {status.label}
+              {status.working && (
+                <span className="flex items-end gap-0.5 pb-0.5" aria-hidden>
+                  <span className="thinking-dot" />
+                  <span className="thinking-dot" />
+                  <span className="thinking-dot" />
+                </span>
+              )}
+            </span>
+          )}
+        </span>
         {tools.length > 0 && (
           <span className="flex flex-wrap gap-1">
             {tools.map((t) => (

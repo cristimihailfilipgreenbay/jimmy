@@ -30,9 +30,11 @@ export function FlashcardsPage() {
   const [tab, setTab] = useState<Tab>('browse')
   const [topic, setTopic] = useState('all')
   const [viewer, setViewer] = useState<number | null>(null)
-  const { container, indicator } = useSlidingIndicator<HTMLDivElement>(tab)
-
   const space = spaces?.find((s) => s.id === spaceId)
+  // The tabs are not on the page while the lists load or the viewer is open, so the pill is
+  // only placed once they are: the key changes then, and the hook measures them.
+  const tabsShown = !!space && !deck.isPending && !drafts.isPending && viewer === null && (deck.data?.length || drafts.data?.length)
+  const { container, indicator } = useSlidingIndicator<HTMLDivElement>(tabsShown ? tab : '')
   if (isPending || deck.isPending || drafts.isPending) return null
   if (!space) return <Placeholder title="Study Space not found" note="That Study Space does not exist." />
 

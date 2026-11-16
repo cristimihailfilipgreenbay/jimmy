@@ -31,7 +31,7 @@ flowchart LR
 
 ## 3. Runtime
 
-`docker compose up` with one `.env` starts three services: `db` (pgvector image), `backend` and `frontend`. Local only, never deployed.
+`docker compose up -d` with one `.env` starts three services: `db` (pgvector image), `backend` and `frontend`. Local only, never deployed.
 
 **Assumptions to confirm** (not discussed explicitly): the backend container runs `alembic upgrade head` on start; seeding demo data is a separate command; the frontend container runs the Vite dev server with a bind mount for hot reload.
 

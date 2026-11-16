@@ -21,10 +21,18 @@ Python, FastAPI, SQLAlchemy and Alembic, LangChain and LangGraph, LangSmith, Ope
 git clone git@github.com:cristimihailfilipgreenbay/jimmy.git
 cd jimmy
 cp .env.example .env     # then fill in the keys
-docker compose up
+docker compose up -d
 ```
 
-`docker compose up` starts three services: `db` (Postgres with pgvector), `backend` (FastAPI) and `frontend` (React dev server). The backend applies database migrations when it starts.
+`docker compose up -d` starts three services in the background: `db` (Postgres with pgvector), `backend` (FastAPI) and `frontend` (React dev server). The backend applies database migrations when it starts.
+
+Useful commands:
+
+```bash
+docker compose logs -f backend   # follow a service's logs
+docker compose ps                # check that all three are running
+docker compose down              # stop everything (add -v to also delete the database volume)
+```
 
 Demo data (open-licensed OpenStax chapters for Biology and Physics) is loaded separately with a seed command, so it is safe to run more than once.
 

@@ -36,7 +36,7 @@ Cited Q&A · Quizzes and Tests with weak-topic tracking · Flashcards with revie
 | **Evaluation** | Ragas report plus custom checks for Citations, answer keys and Conflict detection | [#17](https://github.com/cristimihailfilipgreenbay/jimmy/issues/17) |
 | **Essays** | Written-answer questions graded against a rubric (last story) | [#19](https://github.com/cristimihailfilipgreenbay/jimmy/issues/19) |
 
-Everything runs from one `docker compose up`, with tracing in LangSmith. See the [README](../README.md) for getting started.
+Everything runs from one `docker compose up -d`, with tracing in LangSmith. See the [README](../README.md) for getting started.
 
 ## Not in v1
 

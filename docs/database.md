@@ -130,7 +130,7 @@ Every table under `spaces` cascades on delete.
 
 **First migration.** Enables the `vector` extension, creates the application tables in dependency order (students, then spaces, then everything under them), and creates the indexes.
 
-**When migrations run.** The backend container runs `alembic upgrade head` on start, before it begins serving, so `docker compose up` gives a ready database. This was assumed and has not been explicitly confirmed. Checkpointer tables are created by the checkpointer's own setup call on start-up.
+**When migrations run.** The backend container runs `alembic upgrade head` on start, before it begins serving, so `docker compose up -d` gives a ready database. This was assumed and has not been explicitly confirmed. Checkpointer tables are created by the checkpointer's own setup call on start-up.
 
 **Seed data is not a migration.** Demo Study Spaces, OpenStax chapters and their embeddings are loaded by a separate seed command that is safe to run twice. Migrations never call external services or the embedding model.
 

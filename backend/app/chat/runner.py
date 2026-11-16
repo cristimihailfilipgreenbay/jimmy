@@ -206,7 +206,7 @@ def _stream(
     tokens_in = tokens_out = 0
     try:
         stream = agent.stream(agent_input, config=config, stream_mode="messages")
-        for chunk, _meta in stream:
+        for chunk, meta in stream:
             if isinstance(chunk, ToolMessage):
                 found = len(
                     re.findall(r"^\[\d+\] \(", str(chunk.content), re.MULTILINE)
@@ -217,6 +217,10 @@ def _stream(
                 yield Event("tool_call", done)
                 continue
             if not isinstance(chunk, AIMessage):
+                continue
+            # A tool can call a model of its own (the guard, the source comparison);
+            # only the agent's own model writes the answer.
+            if meta.get("langgraph_node") != "model":
                 continue
             if chunk.id != current_id:
                 if text and not has_tools:

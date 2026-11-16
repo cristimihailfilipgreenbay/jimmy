@@ -1,6 +1,9 @@
+from typing import Annotated
+
+from fastapi import Depends
 from sqlalchemy import MetaData, create_engine
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, Session
 
 from app.config import get_settings
 
@@ -20,3 +23,14 @@ class Base(DeclarativeBase):
 
 def make_engine() -> Engine:
     return create_engine(get_settings().database_url, pool_pre_ping=True)
+
+
+engine = make_engine()
+
+
+def get_session():
+    with Session(engine) as session:
+        yield session
+
+
+SessionDep = Annotated[Session, Depends(get_session)]

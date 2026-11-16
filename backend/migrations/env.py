@@ -2,6 +2,10 @@ from alembic import context
 
 from app.db import Base, make_engine
 
+# Importing the models registers every feature's tables on Base.metadata.
+from app.spaces import models as _spaces_models  # noqa: F401
+from app.students import models as _students_models  # noqa: F401
+
 target_metadata = Base.metadata
 
 # Tables created and maintained by the LangGraph Postgres checkpointer.

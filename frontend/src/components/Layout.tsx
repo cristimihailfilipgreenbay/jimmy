@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useParams } from 'react-router'
-import { ApiStatus } from '@/components/ApiStatus'
+import { ApiStatus } from '@/features/health/components/ApiStatus'
+import { ProfileSwitcher } from '@/features/students/components/ProfileSwitcher'
 import { cn } from '@/lib/utils'
 
 const link = ({ isActive }: { isActive: boolean }) =>
@@ -16,6 +17,7 @@ export function Layout() {
     <div className="flex min-h-screen">
       <aside className="flex w-56 flex-none flex-col gap-1 border-r p-4">
         <h1 className="mb-4 text-xl font-semibold">Jimmy</h1>
+        <ProfileSwitcher />
         <nav className="flex flex-col gap-1" aria-label="Main">
           <NavLink to="/" end className={link}>
             Study Spaces

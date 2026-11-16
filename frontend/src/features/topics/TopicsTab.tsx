@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { errorMessage } from '@/lib/http'
 import { cardClass } from '@/lib/styles'
 import { toast } from '@/lib/toast'
+import { cn } from '@/lib/utils'
 import { useMergeTopics } from './queries/useMergeTopics'
 import { useRenameTopic } from './queries/useRenameTopic'
 import { useTopics } from './queries/useTopics'
@@ -97,7 +98,13 @@ export function TopicsTab({ studentId, spaceId }: { studentId: string; spaceId: 
       )}
       <ul role="list" className="divide-y">
         {topics.map((t) => (
-          <li key={t.id} className="flex items-center gap-3 px-3 py-2.5 transition-colors duration-200 hover:bg-muted/40">
+          <li
+            key={t.id}
+            className={cn(
+              'flex items-center gap-3 px-3 py-2.5 transition-colors duration-200',
+              selected.includes(t.id) ? 'bg-space/[.06]' : 'hover:bg-muted/40',
+            )}
+          >
             <input
               type="checkbox"
               id={`topic-${t.id}`}

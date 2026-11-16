@@ -13,7 +13,19 @@ from app.models import Space
 
 router = APIRouter(tags=["spaces"])
 
-Accent = Literal["default", "biology", "physics", "chemistry", "history", "math"]
+# The accent is only a colour the Student picked; it says nothing about the subject.
+Accent = Literal[
+    "slate",
+    "red",
+    "orange",
+    "amber",
+    "green",
+    "teal",
+    "blue",
+    "indigo",
+    "purple",
+    "pink",
+]
 
 
 class SpaceOut(BaseModel):
@@ -30,7 +42,7 @@ class SpaceIn(BaseModel):
     name: Annotated[
         str, StringConstraints(strip_whitespace=True, min_length=1, max_length=80)
     ]
-    accent: Accent = "default"
+    accent: Accent = "slate"
 
 
 def _duplicate() -> ApiError:

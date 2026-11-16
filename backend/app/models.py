@@ -35,7 +35,7 @@ class Space(Base):
         ForeignKey("students.id", ondelete="CASCADE"), index=True
     )
     name: Mapped[str] = mapped_column(String(80))
-    accent: Mapped[str] = mapped_column(String(20), default="default")
+    accent: Mapped[str] = mapped_column(String(20), default="slate")
     library_enabled: Mapped[bool] = mapped_column(
         Boolean, default=False, server_default="false"
     )

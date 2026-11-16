@@ -43,6 +43,10 @@ class Document(Base):
         ForeignKey("spaces.id", ondelete="CASCADE"), index=True
     )
     kind: Mapped[str] = mapped_column(String(10), default="notes")
+    # The Subject Library pack a library document came from; null for Notes.
+    pack_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("library_packs.id", ondelete="SET NULL"), index=True
+    )
     title: Mapped[str] = mapped_column(String(300))
     author: Mapped[str | None] = mapped_column(String(300))
     filename: Mapped[str] = mapped_column(String(300))

@@ -9,7 +9,7 @@ erDiagram
     STUDENT ||--o{ STUDY_SPACE : owns
     STUDENT ||--|| PROFILE : has
     STUDY_SPACE ||--o{ NOTES : contains
-    STUDY_SPACE ||--o| SUBJECT_LIBRARY : "may attach"
+    STUDY_SPACE ||--o{ SUBJECT_LIBRARY : "may attach several"
     STUDY_SPACE ||--o{ TOPIC : has
     STUDY_SPACE ||--o{ LEARNED_MATERIAL : grows
     STUDY_SPACE ||--o{ FLASHCARD : holds

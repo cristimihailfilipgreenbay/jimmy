@@ -1,5 +1,6 @@
 import json
 import re
+import uuid
 from pathlib import Path
 from typing import Annotated
 
@@ -12,7 +13,7 @@ from app.documents.models import Document
 from app.errors import ApiError
 from app.library.ingest import ingest_library_document
 from app.library.models import LibraryPack
-from app.library.schemas import LibraryIn, LibraryOut, PackOut
+from app.library.schemas import LibraryIn, LibraryOut, PackOut, ShelfBook
 from app.library.search import TYPO_THRESHOLD, build_pack_search
 from app.library.seed import seed_root
 from app.spaces.dependencies import get_owned_space
@@ -36,14 +37,28 @@ def _library_documents(session, space: Space) -> list[Document]:
     )
 
 
-def _cited_in_answers(session, space: Space) -> int:
-    """Answers in this Space with at least one Citation from the Subject Library."""
-    rows = session.scalars(
-        select(Message.citations)
-        .join(Thread, Thread.id == Message.thread_id)
-        .where(Thread.space_id == space.id, Message.role == "assistant")
+def _answer_citations(session, space: Space) -> list[list[dict]]:
+    return list(
+        session.scalars(
+            select(Message.citations)
+            .join(Thread, Thread.id == Message.thread_id)
+            .where(Thread.space_id == space.id, Message.role == "assistant")
+        )
     )
-    return sum(any(c.get("source_type") == "library" for c in rows_) for rows_ in rows)
+
+
+def _cited_in(answers: list[list[dict]], pack: LibraryPack) -> int:
+    """Answers with a Citation from this book. A library document is titled
+    "<book>, ch. N ...", and a Citation carries its document's title."""
+    prefix = f"{pack.title}, "
+    return sum(
+        any(
+            c.get("source_type") == "library"
+            and str(c.get("document", "")).startswith(prefix)
+            for c in answer
+        )
+        for answer in answers
+    )
 
 
 def _chapter_numbers(documents: list[Document]) -> list[int]:
@@ -52,34 +67,39 @@ def _chapter_numbers(documents: list[Document]) -> list[int]:
     return sorted(int(m.group(1)) for m in numbers if m)
 
 
+def _status(documents: list[Document]) -> str:
+    if any(d.status in ("failed", "rejected") for d in documents):
+        return "failed"
+    if all(d.status == "ready" for d in documents):
+        return "ready"
+    return "indexing"
+
+
 def _state(session, space: Space) -> LibraryOut:
     documents = _library_documents(session, space)
     if not documents:
-        return LibraryOut(
-            pack=None,
-            enabled=False,
-            status="none",
-            chapters_ready=0,
-            chapters_total=0,
-            chapters=[],
-            cited_in_answers=0,
+        return LibraryOut(enabled=False, status="none", books=[])
+    answers = _answer_citations(session, space)
+    books = []
+    for pack_id in dict.fromkeys(d.pack_id for d in documents):
+        pack = session.get(LibraryPack, pack_id)
+        if pack is None:
+            continue
+        mine = [d for d in documents if d.pack_id == pack_id]
+        books.append(
+            ShelfBook(
+                pack=PackOut.model_validate(pack),
+                status=_status(mine),
+                chapters_ready=sum(d.status == "ready" for d in mine),
+                chapters_total=len(mine),
+                chapters=_chapter_numbers(mine),
+                cited_in_answers=_cited_in(answers, pack),
+            )
         )
-    pack = session.get(LibraryPack, documents[0].pack_id)
-    ready = sum(d.status == "ready" for d in documents)
-    if any(d.status in ("failed", "rejected") for d in documents):
-        status = "failed"
-    elif ready == len(documents):
-        status = "ready"
-    else:
-        status = "indexing"
     return LibraryOut(
-        pack=PackOut.model_validate(pack) if pack else None,
         enabled=space.library_enabled,
-        status=status,
-        chapters_ready=ready,
-        chapters_total=len(documents),
-        chapters=_chapter_numbers(documents),
-        cited_in_answers=_cited_in_answers(session, space),
+        status=_status(documents),
+        books=books,
     )
 
 
@@ -107,65 +127,73 @@ def get_library(space: SpaceDep, session: SessionDep):
 
 
 @router.put("/spaces/{space_id}/library", response_model=LibraryOut)
-def put_library(
-    body: LibraryIn, space: SpaceDep, session: SessionDep, background: BackgroundTasks
-):
-    """Attach a pack (its chapters become documents of this Space), switch it on or
-    off, or detach it. A Space has at most one pack."""
-    existing = _library_documents(session, space)
-    if body.pack_id is None:
-        for document in existing:
-            session.delete(document)
-        space.library_enabled = False
-        session.commit()
-        return _state(session, space)
-
-    pack = session.get(LibraryPack, body.pack_id)
-    if pack is None:
-        raise ApiError(404, "pack_not_found", "That Subject Library does not exist.")
-
-    keep = []
-    for document in existing:
-        # Another pack, or a chapter that failed, is replaced.
-        if document.pack_id == pack.id and document.status != "failed":
-            keep.append(document)
-        else:
-            session.delete(document)
-    have = {d.filename for d in keep}
-
-    new: list[tuple[Document, Path, int]] = []
-    if not keep or len(keep) < _chapter_count(pack):
-        folder = seed_root() / pack.slug
-        manifest_path = folder / "manifest.json"
-        if not manifest_path.exists():
-            raise ApiError(
-                409,
-                "library_not_seeded",
-                "This Subject Library has not been downloaded yet. "
-                "Run the seed command first.",
-            )
-        for chapter in json.loads(manifest_path.read_text())["chapters"]:
-            if chapter["file"] in have:
-                continue
-            path = folder / chapter["file"]
-            document = Document(
-                space_id=space.id,
-                kind="library",
-                pack_id=pack.id,
-                title=f"{pack.title}, ch. {chapter['number']} {chapter['title']}"[:300],
-                author=f"{pack.author}{AUTHOR_SUFFIX}"[:300],
-                filename=chapter["file"],
-                mime_type="application/pdf",
-                size_bytes=path.stat().st_size,
-                status="uploaded",
-            )
-            session.add(document)
-            new.append((document, path, chapter["first_page"]))
-    session.flush()
-
-    for document in [*keep, *(d for d, _, _ in new)]:
+def switch_library(body: LibraryIn, space: SpaceDep, session: SessionDep):
+    """Switch the Space's whole Subject Library on or off. Off keeps the chapters
+    but nothing in them is searched."""
+    documents = _library_documents(session, space)
+    if not documents:
+        raise ApiError(409, "no_library", "This Study Space has no textbook yet.")
+    for document in documents:
         document.enabled = body.enabled
     space.library_enabled = body.enabled
+    session.commit()
+    return _state(session, space)
+
+
+@router.put("/spaces/{space_id}/library/packs/{pack_id}", response_model=LibraryOut)
+def add_pack(
+    pack_id: uuid.UUID,
+    space: SpaceDep,
+    session: SessionDep,
+    background: BackgroundTasks,
+):
+    """Add a textbook to the Space: its chapters become documents of this Space and
+    are indexed in the background. Adding it again retries chapters that failed.
+    Adding a textbook switches the Library on."""
+    pack = session.get(LibraryPack, pack_id)
+    if pack is None:
+        raise ApiError(404, "pack_not_found", "That textbook does not exist.")
+    folder = seed_root() / pack.slug
+    manifest_path = folder / "manifest.json"
+    if not manifest_path.exists():
+        raise ApiError(
+            409,
+            "library_not_seeded",
+            "This textbook has not been downloaded yet. Run the seed command first.",
+        )
+
+    have = {}
+    for document in _library_documents(session, space):
+        if document.pack_id != pack.id:
+            continue
+        if document.status == "failed":
+            session.delete(document)
+        else:
+            have[document.filename] = document
+
+    new: list[tuple[Document, Path, int]] = []
+    for chapter in json.loads(manifest_path.read_text())["chapters"]:
+        if chapter["file"] in have:
+            continue
+        path = folder / chapter["file"]
+        document = Document(
+            space_id=space.id,
+            kind="library",
+            pack_id=pack.id,
+            title=f"{pack.title}, ch. {chapter['number']} {chapter['title']}"[:300],
+            author=f"{pack.author}{AUTHOR_SUFFIX}"[:300],
+            filename=chapter["file"],
+            mime_type="application/pdf",
+            size_bytes=path.stat().st_size,
+            status="uploaded",
+        )
+        session.add(document)
+        new.append((document, path, chapter["first_page"]))
+    session.flush()
+
+    for document in _library_documents(session, space):
+        document.enabled = True
+    space.library_enabled = True
     session.commit()
     for document, path, first_page in new:
         background.add_task(
@@ -174,8 +202,15 @@ def put_library(
     return _state(session, space)
 
 
-def _chapter_count(pack: LibraryPack) -> int:
-    manifest = seed_root() / pack.slug / "manifest.json"
-    if not manifest.exists():
-        return 0
-    return len(json.loads(manifest.read_text())["chapters"])
+@router.delete("/spaces/{space_id}/library/packs/{pack_id}", response_model=LibraryOut)
+def remove_pack(pack_id: uuid.UUID, space: SpaceDep, session: SessionDep):
+    """Take a textbook off the Space's shelf and delete its chapters. The Library
+    switches itself off when the last textbook goes."""
+    for document in _library_documents(session, space):
+        if document.pack_id == pack_id:
+            session.delete(document)
+    session.flush()
+    if not _library_documents(session, space):
+        space.library_enabled = False
+    session.commit()
+    return _state(session, space)

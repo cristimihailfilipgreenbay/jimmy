@@ -71,8 +71,10 @@ The app is closed to a Student who has not finished onboarding: the frontend sen
 | GET | `/spaces/{space_id}/documents/{id}` | One document |
 | DELETE | `/spaces/{space_id}/documents/{id}` | Delete the document and its chunks |
 | GET | `/libraries` | Available Subject Library packs (title, author, licence), as registered by the seed command. `?q=` keeps only the packs matching those words (title, subject, author), best match first: Postgres full-text search on stemmed words, plus `pg_trgm` similarity so misspellings such as "fizics" still match |
-| GET | `/spaces/{space_id}/library` | The Space's Subject Library: `pack` (or null), `enabled`, `status` (`none`, `indexing`, `ready`, `failed`), `chapters_ready`, `chapters_total`, `chapters` (the book's chapter numbers) and `cited_in_answers` (answers in the Space with a Library Citation) |
-| PUT | `/spaces/{space_id}/library` | `{pack_id, enabled}`. A `pack_id` attaches that pack (replacing another) and indexes its chapters in the background; the same pack again with `enabled` switches it on or off; `pack_id: null` detaches the Library and deletes its chapters. `409 library_not_seeded` if the seed command has not downloaded the pack. Returns the same shape as GET |
+| GET | `/spaces/{space_id}/library` | The Space's Subject Library: `enabled`, an overall `status` (`none`, `indexing`, `ready`, `failed`) and `books`, one per textbook on the shelf with its `pack`, `status`, `chapters_ready`, `chapters_total`, `chapters` (the book's chapter numbers) and `cited_in_answers` (answers in the Space with a Citation from that book) |
+| PUT | `/spaces/{space_id}/library` | `{enabled}` switches the whole Library on or off; the chapters stay, but nothing in them is searched while it is off. `409 no_library` without a textbook. Returns the same shape as GET |
+| PUT | `/spaces/{space_id}/library/packs/{pack_id}` | Add a textbook to the Space (a Space can hold several). Its chapters are indexed in the background; adding it again retries failed chapters. Switches the Library on. `404 pack_not_found`; `409 library_not_seeded` if the seed command has not downloaded it. Returns the same shape as GET |
+| DELETE | `/spaces/{space_id}/library/packs/{pack_id}` | Remove a textbook and delete its chapters. The Library switches itself off when the last one goes. Returns the same shape as GET |
 
 Document status values: `uploaded`, `extracting`, `rejected`, `awaiting_topic_review`, `embedding`, `ready`, `failed`.
 

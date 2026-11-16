@@ -3,6 +3,8 @@ from typing import Literal
 
 from pydantic import BaseModel
 
+Status = Literal["indexing", "ready", "failed"]
+
 
 class PackOut(BaseModel):
     id: uuid.UUID
@@ -17,19 +19,26 @@ class PackOut(BaseModel):
 
 
 class LibraryIn(BaseModel):
-    """`pack_id` attaches that pack (replacing another); null detaches the Library."""
+    """Switches the whole Library of the Space on or off."""
 
-    pack_id: uuid.UUID | None = None
-    enabled: bool = True
+    enabled: bool
+
+
+class ShelfBook(BaseModel):
+    """One textbook on a Space's shelf, with how far its indexing has got."""
+
+    pack: PackOut
+    status: Status
+    chapters_ready: int
+    chapters_total: int
+    # The book's chapter numbers in this Space, and the answers that cited it.
+    chapters: list[int]
+    cited_in_answers: int
 
 
 class LibraryOut(BaseModel):
-    pack: PackOut | None
     enabled: bool
-    # none: no pack attached; indexing: chapters still being embedded.
+    # none: no textbook attached; indexing: some chapter is still being embedded;
+    # failed: some chapter could not be indexed.
     status: Literal["none", "indexing", "ready", "failed"]
-    chapters_ready: int
-    chapters_total: int
-    # The book's chapter numbers in this Space, and how many answers cited the Library.
-    chapters: list[int]
-    cited_in_answers: int
+    books: list[ShelfBook]

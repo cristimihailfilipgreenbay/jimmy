@@ -1,7 +1,13 @@
 import { z } from 'zod'
 
 // Mirrors the backend's StudentOut. The name stays empty until onboarding.
-export const studentSchema = z.object({ id: z.uuid(), display_name: z.string().nullable(), email: z.string() })
+export const studentSchema = z.object({
+  id: z.uuid(),
+  display_name: z.string().nullable(),
+  email: z.string(),
+  // False until onboarding is finished.
+  onboarded: z.boolean(),
+})
 export type Student = z.infer<typeof studentSchema>
 
 const emailSchema = z.string().trim().min(1, 'Enter your email address.').pipe(z.email('That doesn’t look like an email address.'))

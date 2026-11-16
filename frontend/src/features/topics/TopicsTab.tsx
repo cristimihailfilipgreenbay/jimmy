@@ -84,7 +84,7 @@ export function TopicsTab({ studentId, spaceId }: { studentId: string; spaceId: 
           {selected.length ? (
             <strong className="text-foreground">{selected.length} selected</strong>
           ) : (
-            'Select topics to merge duplicates'
+            'Select topics to merge duplicates or delete'
           )}
         </p>
         <div className="ml-auto flex gap-2">

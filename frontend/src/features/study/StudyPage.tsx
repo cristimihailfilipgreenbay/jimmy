@@ -11,9 +11,9 @@ import { cardClass } from '@/lib/styles'
 import { cn } from '@/lib/utils'
 import { QuestionCard } from './components/QuestionCard'
 import { Recap } from './components/Recap'
-import { useAnswerQuestion, useRecap, useReloadQuiz, useStartQuiz } from './queries/useQuiz'
+import { useAnswerQuestion, useDecideDispute, useRecap, useReloadQuiz, useStartQuiz } from './queries/useQuiz'
 import { useWeakTopics } from './queries/useWeakTopics'
-import { QUIZ_LENGTH, type Feedback, type StudySession } from './schemas/study'
+import { QUIZ_LENGTH, type AnswerOut, type Feedback, type StudySession } from './schemas/study'
 
 // A Study Space's Study screen: choose Quiz, answer questions with feedback after each
 // one, then read the recap. A Test comes later.
@@ -29,6 +29,7 @@ export function StudyPage() {
 
   const start = useStartQuiz(spaceId)
   const answer = useAnswerQuestion(student.id, spaceId)
+  const decide = useDecideDispute(student.id, spaceId)
   const reload = useReloadQuiz()
   const [session, setSession] = useState<StudySession | null>(null)
   const [history, setHistory] = useState<Feedback[]>([])
@@ -147,6 +148,13 @@ export function StudyPage() {
   const feedback = history[viewing] ?? null
   const question = feedback ? null : session.current
   const finished = session.status === 'finished'
+  // The answer's result: its feedback, or a Dispute that waits for the Student first.
+  const show = (out: AnswerOut) => {
+    setSession(out.session)
+    if (!out.feedback) return
+    setHistory([...history, out.feedback])
+    setViewing(history.length)
+  }
   const goNext = () => {
     setSlide('q-next')
     if (viewing + 1 >= history.length && finished) setRecapOpen(true)
@@ -192,7 +200,9 @@ export function StudyPage() {
           className={slide}
           question={question}
           feedback={feedback}
+          dispute={feedback ? null : (session.dispute ?? null)}
           checking={answer.isPending}
+          deciding={decide.isPending}
           canGoBack={viewing > 0}
           isLast={viewing + 1 >= total}
           onBack={() => {
@@ -204,14 +214,14 @@ export function StudyPage() {
             setError(null)
             answer.mutate(
               { sessionId: session.id, questionId: question!.id, answer: text },
-              {
-                onSuccess: (out) => {
-                  setHistory([...history, out.feedback])
-                  setSession(out.session)
-                  setViewing(history.length)
-                },
-                onError: (err) => setError(errorMessage(err, 'Jimmy could not check that answer. Try again.')),
-              },
+              { onSuccess: show, onError: (err) => setError(errorMessage(err, 'Jimmy could not check that answer. Try again.')) },
+            )
+          }}
+          onDecide={(decision) => {
+            setError(null)
+            decide.mutate(
+              { threadId: session.thread_id, interruptId: session.dispute!.interrupt_id, decision },
+              { onSuccess: show, onError: (err) => setError(errorMessage(err, 'Jimmy could not save that decision. Try again.')) },
             )
           }}
         />

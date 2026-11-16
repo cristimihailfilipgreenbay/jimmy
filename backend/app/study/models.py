@@ -104,6 +104,29 @@ class QuizAttempt(Base):
     )
 
 
+class Dispute(Base):
+    """The Student's decision on a grade the grader was unsure of. It overrides the
+    attempt's grade; the automatic one is kept here."""
+
+    __tablename__ = "disputes"
+    __table_args__ = (
+        CheckConstraint(
+            "decision IN ('correct', 'incorrect', 'unsure')", name="decision"
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    attempt_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("quiz_attempts.id", ondelete="CASCADE"), unique=True
+    )
+    auto_score: Mapped[float] = mapped_column(Numeric(4, 3))
+    auto_confidence: Mapped[float] = mapped_column(Numeric(4, 3))
+    decision: Mapped[str] = mapped_column(String(10))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
 class WeakTopic(Base):
     """A cache of one Topic's state; `weak_state` can always recompute it."""
 

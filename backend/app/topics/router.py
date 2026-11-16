@@ -2,6 +2,7 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Response
+from fastapi.responses import JSONResponse
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 
@@ -15,6 +16,7 @@ from app.errors import ApiError
 from app.spaces.dependencies import get_owned_space
 from app.spaces.models import Space
 from app.students.dependencies import StudentDep
+from app.study.router import resume_dispute
 from app.topics.models import Topic
 from app.topics.review import (
     Decision,
@@ -179,7 +181,16 @@ def resume_thread(
     background: BackgroundTasks,
 ):
     """Answer a pause. A chat continues as an event stream; a Topic review checks the
-    answer and finishes indexing in the background."""
+    answer and finishes indexing in the background; a Dispute in a Quiz returns the
+    feedback."""
+    if thread.kind == "session":
+        if not isinstance(body.decision, str):
+            raise ApiError(422, "invalid_decision", "Choose yes, no or not sure.")
+        return JSONResponse(
+            resume_dispute(
+                body.interrupt_id, body.decision, thread, session
+            ).model_dump(mode="json")
+        )
     if thread.kind == "chat":
         if not isinstance(body.decision, str):
             raise ApiError(422, "invalid_decision", "Choose one of the options.")

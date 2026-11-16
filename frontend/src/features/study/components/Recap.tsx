@@ -1,4 +1,4 @@
-import { Check, RotateCcw, X } from 'lucide-react'
+import { Check, CircleHelp, RotateCcw, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cardClass } from '@/lib/styles'
 import { cn } from '@/lib/utils'
@@ -35,14 +35,19 @@ export function Recap({ recap, spaceName, onAgain, onDone }: { recap: RecapData;
           <li key={q.question_id} className={cn(cardClass, 'p-5')}>
             <div className="flex items-start gap-3">
               <span
-                className={cn('grid size-7 flex-none place-items-center rounded-full text-xs font-semibold', q.correct ? 'bg-success-soft text-success' : 'bg-destructive-soft text-destructive')}
+                className={cn(
+                  'grid size-7 flex-none place-items-center rounded-full text-xs font-semibold',
+                  q.correct ? 'bg-success-soft text-success' : q.decision === 'unsure' ? 'bg-muted' : 'bg-destructive-soft text-destructive',
+                )}
                 aria-hidden
               >
-                {q.correct ? <Check className="size-3.5" /> : <X className="size-3.5" />}
+                {q.correct ? <Check className="size-3.5" /> : q.decision === 'unsure' ? <CircleHelp className="size-3.5" /> : <X className="size-3.5" />}
               </span>
               <div className="flex-1">
                 <p className="text-xs text-muted-foreground">
-                  Q{q.position} · {q.topic} · <span className="font-medium">{q.correct ? 'Correct' : 'Incorrect'}</span>
+                  Q{q.position} · {q.topic} · <span className="font-medium">
+                    {q.decision === 'unsure' ? 'Marked for review' : `${q.correct ? 'Correct' : 'Incorrect'}${q.graded_by === 'student' ? ' (your call)' : ''}`}
+                  </span>
                 </p>
                 <p className="mt-1 font-serif text-lg leading-snug">{q.prompt}</p>
                 <p className="mt-2 text-sm">

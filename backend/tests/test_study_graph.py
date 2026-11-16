@@ -17,7 +17,13 @@ from app.db import Base
 from app.spaces import models as _spaces  # noqa: F401
 from app.students import models as _students  # noqa: F401
 from app.study.graph import build_study_graph
-from app.study.models import QuizAttempt, SessionQuestion, StudySession, WeakTopic
+from app.study.models import (
+    Dispute,
+    QuizAttempt,
+    SessionQuestion,
+    StudySession,
+    WeakTopic,
+)
 from app.topics.models import Topic
 
 SPACE = uuid.uuid4()
@@ -46,6 +52,22 @@ class FakeModel:
         return type("R", (), {"content": text, "text": text})()
 
 
+class UnsureGrader(FakeModel):
+    """Grades every written answer as the given score and confidence."""
+
+    def __init__(self, score, confidence):
+        self.score, self.confidence = score, confidence
+
+    def invoke(self, messages):
+        data = {
+            "score": self.score,
+            "confidence": self.confidence,
+            "feedback": "Maybe.",
+        }
+        text = json.dumps(data)
+        return type("R", (), {"content": text, "text": text})()
+
+
 def passage_finder(session, space_id, topic, avoid):
     return {
         "chunk_id": str(uuid.uuid4()),
@@ -70,13 +92,14 @@ def db():
             StudySession.__table__,
             SessionQuestion.__table__,
             QuizAttempt.__table__,
+            Dispute.__table__,
             WeakTopic.__table__,
         ],
     )
     return engine
 
 
-def _start(engine, total=3):
+def _start(engine, total=3, grader=None):
     with Session(engine) as s:
         topic = Topic(space_id=SPACE, name="Photosynthesis")
         s.add(topic)
@@ -95,7 +118,7 @@ def _start(engine, total=3):
         lambda: Session(engine),
         passage_finder,
         FakeModel(),
-        FakeModel(),
+        grader or FakeModel(),
         InMemorySaver(),
         random.Random(1),
     )
@@ -175,3 +198,92 @@ def test_the_session_finishes_with_a_score_and_adapts(db):
         row = s.get(StudySession, sid)
         assert row.status == "finished" and row.score == 2
     assert _current(db, sid) is None
+
+
+@pytest.fixture
+def written(monkeypatch):
+    """Every question is a written one, so the grader is always consulted."""
+    monkeypatch.setattr("app.study.graph.MC_SHARE", 0.0)
+
+
+def _pending(graph, config):
+    state = graph.get_state(config)
+    return [p.value for task in state.tasks for p in task.interrupts]
+
+
+def _submit(graph, config, text="my answer"):
+    graph.invoke(Command(resume=text), config)
+
+
+def test_an_uncertain_grade_pauses_before_it_is_recorded(db, written):
+    graph, config, _sid, _topic = _start(db, grader=UnsureGrader(0.5, 0.9))
+    _submit(graph, config)
+    assert _pending(graph, config)[0]["kind"] == "dispute"
+    with Session(db) as s:
+        assert s.scalar(select(QuizAttempt)) is None
+
+
+def test_a_confident_grade_is_recorded_without_a_pause(db, written):
+    graph, config, _sid, _topic = _start(db, grader=UnsureGrader(1.0, 0.95))
+    _submit(graph, config)
+    assert _pending(graph, config)[0]["kind"] == "answer"  # on to the next question
+    with Session(db) as s:
+        assert s.scalar(select(QuizAttempt)).graded_by == "auto"
+        assert s.scalar(select(Dispute)) is None
+
+
+def test_the_students_decision_overrides_the_grade(db, written):
+    graph, config, _sid, _topic = _start(db, grader=UnsureGrader(0.2, 0.4))
+    _submit(graph, config)
+    _submit(graph, config, "correct")
+    with Session(db) as s:
+        attempt = s.scalar(select(QuizAttempt))
+        assert attempt.is_correct and attempt.graded_by == "student"
+        assert float(attempt.score) == 1.0
+        dispute = s.scalar(select(Dispute))
+        assert dispute.decision == "correct"
+        assert float(dispute.auto_score) == pytest.approx(0.2)
+        assert float(dispute.auto_confidence) == pytest.approx(0.4)
+
+
+def test_a_decision_against_the_grade_counts_the_other_way(db, written):
+    graph, config, _sid, _topic = _start(db, grader=UnsureGrader(0.9, 0.3))
+    _submit(graph, config)
+    _submit(graph, config, "incorrect")  # the grader was too kind
+    with Session(db) as s:
+        attempt = s.scalar(select(QuizAttempt))
+        assert not attempt.is_correct and float(attempt.score) == 0.0
+
+
+def test_a_decision_changes_the_weak_topic_record(db, written):
+    # The grader marks every answer wrong, and so would make the Topic weak after two.
+    graph, config, _sid, topic = _start(db, total=5, grader=UnsureGrader(0.0, 0.3))
+    _submit(graph, config)
+    _submit(graph, config, "correct")  # the Student overrules the first one
+    _submit(graph, config)
+    _submit(graph, config, "incorrect")
+    with Session(db) as s:
+        assert not s.get(WeakTopic, (SPACE, topic)).is_weak  # one wrong, one right
+    _submit(graph, config)
+    _submit(graph, config, "incorrect")  # a second wrong one in the last five
+    with Session(db) as s:
+        assert s.get(WeakTopic, (SPACE, topic)).is_weak
+
+
+def test_not_sure_counts_as_not_right_and_is_kept(db, written):
+    graph, config, _sid, _topic = _start(db, grader=UnsureGrader(0.9, 0.3))
+    _submit(graph, config)
+    _submit(graph, config, "unsure")
+    with Session(db) as s:
+        attempt = s.scalar(select(QuizAttempt))
+        assert not attempt.is_correct and attempt.graded_by == "student"
+        assert s.scalar(select(Dispute)).decision == "unsure"
+
+
+def test_the_decision_feeds_the_difficulty(db, written):
+    graph, config, sid, _topic = _start(db, total=4, grader=UnsureGrader(0.0, 0.3))
+    for _ in range(2):
+        _submit(graph, config)
+        _submit(graph, config, "correct")
+    with Session(db) as s:
+        assert s.get(StudySession, sid).difficulty == "hard"  # two right in a row

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { answerQuestion, fetchRecap, fetchSession, startSession } from './study'
+import type { DisputeDecision } from '../schemas/study'
+import { answerQuestion, decideDispute, fetchRecap, fetchSession, startSession } from './study'
 import { weakKey } from './useWeakTopics'
 
 export const useStartQuiz = (spaceId: string) => useMutation({ mutationFn: (topicIds: string[]) => startSession(spaceId, topicIds) })
@@ -10,6 +11,16 @@ export function useAnswerQuestion(studentId: string, spaceId: string) {
   return useMutation({
     mutationFn: ({ sessionId, questionId, answer }: { sessionId: string; questionId: string; answer: string }) =>
       answerQuestion(sessionId, questionId, answer),
+    onSuccess: () => qc.invalidateQueries({ queryKey: weakKey(studentId, spaceId) }),
+  })
+}
+
+/** The Student's decision on a grade changes the Weak Topic record, so it is refetched. */
+export function useDecideDispute(studentId: string, spaceId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ threadId, interruptId, decision }: { threadId: string; interruptId: string; decision: DisputeDecision }) =>
+      decideDispute(threadId, interruptId, decision),
     onSuccess: () => qc.invalidateQueries({ queryKey: weakKey(studentId, spaceId) }),
   })
 }

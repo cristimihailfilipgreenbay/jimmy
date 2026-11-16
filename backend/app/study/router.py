@@ -15,11 +15,19 @@ from app.spaces.dependencies import get_owned_space
 from app.spaces.models import Space
 from app.study import questions as q
 from app.study.dependencies import StudySessionDep
-from app.study.models import QuizAttempt, SessionQuestion, StudySession, WeakTopic
+from app.study.models import (
+    Dispute,
+    QuizAttempt,
+    SessionQuestion,
+    StudySession,
+    WeakTopic,
+)
 from app.study.runtime import get_study_graph
 from app.study.schemas import (
     AnswerIn,
     AnswerOut,
+    DisputeOut,
+    DisputeRecordOut,
     FeedbackOut,
     QuestionOut,
     RecapOut,
@@ -66,6 +74,33 @@ def _answered(session: Session, study: StudySession) -> int:
     )
 
 
+def _pending_dispute(
+    session: Session, study: StudySession, question: SessionQuestion | None
+) -> DisputeOut | None:
+    """The Dispute the run is paused on, built from the saved run and the question."""
+    if question is None:
+        return None
+    state = get_study_graph().get_state(_config(study))
+    for task in state.tasks:
+        for pause in task.interrupts:
+            if dict(pause.value).get("kind") != "dispute":
+                continue
+            grade = state.values["grade"]
+            name = topic_names(session, [question.topic_id]).get(question.topic_id, "")
+            return DisputeOut(
+                interrupt_id=pause.id,
+                question_id=question.id,
+                topic=name,
+                prompt=question.prompt,
+                answer=state.values["answer"],
+                correct_answer=question.answer_key,
+                score=grade["score"],
+                confidence=grade["confidence"],
+                source=SourceOut(**question.source),
+            )
+    return None
+
+
 def _session_out(session: Session, study: StudySession) -> SessionOut:
     question = _current(session, study) if study.status == "active" else None
     current = None
@@ -83,6 +118,7 @@ def _session_out(session: Session, study: StudySession) -> SessionOut:
         )
     return SessionOut(
         id=study.id,
+        thread_id=study.thread_id,
         space_id=study.space_id,
         kind=study.kind,
         status=study.status,
@@ -90,6 +126,7 @@ def _session_out(session: Session, study: StudySession) -> SessionOut:
         answered=_answered(session, study),
         difficulty=study.difficulty,
         current=current,
+        dispute=_pending_dispute(session, study, question),
         started_at=study.started_at,
     )
 
@@ -99,6 +136,7 @@ def _feedback(
 ) -> FeedbackOut:
     space_id = session.get(StudySession, question.session_id).space_id
     weak = session.get(WeakTopic, (space_id, question.topic_id))
+    dispute = session.scalar(select(Dispute).where(Dispute.attempt_id == attempt.id))
     if question.question_type == q.MULTIPLE_CHOICE:
         correct_answer = question.options[int(question.answer_key)]
         shown = _option_text(question, attempt.answer)
@@ -114,6 +152,8 @@ def _feedback(
         options=question.options,
         answer=shown,
         correct=attempt.is_correct,
+        graded_by=attempt.graded_by,
+        decision=dispute.decision if dispute else None,
         score=float(attempt.score),
         correct_answer=correct_answer,
         explanation=question.explanation,
@@ -227,28 +267,55 @@ def answer(body: AnswerIn, study: StudySessionDep, session: SessionDep):
         str(i) for i in range(len(question.options))
     }:
         raise ApiError(422, "invalid_answer", "Choose one of the options.")
+    if _pending_dispute(session, study, question):
+        raise ApiError(
+            409, "dispute_pending", "Decide on the grade before the next answer."
+        )
+    return _resume(study, question, body.answer, session)
+
+
+def _resume(
+    study: StudySession, question: SessionQuestion, value: str, session: Session
+) -> AnswerOut:
+    """Continue the run with an answer or a Dispute decision and return what the Student
+    sees: their feedback, or the Dispute the grade has raised."""
     try:
-        _run(study, Command(resume=body.answer))
+        _run(study, Command(resume=value))
     except ApiError:
         session.expire_all()
         # The answer is recorded before the next question is written; if only that
         # failed, the Student still gets their feedback.
-        if (
-            session.scalar(
-                select(QuizAttempt.id).where(QuizAttempt.question_id == question.id)
-            )
-            is None
-        ):
+        if _attempt(session, question) is None:
             raise
     session.expire_all()
-    attempt = session.scalar(
-        select(QuizAttempt).where(QuizAttempt.question_id == question.id)
-    )
     session.refresh(study)
+    attempt = _attempt(session, question)
     return AnswerOut(
-        feedback=_feedback(session, question, attempt),
+        feedback=_feedback(session, question, attempt) if attempt else None,
         session=_session_out(session, study),
     )
+
+
+def _attempt(session: Session, question: SessionQuestion) -> QuizAttempt | None:
+    return session.scalar(
+        select(QuizAttempt).where(QuizAttempt.question_id == question.id)
+    )
+
+
+def resume_dispute(
+    interrupt_id: str, decision: str, thread: Thread, session: Session
+) -> AnswerOut:
+    """The Student's decision on a Dispute, from POST /threads/{id}/resume."""
+    study = session.scalar(
+        select(StudySession).where(StudySession.thread_id == thread.id)
+    )
+    question = _current(session, study) if study and study.status == "active" else None
+    pending = _pending_dispute(session, study, question) if study else None
+    if pending is None or pending.interrupt_id != interrupt_id:
+        raise ApiError(409, "nothing_to_resume", "There is nothing to answer here.")
+    if decision not in ("correct", "incorrect", "unsure"):
+        raise ApiError(422, "invalid_decision", "Choose yes, no or not sure.")
+    return _resume(study, question, decision, session)
 
 
 @router.get("/sessions/{session_id}/recap", response_model=RecapOut)
@@ -283,6 +350,34 @@ def recap(study: StudySessionDep, session: SessionDep):
         by_topic=list(by_topic.values()),
         questions=feedback,
     )
+
+
+@router.get("/spaces/{space_id}/disputes", response_model=list[DisputeRecordOut])
+def list_disputes(space: SpaceDep, session: SessionDep):
+    """Past Disputes, newest first."""
+    rows = session.execute(
+        select(Dispute, QuizAttempt, SessionQuestion)
+        .join(QuizAttempt, QuizAttempt.id == Dispute.attempt_id)
+        .join(SessionQuestion, SessionQuestion.id == QuizAttempt.question_id)
+        .join(StudySession, StudySession.id == SessionQuestion.session_id)
+        .where(StudySession.space_id == space.id)
+        .order_by(Dispute.created_at.desc())
+    ).all()
+    names = topic_names(session, [question.topic_id for _, _, question in rows])
+    return [
+        DisputeRecordOut(
+            id=dispute.id,
+            topic_id=question.topic_id,
+            topic=names.get(question.topic_id, ""),
+            prompt=question.prompt,
+            answer=attempt.answer,
+            auto_score=float(dispute.auto_score),
+            auto_confidence=float(dispute.auto_confidence),
+            decision=dispute.decision,
+            created_at=dispute.created_at,
+        )
+        for dispute, attempt, question in rows
+    ]
 
 
 @router.get("/spaces/{space_id}/weak-topics", response_model=list[WeakTopicOut])

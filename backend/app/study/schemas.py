@@ -49,6 +49,10 @@ class FeedbackOut(BaseModel):
     score: float
     correct_answer: str
     explanation: str
+    # Whether the Student's own decision set this result.
+    graded_by: str = "auto"
+    # The Student's decision on a Dispute: correct, incorrect or unsure.
+    decision: str | None = None
     # The grader's note on a written answer.
     note: str | None
     source: SourceOut
@@ -56,8 +60,38 @@ class FeedbackOut(BaseModel):
     topic_weak: bool
 
 
+class DisputeOut(BaseModel):
+    """A grade the grader was unsure of: the Student's answer beside the Source passage."""
+
+    interrupt_id: str
+    question_id: uuid.UUID
+    topic: str
+    prompt: str
+    answer: str
+    correct_answer: str
+    score: float
+    confidence: float
+    source: SourceOut
+
+
+class DisputeRecordOut(BaseModel):
+    """A past Dispute."""
+
+    id: uuid.UUID
+    topic_id: uuid.UUID
+    topic: str
+    prompt: str
+    answer: str
+    auto_score: float
+    auto_confidence: float
+    decision: str
+    created_at: datetime
+
+
 class SessionOut(BaseModel):
     id: uuid.UUID
+    # A Dispute is answered at POST /threads/{thread_id}/resume.
+    thread_id: uuid.UUID
     space_id: uuid.UUID
     kind: str
     status: str
@@ -65,6 +99,8 @@ class SessionOut(BaseModel):
     answered: int
     difficulty: str
     current: QuestionOut | None
+    # Set while the run waits for the Student to decide on a grade.
+    dispute: DisputeOut | None = None
     started_at: datetime
 
 
@@ -74,7 +110,8 @@ class AnswerIn(BaseModel):
 
 
 class AnswerOut(BaseModel):
-    feedback: FeedbackOut
+    # None while a Dispute waits for the Student; the decision returns the feedback.
+    feedback: FeedbackOut | None
     session: SessionOut
 
 

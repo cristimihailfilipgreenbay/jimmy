@@ -54,7 +54,7 @@ Postgres schema, conventions and migrations. See [architecture.md](./architectur
 | `study_sessions` | One Quiz or Test | `id`, `space_id`, `thread_id`, `kind` (quiz, test), `status` (active, finished), `difficulty` (of the next question), `question_count`, `topic_ids`, `started_at`, `finished_at`, `score` (correct answers) |
 | `session_questions` | Questions in a session | `id`, `session_id`, `topic_id`, `position`, `question_type` (multiple_choice, short_answer, essay), `prompt`, `options` (JSON), `answer_key`, `explanation`, `source_chunk_id`, `source` (the passage and its Citation fields as asked, so nothing outside retrieval reads chunks), `difficulty` |
 | `quiz_attempts` | The Student's answer and its grade | `id`, `question_id`, `answer`, `score`, `confidence`, `is_correct`, `graded_by` (auto, student), `explanation` |
-| `disputes` | A Student's decision on a grade | `id`, `attempt_id`, `auto_score`, `auto_confidence`, `decision` (correct, incorrect) |
+| `disputes` | A Student's decision on a grade | `id`, `attempt_id`, `auto_score`, `auto_confidence`, `decision` (correct, incorrect, unsure) |
 | `weak_topics` | Weak Topic state per Topic | `space_id`, `topic_id` (together the key), `is_weak`, `consecutive_correct`, `cleared_at`, `updated_at` |
 | `flashcards` | Cards in a Space | `id`, `space_id`, `topic_id`, `front`, `back`, `source_chunk_id`, `status` (draft, approved, rejected), `was_edited` |
 | `conflicts` | Stored Conflict decisions | `id`, `space_id`, `topic` (as the Tutor named it), `topic_id` (when the Space has a Topic of that name), `notes_chunk_id`, `other_chunk_id`, `other_source_type` (library, learned), `decision` (keep_notes, accept_other, unsure), `notes_document`, `other_document`, `notes_excerpt`, `other_excerpt` (so the list reads without querying chunks), `decided_at`. One row per pair of passages |
@@ -115,7 +115,7 @@ Every table under `spaces` cascades on delete.
 | Unreviewed web material is not an assessment source | `learned_material.status` is checked when building questions; `chunks.source_type = 'learned'` is excluded from assessment queries unless the item is approved (ADR 0002) |
 | One of Notes, library or learned per chunk | The `CHECK` on `chunks` described above |
 | Topic names are unique per Space | Unique index on (`space_id`, lower(`name`)) where `merged_into_id` is null, so a merged Topic keeps its row without blocking its name |
-| A Dispute decision overrides the grade | `quiz_attempts.graded_by` becomes `student` and `is_correct` follows the decision |
+| A Dispute decision overrides the grade | `quiz_attempts.graded_by` becomes `student`, `is_correct` follows the decision (`unsure` counts as not correct) and `score` becomes 1 or 0; the automatic score and confidence stay in `disputes` |
 | Embedding model is locked | `app_config` holds the model and dimensions; the API refuses changes once chunks exist |
 
 ## 7. Migrations

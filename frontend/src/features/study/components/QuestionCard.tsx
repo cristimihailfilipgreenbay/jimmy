@@ -3,7 +3,8 @@ import { ArrowLeft, ArrowRight, Check, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cardClass } from '@/lib/styles'
 import { cn } from '@/lib/utils'
-import type { Feedback, Question } from '../schemas/study'
+import type { Dispute, DisputeDecision, Feedback, Question } from '../schemas/study'
+import { DisputeCard } from './DisputeCard'
 import { FeedbackPanel } from './FeedbackPanel'
 
 type Shown = { prompt: string; type: string; topic: string; options: string[] | null }
@@ -13,20 +14,27 @@ type Shown = { prompt: string; type: string; topic: string; options: string[] | 
 export function QuestionCard({
   question,
   feedback,
+  dispute,
   checking,
+  deciding,
   canGoBack,
   isLast,
   onCheck,
+  onDecide,
   onBack,
   onNext,
   className,
 }: {
   question: Question | null
   feedback: Feedback | null
+  // Set while the grader waits for the Student's decision on this question.
+  dispute: Dispute | null
   checking: boolean
+  deciding: boolean
   canGoBack: boolean
   isLast: boolean
   onCheck: (answer: string) => void
+  onDecide: (decision: DisputeDecision) => void
   onBack: () => void
   onNext: () => void
   className?: string
@@ -37,8 +45,10 @@ export function QuestionCard({
   const [text, setText] = useState('')
   const answered = multiple ? choice !== undefined : text.trim() !== ''
   const revealed = !!feedback
+  const locked = revealed || !!dispute
   // The option the Student chose, as the number the backend takes.
   const picked = feedback && multiple ? shown.options?.indexOf(feedback.answer).toString() : choice
+  const written = feedback?.answer ?? dispute?.answer ?? text
 
   return (
     <div className={cn(cardClass, 'p-5 md:p-6', className)}>
@@ -101,14 +111,17 @@ export function QuestionCard({
               rows={3}
               className="w-full rounded-md border border-input bg-card p-3 text-[15px]"
               placeholder="Write one or two sentences…"
-              value={feedback ? feedback.answer : text}
-              disabled={revealed}
+              value={written}
+              disabled={locked}
               onChange={(e) => setText(e.target.value)}
             />
           </>
         )}
       </div>
-      <div aria-live="polite">{feedback && <FeedbackPanel feedback={feedback} />}</div>
+      <div aria-live="polite">
+        {feedback && <FeedbackPanel feedback={feedback} />}
+        {dispute && <DisputeCard dispute={dispute} deciding={deciding} onDecide={onDecide} />}
+      </div>
       <div className="mt-6 flex items-center justify-between gap-2">
         <Button variant="ghost" size="sm" onClick={onBack} disabled={!canGoBack}>
           <ArrowLeft /> Back
@@ -118,7 +131,7 @@ export function QuestionCard({
             {isLast ? 'See summary' : 'Next question'}
             <ArrowRight />
           </Button>
-        ) : (
+        ) : dispute ? null : (
           <Button variant="space" disabled={!answered || checking} onClick={() => onCheck(multiple ? choice! : text.trim())}>
             {checking ? 'Checking…' : 'Check answer'}
           </Button>

@@ -1,13 +1,16 @@
 import { BrowserRouter, Route, Routes } from 'react-router'
 import { Layout } from '@/components/Layout'
+import { StudentProvider } from '@/hooks/student'
 import { Placeholder } from '@/pages/Placeholder'
+import { SpacesPage } from '@/pages/SpacesPage'
 
 export default function App() {
   return (
+    <StudentProvider>
     <BrowserRouter>
       <Routes>
         <Route element={<Layout />}>
-          <Route index element={<Placeholder title="Study Spaces" note="Your Study Spaces will be listed here." />} />
+          <Route index element={<SpacesPage />} />
           <Route path="spaces/:spaceId" element={<Placeholder title="Dashboard" note="Notes, Topics, Weak Topics and Learned Material." />} />
           <Route path="spaces/:spaceId/chat" element={<Placeholder title="Chat" note="Ask the tutor about your Notes." />} />
           <Route path="spaces/:spaceId/study" element={<Placeholder title="Study" note="Quizzes and Tests." />} />
@@ -18,5 +21,6 @@ export default function App() {
         </Route>
       </Routes>
     </BrowserRouter>
+    </StudentProvider>
   )
 }

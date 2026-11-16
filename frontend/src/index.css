@@ -232,3 +232,22 @@
 @keyframes tab-in-prev { from { opacity: 0; transform: translateX(-28px); } }
 .tab-next { animation: tab-in-next 0.3s cubic-bezier(0.2, 0.7, 0.2, 1); }
 .tab-prev { animation: tab-in-prev 0.3s cubic-bezier(0.2, 0.7, 0.2, 1); }
+
+/* Chat: source statements and Citation chips (the design's four source styles).
+   A statement's source is shown by its line pattern and chip label, never by colour alone. */
+.seg { position: relative; padding: 2px 0 2px 16px; margin: 10px 0; line-height: 1.7; font-family: var(--font-serif); font-size: 1.0625rem; }
+.seg::before { content: ''; position: absolute; left: 0; top: 4px; bottom: 4px; }
+.seg-notes::before { border-left: 3px solid var(--src-notes); }
+.seg-lib::before { border-left: 5px double var(--src-lib); }
+.seg-web::before { border-left: 3px dashed var(--src-web-line); }
+.seg-tutor::before { border-left: 3px dotted var(--src-tutor); }
+.chip { display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-sans); font-size: 0.75rem; font-weight: 500; line-height: 1.2; padding: 3px 8px; border-radius: 6px; vertical-align: 1px; margin-left: 4px; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+button.chip { cursor: pointer; }
+button.chip:hover { filter: brightness(0.97); text-decoration: underline; }
+.chip-notes { color: var(--src-notes); background: var(--src-notes-soft); border: 1px solid color-mix(in oklab, var(--src-notes) 55%, transparent); }
+.chip-lib { color: var(--src-lib); background: var(--src-lib-soft); border: 3px double color-mix(in oklab, var(--src-lib) 60%, transparent); font-family: var(--font-serif); font-style: italic; font-size: 0.8rem; padding: 1px 8px; }
+.chip-web { color: var(--src-web); background: var(--src-web-soft); border: 1.5px dashed var(--src-web-line); }
+.chip-tutor { color: var(--src-tutor); background: transparent; border: 1.5px dotted color-mix(in oklab, var(--src-tutor) 80%, transparent); }
+.chip svg { flex: none; }
+.caret::after { content: '▍'; animation: blink 1s steps(2) infinite; color: var(--space); margin-left: 1px; }
+@keyframes blink { 50% { opacity: 0; } }

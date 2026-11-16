@@ -57,13 +57,13 @@ export function ChatPage() {
             m.role === 'user' ? (
               <UserMessage key={m.id} text={m.content} />
             ) : (
-              <AnswerMessage key={m.id} content={m.content} citations={m.citations} tools={chat.pills[m.id]} conflicts={chat.conflicts[m.id]} />
+              <AnswerMessage key={m.id} content={m.content} citations={m.citations} tools={chat.pills[m.id]} spaceId={space.id} conflicts={chat.conflicts[m.id]} />
             ),
           )}
           {chat.pending && (
             <>
               <UserMessage text={chat.pending.question} />
-              <AnswerMessage content={chat.pending.text} citations={chat.pending.citations} conflicts={chat.pending.conflicts} onDecide={chat.decide} streaming />
+              <AnswerMessage content={chat.pending.text} citations={chat.pending.citations} spaceId={space.id} conflicts={chat.pending.conflicts} onDecide={chat.decide} streaming />
             </>
           )}
           {chat.error && (

@@ -22,6 +22,7 @@ export function AnswerMessage({
   content,
   citations,
   tools = [],
+  spaceId = '',
   conflicts = [],
   onDecide,
   streaming = false,
@@ -29,6 +30,7 @@ export function AnswerMessage({
   content: string
   citations: Citation[]
   tools?: ToolPill[]
+  spaceId?: string
   conflicts?: ConflictCardState[]
   onDecide?: (interruptId: string, decision: ConflictDecision) => void
   streaming?: boolean
@@ -53,7 +55,7 @@ export function AnswerMessage({
         )}
       </div>
       {conflicts.map((c) => (
-        <ConflictCard key={c.interruptId} card={c} onDecide={onDecide ?? (() => {})} />
+        <ConflictCard key={c.interruptId} spaceId={spaceId} card={c} onDecide={onDecide ?? (() => {})} />
       ))}
       <Segments content={content} citations={citations} streaming={streaming} />
       {!streaming && (

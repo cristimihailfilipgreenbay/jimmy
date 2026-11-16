@@ -67,3 +67,11 @@ export const streamEventSchema = z.discriminatedUnion('type', [
 export type StreamEvent = z.infer<typeof streamEventSchema>
 
 export const messageInSchema = z.string().trim().min(1).max(8000)
+
+// Mirrors the backend's ConflictOut (only what the chat needs).
+export const storedConflictSchema = z.object({
+  id: z.uuid(),
+  topic: z.string(),
+  other_source_type: z.enum(['library', 'learned']),
+  decision: conflictDecisionSchema,
+})

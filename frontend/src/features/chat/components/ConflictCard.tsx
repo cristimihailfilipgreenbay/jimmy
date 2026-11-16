@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { BookOpen, Check, CircleHelp, FileText, Globe, Scale } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { useForgetConflict } from '../queries/useForgetConflict'
 import type { Citation, ConflictDecision, ConflictPayload } from '../schemas/chat'
 
 export type ConflictCardState = { interruptId: string; payload: ConflictPayload; decision?: ConflictDecision }
@@ -14,7 +16,17 @@ const RESOLVED: Record<ConflictDecision, string> = {
 const where = (c: Citation) => [c.author, c.page_or_section].filter(Boolean).join(' · ')
 
 // A pause where Notes and another Source disagree: the Student chooses which to trust.
-export function ConflictCard({ card, onDecide }: { card: ConflictCardState; onDecide: (interruptId: string, decision: ConflictDecision) => void }) {
+export function ConflictCard({
+  spaceId,
+  card,
+  onDecide,
+}: {
+  spaceId: string
+  card: ConflictCardState
+  onDecide: (interruptId: string, decision: ConflictDecision) => void
+}) {
+  const forget = useForgetConflict(spaceId)
+  const [forgotten, setForgotten] = useState(false)
   const { topic, notes, other } = card.payload
   const learned = other.source_type === 'learned'
   const otherName = learned ? 'Learned Material' : 'Subject Library'
@@ -27,7 +39,19 @@ export function ConflictCard({ card, onDecide }: { card: ConflictCardState; onDe
         <Check className="mt-0.5 size-4 flex-none text-success" aria-hidden />
         <div>
           <p className="font-medium">Resolved: {topic}</p>
-          <p className="text-muted-foreground">{RESOLVED[card.decision]}</p>
+          <p className="text-muted-foreground">{forgotten ? 'Forgotten. Jimmy will ask again the next time this comes up.' : RESOLVED[card.decision]}</p>
+          {!forgotten && (
+            <Button
+              variant="link"
+              size="sm"
+              className="h-auto"
+              disabled={forget.isPending}
+              onClick={() => forget.mutate({ topic, otherSourceType: other.source_type }, { onSuccess: () => setForgotten(true) })}
+            >
+              Change decision
+            </Button>
+          )}
+          {forget.isError && <p className="text-xs text-destructive">Could not forget it. Try again.</p>}
         </div>
       </div>
     )

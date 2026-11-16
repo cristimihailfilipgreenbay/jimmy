@@ -1,6 +1,6 @@
 import { z } from 'zod'
-import { ApiError, request, requestStream } from '@/lib/http'
-import { messageSchema, streamEventSchema, threadSchema, type ConflictDecision, type StreamEvent } from '../schemas/chat'
+import { ApiError, request, requestStream, requestVoid } from '@/lib/http'
+import { messageSchema, storedConflictSchema, streamEventSchema, threadSchema, type ConflictDecision, type StreamEvent } from '../schemas/chat'
 
 export const listThreads = (spaceId: string) => request(`/spaces/${spaceId}/threads`, z.array(threadSchema))
 export const createThread = (spaceId: string) => request(`/spaces/${spaceId}/threads`, threadSchema, { method: 'POST' })
@@ -48,3 +48,6 @@ export async function resumeThread(
   })
   await readEvents(res, onEvent)
 }
+
+export const listConflicts = (spaceId: string) => request(`/spaces/${spaceId}/conflicts`, z.array(storedConflictSchema))
+export const forgetConflict = (spaceId: string, id: string) => requestVoid(`/spaces/${spaceId}/conflicts/${id}`, { method: 'DELETE' })

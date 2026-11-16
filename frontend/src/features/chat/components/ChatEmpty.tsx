@@ -23,18 +23,21 @@ const tile = (s: Starter) =>
   )
 
 // The design's empty Chat: Jimmy peeks over a card that says what he can use, with ways to start.
-// Weak Topics and the Subject Library do not exist yet, so only Notes and Topics are counted.
+// Weak Topics do not exist yet, so only Notes, Topics and the Subject Library are counted.
 export function ChatEmpty({
   spaceId,
   spaceName,
   notes,
   topics,
+  libraryOn,
   onAsk,
 }: {
   spaceId: string
   spaceName: string
   notes: { title: string }[]
   topics: { name: string }[]
+  /** The Space has a textbook attached and switched on. */
+  libraryOn: boolean
   onAsk: (q: string) => void
 }) {
   const none = notes.length === 0
@@ -46,7 +49,8 @@ export function ChatEmpty({
           text: `Add a textbook to the ${spaceName} Subject Library`,
           icon: BookOpen,
           tag: 'Optional',
-          disabledReason: 'The Subject Library is not available yet.',
+          // The Library card on the dashboard opens with its menu.
+          to: `/spaces/${spaceId}?library=open`,
         },
         { text: `What does ${spaceName} usually cover?`, icon: Lightbulb, tag: 'Tutor knowledge', tutor: true, ask: true },
         { text: `Explain one key idea in ${spaceName} simply`, icon: Lightbulb, tag: 'Tutor knowledge', tutor: true, ask: true },
@@ -76,7 +80,7 @@ export function ChatEmpty({
                 <span className="font-medium whitespace-nowrap text-tutor">Tutor knowledge</span>.
               </>
             ) : (
-              `I’ll answer from your ${notes.length} note${notes.length === 1 ? '' : 's'}, and show where every sentence comes from.`
+              `I’ll answer from your ${notes.length} note${notes.length === 1 ? '' : 's'}${libraryOn ? ' and the Subject Library' : ''}, and show where every sentence comes from.`
             )}
           </p>
           <p className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
@@ -88,7 +92,7 @@ export function ChatEmpty({
             {none ? (
               <span className="inline-flex items-center gap-1">
                 <BookOpen className="size-3.5" aria-hidden />
-                Subject Library empty
+                Subject Library {libraryOn ? 'on' : 'empty'}
               </span>
             ) : (
               <span className="inline-flex items-center gap-1">

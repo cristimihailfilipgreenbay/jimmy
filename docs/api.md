@@ -66,7 +66,7 @@ The app is closed to a Student who has not finished onboarding: the frontend sen
 ### Documents (Notes and library)
 | Method | Path | Purpose |
 |---|---|---|
-| POST | `/spaces/{space_id}/documents` | Upload Notes (multipart). Returns `202` with the document and the ingestion `thread_id`. Rejects with `413`, `422 unsupported_type`, `422 too_many_pages` or `422 scanned_document` |
+| POST | `/spaces/{space_id}/documents` | Upload Notes (multipart). Returns `202` with the document (the ingestion `thread_id` arrives with Topic review, which is the first pause in the run). Rejects with `413`, `422 unsupported_type`, `422 too_many_pages` or `422 scanned_document` |
 | GET | `/spaces/{space_id}/documents` | List with processing status |
 | GET | `/spaces/{space_id}/documents/{id}` | One document |
 | DELETE | `/spaces/{space_id}/documents/{id}` | Delete the document and its chunks |

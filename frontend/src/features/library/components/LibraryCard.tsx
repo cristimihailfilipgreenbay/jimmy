@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import { Book, ChevronDown, Plus, Search } from 'lucide-react'
+import { Book, ChevronDown, Plus } from 'lucide-react'
 import { useSearchParams } from 'react-router'
 import { DropdownMenu } from '@/components/DropdownMenu'
 import { Button } from '@/components/ui/button'
@@ -12,7 +12,6 @@ import { cn } from '@/lib/utils'
 import { useLibrary } from '../queries/useLibrary'
 import { useSetLibrary } from '../queries/useSetLibrary'
 import type { LibraryState } from '../schemas/library'
-import { LibrarySearchDialog } from './LibrarySearchDialog'
 import { PackDialog } from './PackDialog'
 
 // The bookshelf, drawn as in the design; it turns the Library's brown when the Library is on.
@@ -40,7 +39,6 @@ export function LibraryCard({ studentId, space }: { studentId: string; space: Sp
   const { data: state } = useLibrary(studentId, space.id)
   const set = useSetLibrary(studentId, space.id)
   const [choosing, setChoosing] = useState(false)
-  const [searching, setSearching] = useState(false)
   // The Chat's "Add a textbook" tile links here with ?library=open.
   const [params, setParams] = useSearchParams()
   const [startOpen] = useState(params.get('library') === 'open')
@@ -63,7 +61,10 @@ export function LibraryCard({ studentId, space }: { studentId: string; space: Sp
     width.current = next
     if (before === null || Math.abs(next - before) < 1 || matchMedia('(prefers-reduced-motion: reduce)').matches) return
     el.style.overflow = 'hidden'
-    el.animate([{ width: `${before}px` }, { width: `${next}px` }], { duration: 340, easing: 'cubic-bezier(.2,.7,.2,1)' }).finished.then(
+    el.animate([{ width: `${before}px` }, { width: `${next}px` }], {
+      duration: 340,
+      easing: 'cubic-bezier(.2,.7,.2,1)',
+    }).finished.then(
       () => (el.style.overflow = ''),
       () => (el.style.overflow = ''),
     )
@@ -99,7 +100,11 @@ export function LibraryCard({ studentId, space }: { studentId: string; space: Sp
               <Shelf on={on} />
               <span>
                 <span className="block text-sm leading-tight font-semibold">Subject Library</span>
-                <span id="lib-desc" key={status} className={cn('fade-in block text-xs whitespace-nowrap transition-colors duration-300', on ? 'text-lib' : 'text-muted-foreground')}>
+                <span
+                  id="lib-desc"
+                  key={status}
+                  className={cn('fade-in block text-xs whitespace-nowrap transition-colors duration-300', on ? 'text-lib' : 'text-muted-foreground')}
+                >
                   {status}
                 </span>
               </span>
@@ -138,34 +143,24 @@ export function LibraryCard({ studentId, space }: { studentId: string; space: Sp
                   {state.pack.author} · {state.pack.license} · ch. {state.chapters.join(', ')}
                 </span>
                 <span className="block text-xs text-muted-foreground">
-                  Cited in {state.cited_in_answers} answer{state.cited_in_answers === 1 ? '' : 's'}
+                  Cited in {state.cited_in_answers} answer
+                  {state.cited_in_answers === 1 ? '' : 's'}
                 </span>
               </span>
             </li>
           </ul>
         ) : (
-          <p className="p-4 text-sm text-muted-foreground">No textbooks in this Space yet. Approved web material and textbooks you add will appear here.</p>
+          <p className="p-4 text-sm text-muted-foreground">
+            No textbooks in this Space yet. Approved web material and textbooks you add will appear here.
+          </p>
         )}
         <div className="flex items-center justify-between gap-2 border-t p-2">
           <span className="px-1 text-xs text-muted-foreground">{on ? 'Searched in every answer' : 'Switched off for this Space'}</span>
-          <span className="flex items-center">
-            <Button
-              variant="ghost"
-              size="sm"
-              role="menuitem"
-              disabled={!on || state?.status !== 'ready'}
-              disabledReason={attached ? 'Switch the Subject Library on, and wait for it to finish indexing, to search it.' : 'Add a textbook first.'}
-              onClick={() => setSearching(true)}
-            >
-              <Search /> Search
-            </Button>
-            <Button variant="ghost" size="sm" role="menuitem" onClick={() => setChoosing(true)}>
-              <Plus /> {attached ? 'Change textbook' : 'Add textbook'}
-            </Button>
-          </span>
+          <Button variant="ghost" size="sm" role="menuitem" onClick={() => setChoosing(true)}>
+            <Plus /> {attached ? 'Change textbook' : 'Add textbook'}
+          </Button>
         </div>
       </DropdownMenu>
-      <LibrarySearchDialog studentId={studentId} space={space} open={searching} onClose={() => setSearching(false)} />
       <PackDialog studentId={studentId} space={space} state={state} open={choosing} onClose={() => setChoosing(false)} />
     </>
   )

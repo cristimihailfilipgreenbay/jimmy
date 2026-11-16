@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from pydantic import BaseModel, StringConstraints
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
@@ -27,9 +27,21 @@ class StudentIn(BaseModel):
 
 
 @router.get("/students", response_model=list[StudentOut])
-def list_students(session: SessionDep):
+def list_students(
+    session: SessionDep,
+    ids: Annotated[list[uuid.UUID] | None, Query(max_length=50)] = None,
+):
+    """Profiles for the switcher, limited to the ids this browser remembers.
+
+    Without `ids` nothing is returned, so the endpoint cannot be used to
+    discover other Students' ids.
+    """
+    if not ids:
+        return []
     return session.scalars(
-        select(Student).order_by(Student.created_at, Student.display_name)
+        select(Student)
+        .where(Student.id.in_(ids))
+        .order_by(Student.created_at, Student.display_name)
     )
 
 

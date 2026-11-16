@@ -7,7 +7,7 @@ The HTTP contract between the frontend and the backend. Structure is in [archite
 ## 1. Conventions
 
 - **Base path:** `/api` (the dev proxy strips it, so the backend serves from the root; no version segment). JSON requests and responses, except file upload (multipart) and streaming (server-sent events).
-- **Identity:** there is no login. The frontend's profile switcher sends the selected Student in the `X-Student-Id` header on every request. A request without it, or with an unknown id, gets `401`. *(proposed)*
+- **Identity:** a Student signs up or signs in with an email and a password. The backend answers with a signed JWT in an `httpOnly`, `SameSite=Lax` cookie (`jimmy_session`), which the browser sends on every request. A request without a valid session gets `401 unauthenticated`. Passwords are hashed with argon2. *(proposed)*
 - **Ownership:** every resource a Student owns is checked against that header. A Study Space that belongs to another Student behaves as if it does not exist (`404`).
 - **Study Space scoping:** everything that belongs to a Study Space is addressed under `/spaces/{space_id}/...`, so the isolation rule (ADR 0001) is visible in every route.
 - **Identifiers:** UUIDs.
@@ -21,7 +21,7 @@ The HTTP contract between the frontend and the backend. Structure is in [archite
 { "error": { "code": "scanned_document", "message": "This PDF has no readable text...", "details": {} } }
 ```
 
-`message` is written for the Student. `code` is stable for the frontend. *Proposed codes:* `unknown_student`, `space_not_found`, `file_too_large`, `too_many_pages`, `unsupported_type`, `scanned_document`, `guardrail_blocked`, `off_topic`, `step_limit_reached`, `tool_disabled`, `embedding_model_locked`, `nothing_to_resume`, `upstream_unavailable`.
+`message` is written for the Student. `code` is stable for the frontend. *Proposed codes:* `unauthenticated`, `invalid_credentials`, `email_exists`, `space_not_found`, `file_too_large`, `too_many_pages`, `unsupported_type`, `scanned_document`, `guardrail_blocked`, `off_topic`, `step_limit_reached`, `tool_disabled`, `embedding_model_locked`, `nothing_to_resume`, `upstream_unavailable`.
 
 ## 2. Resources
 
@@ -30,11 +30,17 @@ The HTTP contract between the frontend and the backend. Structure is in [archite
 |---|---|---|
 | GET | `/health` | Service and database status |
 
-### Students and Profile
+### Authentication
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/students?ids=...` | List the profiles whose ids the browser remembers, for the switcher (no `X-Student-Id` needed). Without `ids` it returns an empty list, so other Students' ids cannot be discovered |
-| POST | `/students` | Create a profile |
+| POST | `/auth/sign-up` | Create an account (`email`, `password` of 8 to 128 characters) and sign in. `201`, sets the session cookie. `409 email_exists` for a taken email (compared ignoring case) |
+| POST | `/auth/sign-in` | Sign in (`email`, `password`, `remember`, default true). `remember` false gives a 12-hour token and a cookie that ends with the browser session. `401 invalid_credentials` for a wrong email or password, the same answer for both |
+| POST | `/auth/sign-out` | Clear the session cookie (`204`) |
+| GET | `/auth/me` | The signed-in Student (`id`, `display_name`, `email`). `display_name` is null until onboarding |
+
+### Profile
+| Method | Path | Purpose |
+|---|---|---|
 | GET | `/profile` | The current Student's Profile (language, explanation style) |
 | PATCH | `/profile` | Update language or explanation style |
 | GET | `/profile/facts` | Stored facts and style preferences, with status |

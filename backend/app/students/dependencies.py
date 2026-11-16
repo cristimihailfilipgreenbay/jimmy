@@ -1,26 +1,25 @@
-import uuid
 from typing import Annotated
 
-from fastapi import Depends, Header
+from fastapi import Cookie, Depends
 
+from app.auth.security import read_token
+from app.config import session_secret
 from app.db import SessionDep
 from app.errors import ApiError
 from app.students.models import Student
 
+SESSION_COOKIE = "jimmy_session"
+
 
 def current_student(
     session: SessionDep,
-    x_student_id: Annotated[str | None, Header()] = None,
+    token: Annotated[str | None, Cookie(alias=SESSION_COOKIE)] = None,
 ) -> Student:
-    """The Student named by the profile switcher's `X-Student-Id` header."""
-    student = None
-    if x_student_id:
-        try:
-            student = session.get(Student, uuid.UUID(x_student_id))
-        except ValueError:
-            pass
+    """The signed-in Student, from the session cookie."""
+    student_id = read_token(token, session_secret()) if token else None
+    student = session.get(Student, student_id) if student_id else None
     if student is None:
-        raise ApiError(401, "unknown_student", "Choose a profile to continue.")
+        raise ApiError(401, "unauthenticated", "Sign in to continue.")
     return student
 
 

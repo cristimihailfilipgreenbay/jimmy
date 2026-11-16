@@ -4,7 +4,7 @@ How the system is built. For what it does and why, see [design.md](./design.md).
 
 ## 1. System context
 
-Jimmy is a local-only web app for one Student at a time (a profile switcher picks `student_id`; there is no login). It calls out to four external services.
+Jimmy is a local-only web app for one Student at a time (Students sign up and sign in with an email and a password; the session is a signed JWT in an httpOnly cookie). It calls out to four external services.
 
 ```mermaid
 flowchart LR
@@ -148,15 +148,15 @@ backend/app/
 frontend/src/
 ├── main.tsx, App.tsx
 ├── components/     # app shell (Providers, AppRoutes, Layout) and ui/ (shadcn)
-├── lib/            # http client, current-profile storage, utils, schemas/ (feature-agnostic)
+├── lib/            # http client, utils, schemas/ (feature-agnostic)
 └── features/
-    ├── students/
-    │   ├── schemas/     # Zod schemas and inferred types
-    │   ├── queries/     # requests, useStudents, useCreateStudent
-    │   ├── hooks/       # useStudent
-    │   ├── state/       # profile context and provider
-    │   ├── components/  # ProfileSwitcher
-    │   └── lib/         # pure helpers (remembered profile ids)
+    ├── auth/
+    │   ├── schemas/     # Zod schemas and inferred types (Student, sign-in, sign-up)
+    │   ├── queries/     # requests, useMe, useSignIn, useSignUp, useSignOut
+    │   ├── hooks/       # useSignedInStudent
+    │   ├── AuthPage.tsx # Sign in / Sign up on one screen
+    │   ├── components/  # forms, RequireAuth, UserMenu
+    │   └── lib/         # password strength, form errors
     ├── spaces/
     │   ├── schemas/     # Zod schemas and inferred types (Space, Accent)
     │   ├── queries/     # requests, keys, useSpaces, useCreateSpace, ...
@@ -166,6 +166,6 @@ frontend/src/
     └── health/          # schemas/, queries/ (useHealth), components/
 ```
 
-Inside a feature, use only the sub-folders it needs: `schemas/`, `queries/`, `hooks/`, `state/`, `components/`, `lib/`. In this pure React app a feature is normally a page, so its page component sits at the feature root (no `pages/` folder). A dialog is not a feature of its own unless it is complex enough to need its own api, hooks and state, and a tab is sometimes a feature; otherwise dialogs and tabs live in the `components/` of the page that uses them. `schemas/` holds the Zod schemas and the types inferred from them (no other file declares an API type by hand); `queries/` holds everything that talks to the server (request functions, query keys and the React Query hooks); `hooks/` is for other hooks; `state/` is for client state such as the current profile.
+Inside a feature, use only the sub-folders it needs: `schemas/`, `queries/`, `hooks/`, `state/`, `components/`, `lib/`. In this pure React app a feature is normally a page, so its page component sits at the feature root (no `pages/` folder). A dialog is not a feature of its own unless it is complex enough to need its own api, hooks and state, and a tab is sometimes a feature; otherwise dialogs and tabs live in the `components/` of the page that uses them. `schemas/` holds the Zod schemas and the types inferred from them (no other file declares an API type by hand); `queries/` holds everything that talks to the server (request functions, query keys and the React Query hooks); `hooks/` is for other hooks; `state/` is for client state.
 
-A new feature gets its own package or folder. A feature may import another feature (Spaces uses the current Student) but `lib/` and `db.py` never import a feature. Alembic's `env.py` imports each feature's models so their tables are registered.
+A new feature gets its own package or folder. A feature may import another feature (Spaces uses the signed-in Student) but `lib/` and `db.py` never import a feature. Alembic's `env.py` imports each feature's models so their tables are registered.

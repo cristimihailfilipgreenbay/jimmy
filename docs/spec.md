@@ -120,7 +120,7 @@ Jimmy is a study tutor organised around **Study Spaces**, one per subject. The s
 
 **Structure and scope**
 - A Study Space is the unit of scope and isolation. Each owns its Notes, Topics, Weak Topics, Flashcards, Learned Material, Conflict decisions, Dispute records and history. One Profile is shared across a Student's Spaces.
-- There is no real login. A profile switcher selects the Student, and every Student-owned row carries that identity.
+- A Student signs up and signs in with an email and a password, and every Student-owned row carries that identity. The session is a signed JWT in an httpOnly cookie. Password reset by email is out of scope because the app is local and sends no email.
 - The app is local only and runs as three services (database, backend, frontend) from one compose file and one environment file. The backend applies database migrations on start; demo data is loaded by a separate seed command. *(The migration and seed behaviour was assumed, not decided.)*
 
 **Agents**
@@ -178,7 +178,7 @@ Jimmy is a study tutor organised around **Study Spaces**, one per subject. The s
 
 ## Out of Scope
 
-Posting or publishing to any platform, image generation, analytics, real login or accounts, OCR for scanned documents, hybrid (keyword plus vector) search, spaced-repetition scheduling, any deployment beyond local Docker, sharing a Study Space between Students, and a mobile app.
+Posting or publishing to any platform, image generation, analytics, password reset by email, OCR for scanned documents, hybrid (keyword plus vector) search, spaced-repetition scheduling, any deployment beyond local Docker, sharing a Study Space between Students, and a mobile app.
 
 ## Further Notes
 

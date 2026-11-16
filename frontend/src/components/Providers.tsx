@@ -1,17 +1,24 @@
 import type { ReactNode } from 'react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter } from 'react-router'
-import { StudentProvider } from '@/features/students/state/StudentProvider'
+import { meKey } from '@/features/auth/queries/useMe'
+import { ApiError } from '@/lib/http'
 
-// No retries: the failures here (401, 404, 409) will not fix themselves.
-const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } } })
+const queryClient = new QueryClient({
+  // A 401 from any request means the session ended: show the sign-in page.
+  queryCache: new QueryCache({
+    onError: (error) => {
+      if (error instanceof ApiError && error.status === 401) queryClient.setQueryData(meKey, null)
+    },
+  }),
+  // No retries: the failures here (401, 404, 409) will not fix themselves.
+  defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
+})
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
-      <StudentProvider>
-        <BrowserRouter>{children}</BrowserRouter>
-      </StudentProvider>
+      <BrowserRouter>{children}</BrowserRouter>
     </QueryClientProvider>
   )
 }

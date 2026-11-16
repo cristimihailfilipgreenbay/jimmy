@@ -40,4 +40,4 @@ Everything runs from one `docker compose up -d`, with tracing in LangSmith. See 
 
 ## Not in v1
 
-Posting or publishing to any platform, image generation, analytics, real login, OCR for scanned documents, hybrid keyword-plus-vector search, spaced-repetition scheduling, and deployment beyond local Docker.
+Posting or publishing to any platform, image generation, analytics, password reset by email, OCR for scanned documents, hybrid keyword-plus-vector search, spaced-repetition scheduling, and deployment beyond local Docker.

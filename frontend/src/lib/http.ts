@@ -1,5 +1,4 @@
 import { z } from 'zod'
-import { getStoredStudentId } from '@/lib/identity'
 import { apiErrorSchema } from '@/lib/schemas/apiError'
 
 export class ApiError extends Error {
@@ -17,10 +16,8 @@ export const errorMessage = (err: unknown, fallback: string) => (err instanceof 
 
 async function send(path: string, init: RequestInit): Promise<Response> {
   const headers = new Headers(init.headers)
-  const studentId = getStoredStudentId()
-  if (studentId) headers.set('X-Student-Id', studentId)
   if (init.body) headers.set('Content-Type', 'application/json')
-  const res = await fetch(`/api${path}`, { ...init, headers })
+  const res = await fetch(`/api${path}`, { ...init, headers, credentials: 'same-origin' })
   if (!res.ok) {
     const body = apiErrorSchema.safeParse(await res.json().catch(() => null))
     throw new ApiError(

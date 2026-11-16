@@ -44,7 +44,7 @@ University students who study from their own notes and want to be tested on that
 
 ## What Jimmy will not do (v1)
 
-It will not post anything anywhere, generate images, read your analytics, or read scanned documents. There is no login: a profile switcher picks who is using it. It runs locally, not as a hosted service.
+It will not post anything anywhere, generate images, read your analytics, or read scanned documents. Each Student has an account (email and password). It runs locally, not as a hosted service.
 
 ## Where to go next
 

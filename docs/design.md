@@ -75,4 +75,4 @@ The student can rate each answer 👍/👎. Repeated feedback may propose a Prof
 
 ## 9. Out of scope for v1
 
-Posting or publishing anything, image generation, analytics, real login (a profile switcher picks `student_id`), OCR, hybrid search, spaced-repetition scheduling, deployment.
+Posting or publishing anything, image generation, analytics, password reset by email, OCR, hybrid search, spaced-repetition scheduling, deployment.

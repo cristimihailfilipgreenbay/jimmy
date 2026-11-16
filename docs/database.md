@@ -57,7 +57,7 @@ Postgres schema, conventions and migrations. See [architecture.md](./architectur
 | `disputes` | A Student's decision on a grade | `id`, `attempt_id`, `auto_score`, `auto_confidence`, `decision` (correct, incorrect) |
 | `weak_topics` | Weak Topic state per Topic | `space_id`, `topic_id` (together the key), `is_weak`, `consecutive_correct`, `cleared_at`, `updated_at` |
 | `flashcards` | Cards in a Space | `id`, `space_id`, `topic_id`, `front`, `back`, `source_chunk_id`, `status` (draft, approved, rejected), `was_edited` |
-| `conflicts` | Stored Conflict decisions | `id`, `space_id`, `topic_id`, `notes_chunk_id`, `other_chunk_id`, `other_source_type`, `decision` (keep_notes, accept_other, unsure), `decided_at` |
+| `conflicts` | Stored Conflict decisions | `id`, `space_id`, `topic` (as the Tutor named it), `topic_id` (when the Space has a Topic of that name), `notes_chunk_id`, `other_chunk_id`, `other_source_type` (library, learned), `decision` (keep_notes, accept_other, unsure), `notes_document`, `other_document`, `notes_excerpt`, `other_excerpt` (so the list reads without querying chunks), `decided_at`. One row per pair of passages |
 
 `weak_topics` caches the state; the rule itself (weak after two wrong answers in the last five, recovered after three correct in a row) is applied to `quiz_attempts` by one function, so the state can always be recomputed. Essay questions use the same `session_questions` and `quiz_attempts` tables; no schema change is planned for them.
 

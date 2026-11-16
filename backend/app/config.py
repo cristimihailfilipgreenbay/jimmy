@@ -3,6 +3,7 @@ import secrets
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy.engine import URL
 
 log = logging.getLogger(__name__)
 
@@ -10,7 +11,14 @@ log = logging.getLogger(__name__)
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(extra="ignore")
 
-    database_url: str = "postgresql+psycopg://jimmy:jimmy@localhost:5432/jimmy"
+    # The database. In Docker Compose the host is "db" and the port 5432.
+    postgres_user: str = "jimmy"
+    postgres_password: str = "jimmy"
+    postgres_host: str = "localhost"
+    postgres_port: int = 5432
+    postgres_db: str = "jimmy"
+    # A full URL overrides the POSTGRES_* values above when it is not empty.
+    database_url: str = ""
 
     # Signs the session cookie. Unset: a random one per process, so sessions end
     # on restart. Set JWT_SECRET (e.g. `openssl rand -hex 32`) to keep them.
@@ -25,6 +33,19 @@ class Settings(BaseSettings):
     # needed to decide whether to run the startup trace.
     langsmith_tracing: bool = False
     langsmith_api_key: str = ""
+
+    def connection_url(self) -> str | URL:
+        if self.database_url:
+            return self.database_url
+        # URL.create escapes the password, so characters like @ or / are fine.
+        return URL.create(
+            "postgresql+psycopg",
+            username=self.postgres_user,
+            password=self.postgres_password,
+            host=self.postgres_host,
+            port=self.postgres_port,
+            database=self.postgres_db,
+        )
 
 
 @lru_cache

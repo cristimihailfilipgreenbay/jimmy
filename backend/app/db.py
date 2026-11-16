@@ -22,7 +22,7 @@ class Base(DeclarativeBase):
 
 
 def make_engine() -> Engine:
-    return create_engine(get_settings().database_url, pool_pre_ping=True)
+    return create_engine(get_settings().connection_url(), pool_pre_ping=True)
 
 
 engine = make_engine()

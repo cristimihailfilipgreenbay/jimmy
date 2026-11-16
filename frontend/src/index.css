@@ -117,6 +117,30 @@
     --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* Tailwind v4 no longer gives buttons a pointer cursor. Anything you can click
+   shows one; disabled controls keep the normal cursor. */
+@layer base {
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  [role='menuitem']:not([aria-disabled='true']),
+  [role='tab'],
+  [role='option'],
+  [role='radio'],
+  [role='checkbox'],
+  summary,
+  select:not(:disabled),
+  input[type='checkbox']:not(:disabled),
+  input[type='radio']:not(:disabled),
+  label:has(> input[type='checkbox']:not(:disabled)),
+  label:has(> input[type='radio']:not(:disabled)) {
+    cursor: pointer;
+  }
+  :disabled,
+  [aria-disabled='true'] {
+    cursor: default;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

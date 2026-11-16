@@ -8,8 +8,10 @@ import { SpacesPage } from '@/features/spaces/SpacesPage'
 export function AppRoutes() {
   return (
     <Routes>
-      <Route path="sign-in" element={<AuthPage mode="sign-in" />} />
-      <Route path="sign-up" element={<AuthPage mode="sign-up" />} />
+      <Route element={<AuthPage />}>
+        <Route path="sign-in" element={null} />
+        <Route path="sign-up" element={null} />
+      </Route>
       <Route element={<RequireAuth />}>
         <Route element={<Layout />}>
           <Route index element={<SpacesPage />} />

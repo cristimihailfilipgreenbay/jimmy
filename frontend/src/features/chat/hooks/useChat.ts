@@ -11,6 +11,7 @@ export type Pending = { question: string; text: string; citations: Citation[]; s
 
 const TOOL_NAMES: Record<string, { run: string; done: string }> = {
   search_notes: { run: 'Searching your notes…', done: 'Searched your notes' },
+  search_library: { run: 'Searching Subject Library…', done: 'Searched Subject Library' },
 }
 export const stepLabel = (s: Step) => (TOOL_NAMES[s.tool] ?? { run: s.tool, done: s.tool })[s.state === 'run' ? 'run' : 'done']
 export const stepMeta = (s: Step) =>

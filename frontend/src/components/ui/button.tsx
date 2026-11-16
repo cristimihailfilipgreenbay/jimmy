@@ -2,7 +2,7 @@ import { Button as ButtonPrimitive } from "@base-ui/react/button"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "cn"
 
-import { WhenDisabled } from "@/components/WhenDisabled"
+import { Tip } from "@/components/Tip"
 
 // The design's buttons: rounded-md, text-sm medium, colour transitions only.
 // `space` takes the colour of the current Study Space.
@@ -34,8 +34,9 @@ const buttonVariants = cva(
   }
 )
 
-// `disabledReason` is shown as a tooltip while the button is disabled, so the Student
-// can see what is missing or what the app is waiting for.
+// A tooltip names what an icon button does (its aria-label) and, while any button is
+// disabled, says why (`disabledReason`), so the Student can see what is missing or
+// what the app is waiting for.
 function Button({
   className,
   variant = "default",
@@ -44,13 +45,16 @@ function Button({
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants> & { disabledReason?: string }) {
   return (
-    <WhenDisabled disabled={props.disabled} reason={disabledReason} fill={typeof className === "string" && className.includes("w-full")}>
+    <Tip
+      text={props.disabled ? disabledReason : size === "icon" || size === "icon-sm" ? props["aria-label"] : undefined}
+      fill={typeof className === "string" && className.includes("w-full")}
+    >
       <ButtonPrimitive
         data-slot="button"
         className={cn(buttonVariants({ variant, size, className }))}
         {...props}
       />
-    </WhenDisabled>
+    </Tip>
   )
 }
 

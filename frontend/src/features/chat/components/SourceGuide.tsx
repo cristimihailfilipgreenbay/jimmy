@@ -36,7 +36,7 @@ const SOURCES: { chip: ReactNode; desc: string }[] = [
     chip: (
       <span className="chip chip-tutor ml-0">
         <Lightbulb className="size-3.5" aria-hidden />
-        Tutor knowledge · not from your notes
+        Tutor knowledge
       </span>
     ),
     desc: 'Jimmy’s general knowledge. Not from your notes and has no citation.',

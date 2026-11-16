@@ -50,7 +50,7 @@ export function TutorChip({ className }: { className?: string }) {
   return (
     <span className={`chip chip-tutor ${className ?? ''}`} title="General knowledge from Jimmy. No citation.">
       <Lightbulb className="size-3.5" aria-hidden />
-      <span>Tutor knowledge · not from your notes</span>
+      <span>Tutor knowledge</span>
     </span>
   )
 }

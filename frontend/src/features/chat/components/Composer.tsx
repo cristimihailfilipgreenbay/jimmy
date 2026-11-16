@@ -39,7 +39,7 @@ export function Composer({ spaceName, busy, onSend, onStop }: { spaceName: strin
           </button>
         ))}
       </div>
-      <form onSubmit={submit} className="flex items-end gap-2 rounded-lg border border-border bg-card p-2 shadow-[0_1px_2px_rgba(20,20,30,.04)] focus-within:ring-2 focus-within:ring-ring">
+      <form onSubmit={submit} className="flex items-end gap-2 rounded-lg border border-border bg-card p-2 shadow-[0_1px_2px_rgba(20,20,30,.04)] focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring">
         <label htmlFor="ask-in" className="sr-only">
           Ask Jimmy about {spaceName}
         </label>

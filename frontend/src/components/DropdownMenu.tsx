@@ -48,11 +48,13 @@ export function MenuButton({
   onClick,
   destructive = false,
   disabled,
+  disabledReason,
   children,
 }: {
   onClick: () => void
   destructive?: boolean
   disabled?: boolean
+  disabledReason?: string
   children: ReactNode
 }) {
   return (
@@ -60,6 +62,7 @@ export function MenuButton({
       type="button"
       role="menuitem"
       disabled={disabled}
+      title={disabled ? disabledReason : undefined}
       onClick={onClick}
       className={cn(item, destructive && 'text-destructive hover:bg-destructive-soft')}
     >

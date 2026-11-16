@@ -54,6 +54,7 @@ export function DeleteTopicDialog({
               <Button
                 variant="destructive"
                 disabled={remove.isPending}
+                disabledReason="Deleting…"
                 onClick={() =>
                   remove.mutate(topic.id, {
                     onSuccess: () => {

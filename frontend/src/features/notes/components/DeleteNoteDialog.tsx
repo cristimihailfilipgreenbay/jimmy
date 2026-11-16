@@ -54,6 +54,7 @@ export function DeleteNoteDialog({
               <Button
                 variant="destructive"
                 disabled={remove.isPending}
+                disabledReason="Deleting…"
                 onClick={() =>
                   remove.mutate(note.id, {
                     onSuccess: () => {

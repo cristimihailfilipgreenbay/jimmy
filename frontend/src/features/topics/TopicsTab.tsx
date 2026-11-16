@@ -88,7 +88,9 @@ export function TopicsTab({ studentId, spaceId }: { studentId: string; spaceId: 
           )}
         </p>
         <div className="ml-auto flex gap-2">
-          <Button variant="outline" size="sm" disabled={selected.length < 2 || merge.isPending} onClick={mergeSelected}>
+          <Button variant="outline" size="sm" disabled={selected.length < 2 || merge.isPending}
+            disabledReason={merge.isPending ? 'Merging…' : 'Select at least two topics to merge'}
+            onClick={mergeSelected}>
             <GitMerge /> Merge
           </Button>
         </div>
@@ -123,7 +125,7 @@ export function TopicsTab({ studentId, spaceId }: { studentId: string; spaceId: 
                   onChange={(e) => setRenaming({ id: t.id, name: e.target.value })}
                   aria-label="New topic name"
                 />
-                <Button variant="space" size="sm" type="submit" disabled={rename.isPending}>
+                <Button variant="space" size="sm" type="submit" disabled={rename.isPending} disabledReason="Saving…">
                   Save
                 </Button>
                 <Button

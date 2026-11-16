@@ -228,7 +228,7 @@ function ReviewBody({
           <Button variant="ghost" onClick={onClose}>
             Later
           </Button>
-          <Button variant="space" disabled={answer.isPending} onClick={save}>
+          <Button variant="space" disabled={answer.isPending} disabledReason="Saving…" onClick={save}>
             Save topics
           </Button>
         </div>

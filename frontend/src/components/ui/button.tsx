@@ -32,15 +32,19 @@ const buttonVariants = cva(
   }
 )
 
+// `disabledReason` is shown as a tooltip while the button is disabled, so the Student
+// can see what is missing or what the app is waiting for.
 function Button({
   className,
   variant = "default",
   size = "default",
+  disabledReason,
   ...props
-}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants> & { disabledReason?: string }) {
   return (
     <ButtonPrimitive
       data-slot="button"
+      title={props.disabled ? disabledReason : props.title}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     />

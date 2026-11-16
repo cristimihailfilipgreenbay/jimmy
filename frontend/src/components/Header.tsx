@@ -103,7 +103,7 @@ function AccountMenu({ student }: { student: Student }) {
         <Code className="size-4" aria-hidden /> Developer
       </MenuLink>
       <MenuDivider />
-      <MenuButton onClick={() => signOut.mutate()} disabled={signOut.isPending}>
+      <MenuButton onClick={() => signOut.mutate()} disabled={signOut.isPending} disabledReason="Signing you out…">
         <LogOut className="size-4" aria-hidden /> Sign out
       </MenuButton>
     </DropdownMenu>

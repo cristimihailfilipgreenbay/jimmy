@@ -5,6 +5,8 @@ import { messageInSchema } from '../schemas/chat'
 
 const SUGGESTIONS = ['What can you help with before I add notes?']
 
+const BUSY_REASON = 'Jimmy is answering. Stop the answer to ask something else.'
+
 export function Composer({ spaceName, busy, onSend, onStop }: { spaceName: string; busy: boolean; onSend: (q: string) => void; onStop: () => void }) {
   const [value, setValue] = useState('')
   const field = useRef<HTMLTextAreaElement>(null)
@@ -32,6 +34,7 @@ export function Composer({ spaceName, busy, onSend, onStop }: { spaceName: strin
             key={s}
             type="button"
             disabled={busy}
+            title={busy ? BUSY_REASON : undefined}
             onClick={() => onSend(s)}
             className="flex-none rounded-full border border-border bg-card px-3 py-1 text-xs enabled:hover:bg-muted disabled:opacity-50"
           >
@@ -49,6 +52,7 @@ export function Composer({ spaceName, busy, onSend, onStop }: { spaceName: strin
           rows={1}
           value={value}
           disabled={busy}
+          title={busy ? BUSY_REASON : undefined}
           placeholder={`Ask about ${spaceName}…`}
           onChange={(e) => {
             setValue(e.target.value)

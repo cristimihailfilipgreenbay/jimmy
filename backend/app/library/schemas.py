@@ -30,3 +30,6 @@ class LibraryOut(BaseModel):
     status: Literal["none", "indexing", "ready", "failed"]
     chapters_ready: int
     chapters_total: int
+    # The book's chapter numbers in this Space, and how many answers cited the Library.
+    chapters: list[int]
+    cited_in_answers: int

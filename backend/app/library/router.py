@@ -1,10 +1,12 @@
 import json
+import re
 from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends
 from sqlalchemy import select
 
+from app.chat.models import Message, Thread
 from app.db import SessionDep
 from app.documents.models import Document
 from app.errors import ApiError
@@ -33,6 +35,22 @@ def _library_documents(session, space: Space) -> list[Document]:
     )
 
 
+def _cited_in_answers(session, space: Space) -> int:
+    """Answers in this Space with at least one Citation from the Subject Library."""
+    rows = session.scalars(
+        select(Message.citations)
+        .join(Thread, Thread.id == Message.thread_id)
+        .where(Thread.space_id == space.id, Message.role == "assistant")
+    )
+    return sum(any(c.get("source_type") == "library" for c in rows_) for rows_ in rows)
+
+
+def _chapter_numbers(documents: list[Document]) -> list[int]:
+    # Chapter files are named "ch08-photosynthesis.pdf" by the seed command.
+    numbers = (re.match(r"ch(\d+)-", d.filename) for d in documents)
+    return sorted(int(m.group(1)) for m in numbers if m)
+
+
 def _state(session, space: Space) -> LibraryOut:
     documents = _library_documents(session, space)
     if not documents:
@@ -42,6 +60,8 @@ def _state(session, space: Space) -> LibraryOut:
             status="none",
             chapters_ready=0,
             chapters_total=0,
+            chapters=[],
+            cited_in_answers=0,
         )
     pack = session.get(LibraryPack, documents[0].pack_id)
     ready = sum(d.status == "ready" for d in documents)
@@ -57,6 +77,8 @@ def _state(session, space: Space) -> LibraryOut:
         status=status,
         chapters_ready=ready,
         chapters_total=len(documents),
+        chapters=_chapter_numbers(documents),
+        cited_in_answers=_cited_in_answers(session, space),
     )
 
 

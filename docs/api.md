@@ -71,7 +71,7 @@ The app is closed to a Student who has not finished onboarding: the frontend sen
 | GET | `/spaces/{space_id}/documents/{id}` | One document |
 | DELETE | `/spaces/{space_id}/documents/{id}` | Delete the document and its chunks |
 | GET | `/libraries` | Available Subject Library packs (title, author, licence), as registered by the seed command |
-| GET | `/spaces/{space_id}/library` | The Space's Subject Library: `pack` (or null), `enabled`, `status` (`none`, `indexing`, `ready`, `failed`), `chapters_ready`, `chapters_total` |
+| GET | `/spaces/{space_id}/library` | The Space's Subject Library: `pack` (or null), `enabled`, `status` (`none`, `indexing`, `ready`, `failed`), `chapters_ready`, `chapters_total`, `chapters` (the book's chapter numbers) and `cited_in_answers` (answers in the Space with a Library Citation) |
 | PUT | `/spaces/{space_id}/library` | `{pack_id, enabled}`. A `pack_id` attaches that pack (replacing another) and indexes its chapters in the background; the same pack again with `enabled` switches it on or off; `pack_id: null` detaches the Library and deletes its chapters. `409 library_not_seeded` if the seed command has not downloaded the pack. Returns the same shape as GET |
 
 Document status values: `uploaded`, `extracting`, `rejected`, `awaiting_topic_review`, `embedding`, `ready`, `failed`.

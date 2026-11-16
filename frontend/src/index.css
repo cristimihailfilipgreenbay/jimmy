@@ -115,7 +115,7 @@
 }
 
 /* Tailwind v4 no longer gives buttons a pointer cursor. Anything you can click
-   shows one; disabled controls show the busy cursor. */
+   shows one; disabled controls show the not-allowed cursor. */
 @layer base {
   button:not(:disabled),
   [role='button']:not([aria-disabled='true']),
@@ -136,7 +136,7 @@
   }
   :disabled,
   [aria-disabled='true'] {
-    cursor: wait;
+    cursor: not-allowed;
   }
 }
 

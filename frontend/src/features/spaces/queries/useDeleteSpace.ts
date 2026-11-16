@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { deleteSpace } from '../api/spaces'
+import { deleteSpace } from './spaces'
 import { spacesKey } from './spacesKey'
 
 export function useDeleteSpace(studentId: string) {

@@ -5,10 +5,10 @@ import { Button } from '@/components/ui/button'
 import { errorMessage } from '@/lib/http'
 import { cn } from '@/lib/utils'
 import { useStudent } from '@/features/students/hooks/useStudent'
-import type { Space } from './api/spaces'
+import type { Space } from './queries/spaces'
 import { CreateSpaceDialog } from './components/CreateSpaceDialog'
 import { DeleteSpaceDialog } from './components/DeleteSpaceDialog'
-import { useSpaces } from './hooks/useSpaces'
+import { useSpaces } from './queries/useSpaces'
 import { swatchFor } from './lib/accents'
 
 export function SpacesPage() {

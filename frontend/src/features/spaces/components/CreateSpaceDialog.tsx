@@ -11,8 +11,8 @@ import {
 import { Input } from '@/components/ui/input'
 import { errorMessage } from '@/lib/http'
 import { cn } from '@/lib/utils'
-import type { Accent } from '../api/spaces'
-import { useCreateSpace } from '../hooks/useCreateSpace'
+import type { Accent } from '../queries/spaces'
+import { useCreateSpace } from '../queries/useCreateSpace'
 import { ACCENTS } from '../lib/accents'
 
 export function CreateSpaceDialog({ studentId, open, onClose }: { studentId: string; open: boolean; onClose: () => void }) {

@@ -1,24 +1,8 @@
-import { useEffect, useState } from 'react'
-import { getHealth } from '../api/health'
-
-type State = 'checking' | 'ok' | 'down'
+import { useHealth } from '../queries/useHealth'
 
 export function ApiStatus() {
-  const [state, setState] = useState<State>('checking')
-
-  useEffect(() => {
-    let alive = true
-    const check = () =>
-      getHealth()
-        .then((h) => alive && setState(h.status === 'ok' ? 'ok' : 'down'))
-        .catch(() => alive && setState('down'))
-    check()
-    const id = setInterval(check, 10_000)
-    return () => {
-      alive = false
-      clearInterval(id)
-    }
-  }, [])
+  const { data, isPending, isError } = useHealth()
+  const state = isPending ? 'checking' : isError || data?.status !== 'ok' ? 'down' : 'ok'
 
   const label = { checking: 'Checking API…', ok: 'API healthy', down: 'API unavailable' }[state]
   const dot = { checking: 'bg-muted-foreground', ok: 'bg-green-600', down: 'bg-destructive' }[state]

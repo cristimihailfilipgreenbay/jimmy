@@ -14,7 +14,7 @@ import { ChatEmpty } from './components/ChatEmpty'
 import { Composer } from './components/Composer'
 import { SourceGuide } from './components/SourceGuide'
 import { useSpaceEvents } from '@/features/learned/queries/useSpaceEvents'
-import { stepLabel, stepMeta, useChat } from './hooks/useChat'
+import { chatStatus, stepLabel, stepMeta, useChat } from './hooks/useChat'
 
 // A Study Space's chat: cited answers from its Notes, streamed as they are written.
 export function ChatPage() {
@@ -66,7 +66,15 @@ export function ChatPage() {
           {chat.pending && (
             <>
               <UserMessage text={chat.pending.question} />
-              <AnswerMessage content={chat.pending.text} citations={chat.pending.citations} spaceId={space.id} conflicts={chat.pending.conflicts} onDecide={chat.decide} streaming />
+              <AnswerMessage
+                content={chat.pending.text}
+                citations={chat.pending.citations}
+                spaceId={space.id}
+                conflicts={chat.pending.conflicts}
+                onDecide={chat.decide}
+                streaming
+                status={chatStatus(chat.pending)}
+              />
             </>
           )}
           {chat.error && (

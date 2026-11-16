@@ -129,7 +129,7 @@ A pending Dispute is answered through the thread resume endpoint.
 ### Learned Material
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/spaces/{space_id}/learned-material` | List, filter by `status` (unreviewed or approved) |
+| GET | `/spaces/{space_id}/learned-material` | List, filter by `status` (unreviewed or approved). Each item has `title`, `publisher`, `url`, `excerpt`, `reason`, `fetched_at` and `used_in_answers` |
 | POST | `/spaces/{space_id}/learned-material/{id}/approve` | Approve so it may feed assessments |
 | DELETE | `/spaces/{space_id}/learned-material/{id}` | Delete it and its chunks |
 
@@ -152,10 +152,10 @@ A pending Dispute is answered through the thread resume endpoint.
 | `reset` | none | The Citation check rejected the answer being streamed; discard the text, a rewrite follows |
 | `tool_call` | `tool`, `status` (started, finished, failed), short description, `found` (passages returned, on finished) | "Searching your notes..." |
 | `segment` | `source_type`, `citation_ids` | Marks which Source the text just streamed came from, so the UI can style it |
-| `citation` | `id`, `source_type` (`notes`, `library`, `wikipedia`, `web`), `document`, `author`, `page_or_section`, `passage`, and for a web Finding `url` and `fetched_at` | Citation chips and the passage viewer |
+| `citation` | `id`, `source_type` (`notes`, `library`, `learned`, `wikipedia`, `web`), `document`, `author`, `page_or_section`, `passage`, and for a web Finding `url` and `fetched_at` | Citation chips and the passage viewer |
 | `interrupt` | `interrupt_id`, `kind`, `payload` | A pause the Student must answer (section 4) |
 | `cost` | `tokens_in`, `tokens_out`, `usd` | Cost under the answer |
-| `job` | `job_id`, `kind`, `status`, `message` | Background Promotion toast |
+| `job` | `job_id`, `kind`, `status`, `message`, `outcome` (`saved`, `kept`, `refused` or `failed` for a Promotion) | Background Promotion toast; sent on `GET /spaces/{space_id}/events` only for work that finishes while the stream is open |
 | `error` | `code`, `message` | A failure mid-stream |
 | `done` | `message_id`, `trace_id`, `content` (the stored answer, which can differ from the streamed text if the backend had to label a paragraph) | End of the run; enables the 👍/👎 and the trace link |
 

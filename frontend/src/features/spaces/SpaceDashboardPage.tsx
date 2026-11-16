@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { Book, MessageSquare, Pencil, Trash2 } from 'lucide-react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
+import { LearnedTab } from '@/features/learned/LearnedTab'
+import { useLearnedMaterial } from '@/features/learned/queries/useLearnedMaterial'
+import { useSpaceEvents } from '@/features/learned/queries/useSpaceEvents'
 import { LibraryCard } from '@/features/library/components/LibraryCard'
 import { NotesTab } from '@/features/notes/NotesTab'
 import { useDocuments } from '@/features/notes/queries/useDocuments'
@@ -18,10 +21,10 @@ import { SpaceFormDialog } from './components/SpaceFormDialog'
 import { useSpaces } from './queries/useSpaces'
 
 // A Study Space's dashboard: its header, with the "⋯" menu that deletes it, and the
-// tabs under it. Notes and Topics are built; Weak topics and Learned material come
-// with the features that fill them.
-type Tab = 'notes' | 'topics'
-const TABS: Tab[] = ['notes', 'topics']
+// tabs under it. Notes, Topics and Learned material are built; Weak topics comes
+// with the feature that fills it.
+type Tab = 'notes' | 'topics' | 'learned'
+const TABS: Tab[] = ['notes', 'topics', 'learned']
 export function SpaceDashboardPage() {
   const { spaceId } = useParams()
   const student = useSignedInStudent()
@@ -41,6 +44,8 @@ export function SpaceDashboardPage() {
   const notes = useDocuments(student.id, spaceId ?? '')
   const processing = notes.data?.some((d) => PROCESSING.includes(d.status)) ?? false
   const topics = useTopics(student.id, spaceId ?? '', processing)
+  const learned = useLearnedMaterial(student.id, spaceId ?? '')
+  useSpaceEvents(student.id, spaceId)
 
   if (isPending) return null
   if (!space) return <Placeholder title="Study Space not found" note="That Study Space does not exist." />
@@ -104,6 +109,7 @@ export function SpaceDashboardPage() {
             [
               ['notes', 'Notes', notes.data?.length ?? 0],
               ['topics', 'Topics', topics.data?.length ?? 0],
+              ['learned', 'Learned material', learned.data?.filter((m) => m.status === 'unreviewed').length ?? 0],
             ] as const
           ).map(([key, label, count]) => (
             <button
@@ -129,7 +135,13 @@ export function SpaceDashboardPage() {
         </div>
       </div>
       <section key={tab} role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="fade-in">
-        {tab === 'notes' ? <NotesTab studentId={student.id} space={space} /> : <TopicsTab studentId={student.id} spaceId={space.id} />}
+        {tab === 'notes' ? (
+          <NotesTab studentId={student.id} space={space} />
+        ) : tab === 'topics' ? (
+          <TopicsTab studentId={student.id} spaceId={space.id} />
+        ) : (
+          <LearnedTab studentId={student.id} spaceId={space.id} spaceName={space.name} />
+        )}
       </section>
 
       <SpaceFormDialog

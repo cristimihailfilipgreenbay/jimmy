@@ -12,6 +12,7 @@ import { AnswerMessage, UserMessage } from './components/AnswerMessage'
 import { ChatEmpty } from './components/ChatEmpty'
 import { Composer } from './components/Composer'
 import { SourceGuide } from './components/SourceGuide'
+import { useSpaceEvents } from '@/features/learned/queries/useSpaceEvents'
 import { stepLabel, stepMeta, useChat } from './hooks/useChat'
 
 // A Study Space's chat: cited answers from its Notes, streamed as they are written.
@@ -23,6 +24,7 @@ export function ChatPage() {
   const { data: topics, isPending: loadingTopics } = useTopics(student.id, spaceId)
   const { data: library, isPending: loadingLibrary } = useLibrary(student.id, spaceId)
   const chat = useChat(student.id, spaceId)
+  useSpaceEvents(student.id, spaceId)
   const end = useRef<HTMLDivElement>(null)
   const space = spaces?.find((s) => s.id === spaceId)
 

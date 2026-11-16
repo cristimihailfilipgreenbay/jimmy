@@ -1,5 +1,6 @@
 import { Popover } from '@base-ui/react/popover'
 import { Book, Eye, File, Globe, Lightbulb, TriangleAlert, X } from 'lucide-react'
+import { Link, useParams } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { citationLabel, isWeb } from '../lib/segments'
 import type { Citation } from '../schemas/chat'
@@ -7,6 +8,7 @@ import type { Citation } from '../schemas/chat'
 // A Citation chip; it opens the source passage, as in the design's popover.
 export function CitationChip({ citation }: { citation: Citation }) {
   const web = isWeb(citation)
+  const { spaceId } = useParams()
   const label = web ? `Unreviewed web · ${citation.page_or_section ?? citation.document}` : citationLabel(citation)
   // Textbook passages look different from Notes: double line, book icon, serif title.
   const library = citation.source_type === 'library'
@@ -67,9 +69,16 @@ export function CitationChip({ citation }: { citation: Citation }) {
                   >
                     <Globe /> Open page
                   </Button>
-                  <Button variant="outline" size="sm" disabled>
-                    Review now
-                  </Button>
+                  {/* A saved item can be reviewed; a Finding is only saved after the answer. */}
+                  {citation.source_type === 'learned' ? (
+                    <Button variant="outline" size="sm" nativeButton={false} render={<Link to={`/spaces/${spaceId}?tab=learned`} />}>
+                      Review now
+                    </Button>
+                  ) : (
+                    <Button variant="outline" size="sm" disabled>
+                      Review now
+                    </Button>
+                  )}
                 </>
               ) : (
                 <Button variant="outline" size="sm" disabled>

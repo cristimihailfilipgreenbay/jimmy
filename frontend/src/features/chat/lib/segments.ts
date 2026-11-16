@@ -21,5 +21,6 @@ export function parseSegments(content: string): Segment[] {
 export const citationLabel = (c: { document: string; page_or_section: string | null }) =>
   c.page_or_section ? `${c.document}, ${c.page_or_section}` : c.document
 
-// Wikipedia and web Findings come from outside the Study Space and are unreviewed.
-export const isWeb = (c: { source_type: string }) => c.source_type === 'wikipedia' || c.source_type === 'web'
+// Wikipedia and web Findings, and Learned Material saved from them, come from outside the
+// Study Space and are unreviewed.
+export const isWeb = (c: { source_type: string }) => ['wikipedia', 'web', 'learned'].includes(c.source_type)

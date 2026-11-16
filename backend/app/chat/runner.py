@@ -16,12 +16,14 @@ from app.chat.guards import StepLimitReached
 from app.chat.models import Message
 from app.chat.tools import RunSources
 from app.db import engine
+from app.learned.promotion import promote_in_background
 
 log = logging.getLogger(__name__)
 
 TOOL_LABELS = {
     "search_notes": "Searching your notes…",
     "search_library": "Searching the Subject Library…",
+    "search_learned_material": "Searching Learned Material…",
     "search_wikipedia": "Searching Wikipedia…",
     "search_web": "Searching the web…",
 }
@@ -71,11 +73,13 @@ def run_turn(
     model=None,
     library: bool = False,
     web: bool = False,
+    space_name: str = "",
+    learned: bool = False,
 ) -> Iterator[Event]:
     """Stream the answer, then store it. Never raises: failures become `error` events."""
     sources = RunSources()
     try:
-        agent = build_agent(space_id, sources, model, library, web)
+        agent = build_agent(space_id, sources, model, library, web, learned)
     except ModelNotConfigured as exc:
         yield Event("error", {"code": "upstream_unavailable", "message": str(exc)})
         return
@@ -169,6 +173,8 @@ def run_turn(
         session.add(message)
         session.commit()
         message_id = message.id
+    # Saving a web Finding runs in the background; the answer never waits for it.
+    promote_in_background(space_id, space_name, citations)
     for c in citations:
         yield Event(
             "citation", {k: v for k, v in c.as_json().items() if k != "chunk_id"}

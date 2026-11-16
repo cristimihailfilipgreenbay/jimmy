@@ -12,6 +12,7 @@ export type Pending = { question: string; text: string; citations: Citation[]; s
 const TOOL_NAMES: Record<string, { run: string; done: string }> = {
   search_notes: { run: 'Searching your notes…', done: 'Searched your notes' },
   search_library: { run: 'Searching Subject Library…', done: 'Searched Subject Library' },
+  search_learned_material: { run: 'Searching Learned Material…', done: 'Searched Learned Material' },
   search_wikipedia: { run: 'Searching Wikipedia…', done: 'Searched Wikipedia' },
   search_web: { run: 'Searching the web…', done: 'Searched the web' },
 }

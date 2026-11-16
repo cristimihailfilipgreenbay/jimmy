@@ -36,7 +36,7 @@ Postgres schema, conventions and migrations. See [architecture.md](./architectur
 | `spaces` | A Study Space | `id`, `student_id` (FK), `name`, `course` (optional, one line "code · lecturer", for example "BIO 202 · Prof. Weber"; the screens edit the two parts separately), `accent` (a colour name, not a subject), `library_enabled`. Unique on (`student_id`, lower(`name`)) |
 | `library_packs` | Available Subject Library packs | `id`, `slug`, `title`, `author`, `license`, `source_url`, `subject` |
 | `documents` | Notes and library documents in a Space | `id`, `space_id`, `kind` (notes, library), `pack_id` (FK to `library_packs`; null for Notes), `title`, `author`, `filename`, `mime_type`, `size_bytes`, `page_count`, `status`, `rejection_reason`, `thread_id` (the ingestion run, a `threads` row), `enabled` |
-| `learned_material` | Web-sourced items promoted into a Space | `id`, `space_id`, `title`, `publisher`, `url`, `status` (unreviewed, approved), `job_id`, `approved_at` |
+| `learned_material` | Web-sourced items promoted into a Space | `id`, `space_id`, `title`, `publisher`, `url`, `excerpt`, `reason`, `status` (unreviewed, approved), `fetched_at`, `created_at`, `approved_at` |
 | `chunks` | Searchable passages with vectors | `id`, `space_id`, `source_type` (notes, library, learned), `document_id`, `learned_material_id`, `chunk_index`, `text`, `page_start`, `page_end`, `section`, `topic_id`, `embedding`, `embedding_model`, `embedding_dimensions`, `token_count` |
 | `topics` | Topics in a Space | `id`, `space_id`, `name`, `status` (proposed, approved), `merged_into_id`. Unique on (`space_id`, lower(`name`)) among Topics that are not merged |
 
@@ -67,7 +67,7 @@ Postgres schema, conventions and migrations. See [architecture.md](./architectur
 | `threads` | A conversation or run | `id`, `space_id`, `kind` (chat, session, ingestion, flashcard_draft), `title`. The `id` is also the LangGraph thread id |
 | `messages` | What the Student sees in the chat | `id`, `thread_id`, `role`, `content`, `citations` (JSON), `tokens_in`, `tokens_out`, `cost_usd`, `trace_id` |
 | `feedback` | 👍/👎 on an answer | `id`, `message_id`, `rating` (up, down), `comment`, `synced_to_langsmith_at` |
-| `jobs` | Background work such as Promotion | `id`, `space_id`, `kind`, `status` (queued, running, succeeded, failed, cancelled), `payload` (JSON), `error`, `finished_at` |
+| `jobs` | Background work such as Promotion | `id`, `space_id`, `kind`, `status` (queued, running, succeeded, failed, cancelled), `payload` (JSON, with the Promotion `outcome`), `message`, `error`, `created_at`, `updated_at`, `finished_at` |
 
 `messages` is the display record (with Citations, cost and trace id for the UI). The LangGraph checkpointer holds the agent's working state for the same thread. They are written together and are not meant to be reconciled by hand.
 

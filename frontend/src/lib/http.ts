@@ -16,7 +16,8 @@ export const errorMessage = (err: unknown, fallback: string) => (err instanceof 
 
 async function send(path: string, init: RequestInit): Promise<Response> {
   const headers = new Headers(init.headers)
-  if (init.body) headers.set('Content-Type', 'application/json')
+  // A FormData body sets its own Content-Type (with the multipart boundary).
+  if (typeof init.body === 'string') headers.set('Content-Type', 'application/json')
   const res = await fetch(`/api${path}`, { ...init, headers, credentials: 'same-origin' })
   if (!res.ok) {
     const body = apiErrorSchema.safeParse(await res.json().catch(() => null))

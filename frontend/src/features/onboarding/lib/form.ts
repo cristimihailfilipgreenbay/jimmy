@@ -44,6 +44,17 @@ export function duplicateNames(subjects: SubjectDraft[]): Set<number> {
   return out
 }
 
+/** Why Continue is disabled on this step, for its tooltip. */
+export function continueBlocker(form: OnboardingForm): string | undefined {
+  if (form.step === 0 && !form.name.trim()) return 'Enter your name to continue'
+  if (form.step === 2 && form.subjects.length === 0) return 'Pick at least one subject'
+  if (form.step === 3) {
+    if (!form.subjects.every((s) => s.name.trim())) return 'Give every Study Space a name'
+    if (duplicateNames(form.subjects).size > 0) return 'Each Study Space needs its own name'
+  }
+  return undefined
+}
+
 export function canContinue(form: OnboardingForm): boolean {
   if (form.step === 0) return form.name.trim().length > 0
   if (form.step === 2) return form.subjects.length > 0

@@ -1,3 +1,4 @@
+import { Tip } from '@/components/Tip'
 import { useLayoutEffect, useRef, type ReactNode } from 'react'
 import { Check, GraduationCap, Layers, LayoutGrid, MessageSquare, Pencil, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router'
@@ -108,23 +109,23 @@ export function SpaceContextMenu({
             {ACCENTS.map((a) => {
               const on = a.value === space.accent
               return (
-                <button
-                  key={a.value}
-                  type="button"
-                  role="menuitemradio"
-                  tabIndex={-1}
-                  aria-checked={on}
-                  aria-label={a.label}
-                  title={a.label}
-                  onClick={() => onColour(a.value)}
-                  style={accentStyle(a.value)}
-                  className={cn(
-                    'grid size-5 place-items-center rounded-full bg-space text-white ring-offset-2 ring-offset-card transition hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                    on && 'ring-2 ring-space',
-                  )}
-                >
-                  {on && <Check className="size-3" />}
-                </button>
+                <Tip key={a.value} text={a.label}>
+                  <button
+                    type="button"
+                    role="menuitemradio"
+                    tabIndex={-1}
+                    aria-checked={on}
+                    aria-label={a.label}
+                    onClick={() => onColour(a.value)}
+                    style={accentStyle(a.value)}
+                    className={cn(
+                      'grid size-5 place-items-center rounded-full bg-space text-white ring-offset-2 ring-offset-card transition hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                      on && 'ring-2 ring-space',
+                    )}
+                  >
+                    {on && <Check className="size-3" />}
+                  </button>
+                </Tip>
               )
             })}
           </div>

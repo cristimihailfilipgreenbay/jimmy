@@ -72,6 +72,7 @@ export function DeleteSpaceDialog({
             <Button
               variant="destructive"
               disabled={!matches || remove.isPending}
+              disabledReason={remove.isPending ? 'Deleting…' : 'Type the Space name to confirm'}
               onClick={() => remove.mutate(space.id, { onSuccess: onDeleted })}
             >
               Delete Space

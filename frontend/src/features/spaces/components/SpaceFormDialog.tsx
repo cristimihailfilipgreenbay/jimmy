@@ -170,7 +170,7 @@ export function SpaceFormDialog({
             <Button type="button" variant="ghost" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={saving.isPending || !name.trim()}>
+            <Button type="submit" disabled={saving.isPending || !name.trim()} disabledReason={saving.isPending ? 'Saving…' : 'Enter a name'}>
               {edit ? 'Save changes' : 'Create Space'}
             </Button>
           </DialogFooter>

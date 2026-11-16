@@ -50,6 +50,16 @@ Spaces list · Space dashboard (Notes, Topics, Weak Topics, Learned Material rev
 
 A visual prototype exists as a private artifact: [Jimmy: Study Tutor Prototype](https://claude.ai/artifact/TSNW2vrvQXEA6QRmi1WLDt). It shows four distinct source-label styles (solid line for Notes, double line for the Library, dashed and hatched for web content, dotted for Tutor Knowledge), so that source never relies on colour alone.
 
+### Prototype elements still to build
+
+The empty Chat (`features/chat/components/ChatEmpty.tsx`) follows the prototype but leaves these out until the feature behind them exists. Add each one in the issue that builds it.
+
+| Element | Prototype behaviour | Built in |
+| --- | --- | --- |
+| Weak topic starter tile | "Explain *weak topic* step by step", first of four starters, and the weak-topic count in the stats line. Without it the Space with Notes shows three starters. | [#11](https://github.com/cristimihailfilipgreenbay/jimmy/issues/11) |
+| Subject Library starter tile | "Add a textbook to the *Space* Subject Library". Disabled with a tooltip for now; the stats line says "Subject Library empty" and the intro text omits "and the Subject Library". | [#6](https://github.com/cristimihailfilipgreenbay/jimmy/issues/6) |
+| New chat | "New chat" button in the conversation header, and "Back to your previous conversation" under the empty card. The app keeps one conversation per Study Space today. | Not assigned yet |
+
 ## 6. Feedback and personalisation
 
 The student can rate each answer 👍/👎. Repeated feedback may propose a Profile style change (for example "shorter explanations"), which needs Approval. The Profile also holds language and explanation style, shared across Study Spaces. Answers follow the language set in the Profile; the UI is English.

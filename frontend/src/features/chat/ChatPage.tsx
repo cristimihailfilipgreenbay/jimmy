@@ -1,13 +1,14 @@
 import { useEffect, useRef } from 'react'
-import { Check, File, Loader2, TriangleAlert, Upload } from 'lucide-react'
-import { Link, useParams } from 'react-router'
+import { Check, Loader2, TriangleAlert } from 'lucide-react'
+import { useParams } from 'react-router'
 import { Placeholder } from '@/components/Placeholder'
-import { buttonVariants } from '@/components/ui/button'
 import { useSignedInStudent } from '@/features/auth/hooks/useSignedInStudent'
 import { useDocuments } from '@/features/notes/queries/useDocuments'
+import { useTopics } from '@/features/topics/queries/useTopics'
 import { useSpaces } from '@/features/spaces/queries/useSpaces'
 import { cn } from '@/lib/utils'
 import { AnswerMessage, UserMessage } from './components/AnswerMessage'
+import { ChatEmpty } from './components/ChatEmpty'
 import { Composer } from './components/Composer'
 import { SourceGuide } from './components/SourceGuide'
 import { stepLabel, stepMeta, useChat } from './hooks/useChat'
@@ -17,7 +18,8 @@ export function ChatPage() {
   const { spaceId = '' } = useParams()
   const student = useSignedInStudent()
   const { data: spaces, isPending } = useSpaces(student.id)
-  const { data: documents } = useDocuments(student.id, spaceId)
+  const { data: documents, isPending: loadingNotes } = useDocuments(student.id, spaceId)
+  const { data: topics, isPending: loadingTopics } = useTopics(student.id, spaceId)
   const chat = useChat(student.id, spaceId)
   const end = useRef<HTMLDivElement>(null)
   const space = spaces?.find((s) => s.id === spaceId)
@@ -28,26 +30,23 @@ export function ChatPage() {
 
   if (isPending) return null
   if (!space) return <Placeholder title="Study Space not found" note="That Study Space does not exist." />
-  const hasNotes = documents?.some((d) => d.status === 'ready') ?? true
+  const ready = documents?.filter((d) => d.status === 'ready') ?? []
+  const empty = !chat.loadingMessages && chat.messages.length === 0 && !chat.pending
+  const settled = !loadingNotes && !loadingTopics
 
   return (
     <div className="grid gap-6 pt-4 pb-6 lg:grid-cols-[1fr_300px]">
       <div className="flex min-h-[calc(100vh-7.5rem)] flex-col">
         <h1 className="sr-only">Chat · {space.name}</h1>
         <div className="flex-1 space-y-6 pb-4" aria-live="polite" aria-busy={!!chat.pending}>
-          {!hasNotes && (
-            <div className="rounded-lg border border-border bg-card p-6 text-center shadow-[0_1px_2px_rgba(20,20,30,.04)]">
-              <span className="mx-auto grid size-10 place-items-center rounded-full bg-space-soft text-space-ink">
-                <File className="size-4" aria-hidden />
-              </span>
-              <p className="mt-3 font-semibold">This Space has no notes yet</p>
-              <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-                You can still ask, but every answer will be labelled <em>Tutor knowledge</em> until you upload notes.
-              </p>
-              <Link to={`/spaces/${space.id}`} className={cn(buttonVariants({ variant: 'space', size: 'sm' }), 'mt-4')}>
-                <Upload /> Upload notes
-              </Link>
-            </div>
+          {empty && settled && (
+            <ChatEmpty
+              spaceId={space.id}
+              spaceName={space.name}
+              notes={ready}
+              topics={topics ?? []}
+              onAsk={chat.ask}
+            />
           )}
           {chat.messages.map((m) =>
             m.role === 'user' ? (
@@ -82,7 +81,7 @@ export function ChatPage() {
               ))}
             </div>
           )}
-          <Composer spaceName={space.name} busy={!!chat.pending} onSend={chat.ask} onStop={chat.stop} />
+          <Composer empty={empty} spaceName={space.name} busy={!!chat.pending} onSend={chat.ask} onStop={chat.stop} />
         </div>
       </div>
       <SourceGuide space={space} />

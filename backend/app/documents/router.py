@@ -4,6 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, BackgroundTasks, Depends, Response, UploadFile
 from sqlalchemy import select
 
+from app.chat.models import Thread
 from app.db import SessionDep
 from app.documents.extract import MAX_BYTES, Rejected, extract
 from app.documents.ingestion import run_ingestion
@@ -59,9 +60,17 @@ def upload_document(
         page_count=extracted.page_count,
         status="uploaded",
     )
+    # The ingestion run is a LangGraph thread; its id is how the Student answers
+    # the Topic review pause.
+    thread = Thread(space_id=space.id, kind="ingestion", title=document.title[:200])
+    session.add(thread)
+    session.flush()
+    document.thread_id = thread.id
     session.add(document)
     session.commit()
-    background.add_task(run_ingestion, document.id, space.id, extracted.pages)
+    background.add_task(
+        run_ingestion, document.id, space.id, extracted.pages, thread.id
+    )
     return document
 
 

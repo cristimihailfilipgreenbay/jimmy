@@ -16,6 +16,7 @@ class DocumentOut(BaseModel):
     page_count: int | None
     status: str
     rejection_reason: str | None
+    thread_id: uuid.UUID | None
     enabled: bool
     created_at: datetime
 

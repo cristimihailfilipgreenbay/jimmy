@@ -75,7 +75,7 @@ export function SignUpForm() {
             </p>
           )}
         </div>
-        <Button type="submit" variant="space" size="lg" className="w-full" disabled={signUp.isPending} aria-busy={signUp.isPending}>
+        <Button type="submit" variant="space" size="lg" className="w-full" disabled={signUp.isPending} disabledReason="Creating your account…" aria-busy={signUp.isPending}>
           {signUp.isPending ? (
             <>
               <LoaderCircle className="animate-spin" /> Creating your account…

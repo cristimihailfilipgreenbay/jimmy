@@ -35,10 +35,10 @@ Postgres schema, conventions and migrations. See [architecture.md](./architectur
 |---|---|---|
 | `spaces` | A Study Space | `id`, `student_id` (FK), `name`, `course` (optional, one line "code · lecturer", for example "BIO 202 · Prof. Weber"; the screens edit the two parts separately), `accent` (a colour name, not a subject), `library_enabled`. Unique on (`student_id`, lower(`name`)) |
 | `library_packs` | Available Subject Library packs | `id`, `slug`, `title`, `author`, `license`, `source_url`, `subject` |
-| `documents` | Notes and library documents in a Space | `id`, `space_id`, `kind` (notes, library), `pack_id` (null for Notes), `title`, `author`, `filename`, `mime_type`, `size_bytes`, `page_count`, `status`, `rejection_reason`, `enabled` |
+| `documents` | Notes and library documents in a Space | `id`, `space_id`, `kind` (notes, library), `pack_id` (null for Notes), `title`, `author`, `filename`, `mime_type`, `size_bytes`, `page_count`, `status`, `rejection_reason`, `thread_id` (the ingestion run, a `threads` row), `enabled` |
 | `learned_material` | Web-sourced items promoted into a Space | `id`, `space_id`, `title`, `publisher`, `url`, `status` (unreviewed, approved), `job_id`, `approved_at` |
 | `chunks` | Searchable passages with vectors | `id`, `space_id`, `source_type` (notes, library, learned), `document_id`, `learned_material_id`, `chunk_index`, `text`, `page_start`, `page_end`, `section`, `topic_id`, `embedding`, `embedding_model`, `embedding_dimensions`, `token_count` |
-| `topics` | Topics in a Space | `id`, `space_id`, `name`, `status` (proposed, approved), `merged_into_id`. Unique on (`space_id`, lower(`name`)) |
+| `topics` | Topics in a Space | `id`, `space_id`, `name`, `status` (proposed, approved), `merged_into_id`. Unique on (`space_id`, lower(`name`)) among Topics that are not merged |
 
 **Library chunks live in the Space.** Attaching a Subject Library pack ingests its chapters as `documents` of kind `library` with that Space's `space_id`, so the one retrieval function and the isolation rule apply unchanged. The cost is storing a pack's embeddings once per Space, which is small for two or three chapters per subject. Switching the library off sets `enabled` to false on those documents and retrieval skips them. *(proposed)*
 
@@ -112,7 +112,7 @@ Every table under `spaces` cascades on delete.
 | A Study Space never reads another's data | `space_id` is `NOT NULL` on `chunks`; foreign keys carry `space_id` through; the single retrieval function is the only reader (ADR 0001) |
 | Unreviewed web material is not an assessment source | `learned_material.status` is checked when building questions; `chunks.source_type = 'learned'` is excluded from assessment queries unless the item is approved (ADR 0002) |
 | One of Notes, library or learned per chunk | The `CHECK` on `chunks` described above |
-| Topic names are unique per Space | Unique index on (`space_id`, lower(`name`)) |
+| Topic names are unique per Space | Unique index on (`space_id`, lower(`name`)) where `merged_into_id` is null, so a merged Topic keeps its row without blocking its name |
 | A Dispute decision overrides the grade | `quiz_attempts.graded_by` becomes `student` and `is_correct` follows the decision |
 | Embedding model is locked | `app_config` holds the model and dimensions; the API refuses changes once chunks exist |
 

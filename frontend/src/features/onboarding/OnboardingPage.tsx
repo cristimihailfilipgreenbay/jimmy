@@ -21,6 +21,7 @@ import {
   STEPS,
   bubbleText,
   canContinue,
+  continueBlocker,
   initialForm,
   toRequest,
   withDefaultAccents,
@@ -133,16 +134,17 @@ export function OnboardingPage() {
                     </div>
                   )}
                   <div className="mt-7 flex items-center justify-between gap-2 border-t pt-5">
-                    <Button variant="ghost" onClick={() => go(-1)} disabled={form.step === 0 || complete.isPending}>
+                    <Button variant="ghost" onClick={() => go(-1)} disabled={form.step === 0 || complete.isPending}
+                      disabledReason={complete.isPending ? 'Creating your Study Spaces…' : 'This is the first step'}>
                       <ArrowLeft /> Back
                     </Button>
                     <div className="flex items-center gap-2">
                       {skippable && (
-                        <Button variant="ghost" className="text-muted-foreground" onClick={() => (form.step === LAST_STEP ? submit() : go(1))} disabled={complete.isPending}>
+                        <Button variant="ghost" className="text-muted-foreground" onClick={() => (form.step === LAST_STEP ? submit() : go(1))} disabled={complete.isPending} disabledReason="Creating your Study Spaces…">
                           Skip
                         </Button>
                       )}
-                      <Button onClick={next} disabled={!canContinue(form) || complete.isPending} aria-busy={complete.isPending}>
+                      <Button onClick={next} disabled={!canContinue(form) || complete.isPending} disabledReason={complete.isPending ? 'Creating your Study Spaces…' : continueBlocker(form)} aria-busy={complete.isPending}>
                         {complete.isPending ? (
                           <>
                             <LoaderCircle className="animate-spin" /> Creating…

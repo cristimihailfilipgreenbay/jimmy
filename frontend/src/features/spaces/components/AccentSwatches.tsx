@@ -1,3 +1,4 @@
+import { Tip } from '@/components/Tip'
 import { Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ACCENTS, accentStyle } from '../lib/accents'
@@ -18,22 +19,22 @@ export function AccentSwatches({
       {ACCENTS.map((a) => {
         const on = a.value === value
         return (
-          <button
-            key={a.value}
-            type="button"
-            role="radio"
-            aria-checked={on}
-            aria-label={a.label}
-            title={a.label}
-            onClick={() => onChange(a.value)}
-            style={accentStyle(a.value)}
-            className={cn(
-              'grid size-7 place-items-center rounded-full bg-space text-white ring-offset-2 ring-offset-card transition duration-200 hover:scale-110',
-              on && 'ring-2 ring-space',
-            )}
-          >
-            {on && <Check className="size-3.5" />}
-          </button>
+          <Tip key={a.value} text={a.label}>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={on}
+              aria-label={a.label}
+              onClick={() => onChange(a.value)}
+              style={accentStyle(a.value)}
+              className={cn(
+                'grid size-7 place-items-center rounded-full bg-space text-white ring-offset-2 ring-offset-card transition duration-200 hover:scale-110',
+                on && 'ring-2 ring-space',
+              )}
+            >
+              {on && <Check className="size-3.5" />}
+            </button>
+          </Tip>
         )
       })}
     </div>

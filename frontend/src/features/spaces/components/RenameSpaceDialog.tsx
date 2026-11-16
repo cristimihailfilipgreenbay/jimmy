@@ -68,7 +68,7 @@ export function RenameSpaceDialog({
             <Button type="button" variant="ghost" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={update.isPending || !name.trim()}>
+            <Button type="submit" disabled={update.isPending || !name.trim()} disabledReason={update.isPending ? 'Saving…' : 'Enter a name'}>
               Save
             </Button>
           </DialogFooter>

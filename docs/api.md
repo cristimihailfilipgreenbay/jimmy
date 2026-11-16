@@ -57,7 +57,7 @@ The app is closed to a Student who has not finished onboarding: the frontend sen
 ### Study Spaces
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/spaces` | List Study Spaces with counts (documents, Topics, Weak Topics) |
+| GET | `/spaces` | List Study Spaces with counts (documents, Topics, Weak Topics), newest first |
 | POST | `/spaces` | Create (`name`, optional `course`, `accent`). `accent` is one of `leaf-green`, `ink-blue`, `copper`, `rosewood`, `plum`, `teal`, `indigo`, `ochre`, `olive`, `slate` (default `slate`). `409 space_exists` for a name the Student already uses (ignoring case) |
 | GET | `/spaces/{space_id}` | One Space |
 | PATCH | `/spaces/{space_id}` | Change a Study Space. Only the fields that are sent change: `name` (rename, `409 space_exists` if another of the Student's Spaces has it, ignoring case), `course` (`null` or blank clears it) and `accent`. The Subject Library toggle is added with that feature. Returns the Space |

@@ -23,7 +23,9 @@ def _duplicate() -> ApiError:
 @router.get("/spaces", response_model=list[SpaceOut])
 def list_spaces(session: SessionDep, student: StudentDep):
     return session.scalars(
-        select(Space).where(Space.student_id == student.id).order_by(Space.created_at)
+        select(Space)
+        .where(Space.student_id == student.id)
+        .order_by(Space.created_at.desc())
     )
 
 

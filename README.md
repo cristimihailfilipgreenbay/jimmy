@@ -1,40 +1,80 @@
 # Jimmy
 
-An AI study tutor for university students. Jimmy works inside one **Study Space** per subject (Biology, Physics, ...) and answers from the student's own notes, an optional open-textbook library, and its own subject knowledge, always showing which. It quizzes you, remembers which topics you struggle with, and when its sources fall short it looks things up on Wikipedia or the web and grows the knowledge base in the background.
+An AI study tutor for university students, built with FastAPI, LangGraph and React. This README is for developers: how to get the project running and where things live. For what Jimmy is and does, start with [docs/overview.md](docs/overview.md).
 
-> **Status:** design phase. The documentation is complete; the application is not built yet. The build is tracked in [GitHub issues](https://github.com/cristimihailfilipgreenbay/jimmy/issues), in order, starting with #1.
-
-## What makes it different from a chatbot
-
-- **Your material first.** Answers cite your notes with document, author and page.
-- **Honest about sources.** Notes, textbook, web and the tutor's own knowledge are labelled differently, so you always know how much to trust a statement.
-- **It asks when it is unsure.** If your notes disagree with the textbook, or an answer is borderline, Jimmy pauses and lets you decide.
-- **Per-subject progress.** Weak topics, flashcards and quiz history stay inside each Study Space.
-- **It is an agent, not a pipeline.** It decides when to search your notes, the library, Wikipedia or the web, and whether a web finding is worth keeping.
-
-## Features (v1)
-
-Cited Q&A · Quizzes and Tests with weak-topic tracking · Flashcards with review · Conflict and Dispute handling · Web lookup with background saving · Developer screen with model settings, tool toggles and cost display · LangSmith tracing · an evaluation report. Essay questions come last.
+> **Status:** design phase. The documentation is complete; the application is not built yet. The build is tracked in [GitHub issues](https://github.com/cristimihailfilipgreenbay/jimmy/issues), in order, starting with #1. The commands below describe the intended setup and will work once issue #1 is done.
 
 ## Stack
 
-Python, FastAPI, LangGraph, LangSmith, OpenRouter, Postgres with pgvector, React, React Router, shadcn. Runs locally with Docker Compose.
+Python, FastAPI, SQLAlchemy and Alembic, LangChain and LangGraph, LangSmith, OpenRouter, Postgres with pgvector, React, React Router, shadcn. Everything runs locally with Docker Compose.
 
-## Running it (once built)
+## Prerequisites
+
+- Docker with Docker Compose
+- An [OpenRouter](https://openrouter.ai) API key (chat and embeddings)
+- A [Tavily](https://tavily.com) API key (web search)
+- A [LangSmith](https://smith.langchain.com) API key (tracing)
+
+## Getting started
 
 ```bash
-cp .env.example .env     # add your OpenRouter, Tavily and LangSmith keys
+git clone git@github.com:cristimihailfilipgreenbay/jimmy.git
+cd jimmy
+cp .env.example .env     # then fill in the keys
 docker compose up
 ```
 
-This starts the database, the backend and the frontend. Demo data (open-licensed OpenStax chapters) is loaded with a separate seed command.
+`docker compose up` starts three services: `db` (Postgres with pgvector), `backend` (FastAPI) and `frontend` (React dev server). The backend applies database migrations when it starts.
+
+Demo data (open-licensed OpenStax chapters for Biology and Physics) is loaded separately with a seed command, so it is safe to run more than once.
+
+### Configuration
+
+All settings come from `.env`. Names are proposals until `.env.example` exists.
+
+| Variable | Purpose |
+|---|---|
+| `OPENROUTER_API_KEY` | Chat and embedding calls |
+| `TAVILY_API_KEY` | Web search tool |
+| `LANGSMITH_API_KEY`, `LANGSMITH_ENDPOINT`, `LANGSMITH_PROJECT`, `LANGSMITH_TRACING` | Tracing and feedback |
+| `TUTOR_MODEL` | Model for tutoring, grading and essays |
+| `BACKGROUND_MODEL` | Cheaper model for background work |
+| `EMBEDDING_MODEL` | Embedding model (default `openai/text-embedding-3-small`); locked once documents are indexed |
+| `DATABASE_URL` | Postgres connection (set by Compose by default) |
+
+Never commit `.env`.
+
+## Project layout (planned)
+
+```
+jimmy/
+├── backend/            FastAPI app, graphs, tools, middleware, migrations, tests
+├── frontend/           React app
+├── eval/               golden set, Ragas run, report
+├── data/seed/          demo data download target (not committed)
+├── docs/
+├── docker-compose.yml
+├── .env.example
+└── LICENSE
+```
+
+## Working on it
+
+- **Pick the next issue** from the [issue list](https://github.com/cristimihailfilipgreenbay/jimmy/issues). Each issue is a vertical slice and names the issues it needs first.
+- **Use the glossary.** Names in code, docs and the UI follow [docs/GLOSSARY.md](docs/GLOSSARY.md) (for example Study Space and Student, not "course" or "user").
+- **Respect the ADRs** in [docs/adr/](docs/adr/). In particular, all chunk queries go through the one retrieval function that requires a Study Space id.
+- **Migrations:** Alembic, reviewed by hand, never edit one that has been applied. See [docs/database.md](docs/database.md).
+- **Tests:** unit tests for critical backend logic only, with a fake model; no integration or frontend tests. See [docs/architecture.md](docs/architecture.md), section 9.
+- **Lint and format:** Ruff for Python. Frontend tooling is chosen in issue #1.
 
 ## Documentation
 
 | Document | What it covers |
 |---|---|
-| [docs/design.md](docs/design.md) | Product design: purpose, behaviour, screens, evaluation, risks |
-| [docs/architecture.md](docs/architecture.md) | How it is built: stack, agent graphs, runtime, data, test seams |
+| [docs/overview.md](docs/overview.md) | What Jimmy is, who it is for, how it works |
+| [docs/Features.md](docs/Features.md) | Feature list, mapped to issues |
+| [docs/design.md](docs/design.md) | Product design: behaviour, screens, evaluation, risks |
+| [docs/architecture.md](docs/architecture.md) | How it is built: stack, agent graphs, runtime, test seams |
 | [docs/domain.md](docs/domain.md) | Concepts, relationships, invariants, lifecycles |
 | [docs/api.md](docs/api.md) | HTTP contract: resources, streaming events, pauses and resume, errors |
 | [docs/database.md](docs/database.md) | Postgres schema, constraints, indexes, migrations |

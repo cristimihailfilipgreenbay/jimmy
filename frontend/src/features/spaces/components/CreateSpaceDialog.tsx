@@ -11,7 +11,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { errorMessage } from '@/lib/http'
 import { cn } from '@/lib/utils'
-import { spaceNameSchema, type Accent } from '../queries/spaces'
+import { spaceNameSchema, type Accent } from '../schemas/space'
 import { useCreateSpace } from '../queries/useCreateSpace'
 import { ACCENTS } from '../lib/accents'
 

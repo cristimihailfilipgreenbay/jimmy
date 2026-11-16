@@ -1,5 +1,5 @@
 import { createContext } from 'react'
-import type { Student } from '../queries/students'
+import type { Student } from '../schemas/student'
 
 export type StudentState = {
   students: Student[]

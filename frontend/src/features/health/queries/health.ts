@@ -1,7 +1,4 @@
-import { z } from 'zod'
-
-const healthSchema = z.object({ status: z.enum(['ok', 'degraded']), database: z.enum(['ok', 'down']) })
-export type Health = z.infer<typeof healthSchema>
+import { healthSchema, type Health } from '../schemas/health'
 
 export async function getHealth(): Promise<Health> {
   const res = await fetch('/api/health')

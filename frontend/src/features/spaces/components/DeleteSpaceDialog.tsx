@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { errorMessage } from '@/lib/http'
-import type { Space } from '../queries/spaces'
+import type { Space } from '../schemas/space'
 import { useDeleteSpace } from '../queries/useDeleteSpace'
 
 export function DeleteSpaceDialog({ studentId, space, onClose }: { studentId: string; space: Space | null; onClose: () => void }) {

@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { errorMessage } from '@/lib/http'
 import { useStudent } from '../hooks/useStudent'
-import { studentNameSchema } from '../queries/students'
+import { studentNameSchema } from '../schemas/student'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 

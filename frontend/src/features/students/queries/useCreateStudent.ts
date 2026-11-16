@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { rememberStudentId } from '../lib/knownStudents'
-import { createStudent, type Student } from './students'
+import type { Student } from '../schemas/student'
+import { createStudent } from './students'
 import { studentsKey } from './useStudents'
 
 export function useCreateStudent() {

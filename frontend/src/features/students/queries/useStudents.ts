@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { getStoredStudentId, storeStudentId } from '@/lib/identity'
 import { forgetStudentIds, getKnownStudentIds } from '../lib/knownStudents'
-import { listStudents, type Student } from './students'
+import type { Student } from '../schemas/student'
+import { listStudents } from './students'
 
 export const studentsKey = ['students'] as const
 

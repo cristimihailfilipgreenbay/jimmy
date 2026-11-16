@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { createSpace, type Accent } from './spaces'
+import type { Accent } from '../schemas/space'
+import { createSpace } from './spaces'
 import { spacesKey } from './spacesKey'
 
 export function useCreateSpace(studentId: string) {

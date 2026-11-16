@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { getStoredStudentId } from '@/lib/identity'
+import { apiErrorSchema } from '@/lib/schemas/apiError'
 
 export class ApiError extends Error {
   status: number
@@ -14,9 +15,6 @@ export class ApiError extends Error {
 
 export const errorMessage = (err: unknown, fallback: string) => (err instanceof ApiError ? err.message : fallback)
 
-// The error shape from docs/api.md.
-const errorBodySchema = z.object({ error: z.object({ code: z.string(), message: z.string() }) })
-
 async function send(path: string, init: RequestInit): Promise<Response> {
   const headers = new Headers(init.headers)
   const studentId = getStoredStudentId()
@@ -24,7 +22,7 @@ async function send(path: string, init: RequestInit): Promise<Response> {
   if (init.body) headers.set('Content-Type', 'application/json')
   const res = await fetch(`/api${path}`, { ...init, headers })
   if (!res.ok) {
-    const body = errorBodySchema.safeParse(await res.json().catch(() => null))
+    const body = apiErrorSchema.safeParse(await res.json().catch(() => null))
     throw new ApiError(
       res.status,
       body.success ? body.data.error.code : 'unknown',

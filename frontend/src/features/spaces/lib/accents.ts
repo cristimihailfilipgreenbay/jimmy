@@ -1,4 +1,4 @@
-import type { Accent } from '../queries/spaces'
+import type { Accent } from '../schemas/space'
 
 // Ten colours a Student can pick for a Study Space. The name is what is stored;
 // class names are written out in full so Tailwind can see them.

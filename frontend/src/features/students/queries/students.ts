@@ -1,11 +1,6 @@
 import { z } from 'zod'
 import { request } from '@/lib/http'
-
-export const studentSchema = z.object({ id: z.uuid(), display_name: z.string() })
-export type Student = z.infer<typeof studentSchema>
-
-// Mirrors the backend's StudentIn.
-export const studentNameSchema = z.string().trim().min(1, 'Enter a name.').max(80, 'Use 80 characters or fewer.')
+import { studentSchema, type Student } from '../schemas/student'
 
 export async function listStudents(ids: string[]): Promise<Student[]> {
   if (ids.length === 0) return []

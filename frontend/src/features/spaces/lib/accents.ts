@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import type { Accent } from '../schemas/space'
 
 type AccentInfo = {
@@ -29,3 +30,15 @@ export const ACCENTS: AccentInfo[] = [
 export const DEFAULT_ACCENT: Accent = 'rosewood'
 
 export const accentInfo = (accent: Accent): AccentInfo => ACCENTS.find((a) => a.value === accent) ?? ACCENTS[ACCENTS.length - 1]
+
+/**
+ * CSS variables that tint everything inside an element with this colour, so
+ * `bg-space`, `bg-space-soft` and `text-space-ink` pick it up (as the design's
+ * `data-space` does).
+ */
+export const accentStyle = (accent: Accent): CSSProperties =>
+  ({
+    '--space': accentInfo(accent).color,
+    '--space-soft': accentInfo(accent).soft,
+    '--space-ink': accentInfo(accent).ink,
+  }) as CSSProperties

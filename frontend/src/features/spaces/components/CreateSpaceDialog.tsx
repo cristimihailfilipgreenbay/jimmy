@@ -1,18 +1,10 @@
 import { useState, type FormEvent } from 'react'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogFooter, DialogHead } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { errorMessage } from '@/lib/http'
-import { ACCENTS, DEFAULT_ACCENT } from '../lib/accents'
+import { ACCENTS, DEFAULT_ACCENT, accentStyle } from '../lib/accents'
 import { useCreateSpace } from '../queries/useCreateSpace'
 import { spaceCourseSchema, spaceNameSchema, type Accent } from '../schemas/space'
 
@@ -58,13 +50,12 @@ export function CreateSpaceDialog({ studentId, open, onClose }: { studentId: str
   return (
     <Dialog open={open} onOpenChange={(o) => !o && close()}>
       <DialogContent>
-        <form onSubmit={submit} noValidate className="flex flex-col gap-4">
-          <DialogHeader>
-            <DialogTitle>New Study Space</DialogTitle>
-            <DialogDescription>One Space per subject. You can add notes right after.</DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="space-name">Subject name</Label>
+        <DialogHead icon={<Plus className="size-4" />} title="New Study Space" description="One Space per subject. You can add notes right after." />
+        <form onSubmit={submit} noValidate className="space-y-4 p-5">
+          <div>
+            <label className="mb-1.5 block text-sm font-medium" htmlFor="space-name">
+              Subject name
+            </label>
             <Input
               id="space-name"
               autoFocus
@@ -76,15 +67,15 @@ export function CreateSpaceDialog({ studentId, open, onClose }: { studentId: str
               aria-describedby={invalid.name ? 'space-name-error' : undefined}
             />
             {invalid.name && (
-              <p id="space-name-error" className="text-sm text-destructive">
+              <p id="space-name-error" className="mt-1.5 text-sm text-destructive">
                 {invalid.name}
               </p>
             )}
           </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="space-course">
+          <div>
+            <label className="mb-1.5 block text-sm font-medium" htmlFor="space-course">
               Course <span className="font-normal text-muted-foreground">(optional)</span>
-            </Label>
+            </label>
             <Input
               id="space-course"
               placeholder="e.g. BIO 202 · Prof. Weber"
@@ -93,7 +84,7 @@ export function CreateSpaceDialog({ studentId, open, onClose }: { studentId: str
               onChange={(e) => setCourse(e.target.value)}
               aria-invalid={invalid.course ? true : undefined}
             />
-            {invalid.course && <p className="text-sm text-destructive">{invalid.course}</p>}
+            {invalid.course && <p className="mt-1.5 text-sm text-destructive">{invalid.course}</p>}
           </div>
           <fieldset>
             <legend className="mb-2 text-sm font-medium">Accent colour</legend>
@@ -101,17 +92,18 @@ export function CreateSpaceDialog({ studentId, open, onClose }: { studentId: str
               {ACCENTS.map((a) => (
                 <label
                   key={a.value}
-                  className="flex cursor-pointer items-center gap-2 rounded-md border p-2 text-sm has-[:checked]:border-foreground has-[:checked]:bg-muted has-[:checked]:font-medium has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring"
+                  style={accentStyle(a.value)}
+                  className="flex cursor-pointer items-center gap-2 rounded-md border p-2 text-sm transition-colors has-[:checked]:border-space has-[:checked]:bg-space-soft has-[:checked]:font-medium"
                 >
                   <input
                     type="radio"
                     name="accent"
                     value={a.value}
-                    className="sr-only"
+                    className="accent-space"
                     checked={accent === a.value}
                     onChange={() => setAccent(a.value)}
                   />
-                  <span className="size-4 flex-none rounded" style={{ backgroundColor: a.color }} aria-hidden />
+                  <span className="size-4 rounded bg-space" aria-hidden />
                   {a.label}
                 </label>
               ))}
@@ -122,12 +114,12 @@ export function CreateSpaceDialog({ studentId, open, onClose }: { studentId: str
               {serverError}
             </p>
           )}
-          <DialogFooter>
+          <DialogFooter className="pt-2">
             <Button type="button" variant="ghost" onClick={close}>
               Cancel
             </Button>
             <Button type="submit" disabled={create.isPending || !name.trim()}>
-              <Plus /> Create Space
+              Create Space
             </Button>
           </DialogFooter>
         </form>

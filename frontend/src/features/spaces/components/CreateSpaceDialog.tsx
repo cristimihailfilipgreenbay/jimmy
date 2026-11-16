@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -9,39 +10,45 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { errorMessage } from '@/lib/http'
-import { cn } from '@/lib/utils'
-import { spaceNameSchema, type Accent } from '../schemas/space'
+import { ACCENTS, DEFAULT_ACCENT } from '../lib/accents'
 import { useCreateSpace } from '../queries/useCreateSpace'
-import { ACCENTS } from '../lib/accents'
+import { spaceCourseSchema, spaceNameSchema, type Accent } from '../schemas/space'
 
 export function CreateSpaceDialog({ studentId, open, onClose }: { studentId: string; open: boolean; onClose: () => void }) {
   const [name, setName] = useState('')
-  const [accent, setAccent] = useState<Accent>('slate')
+  const [course, setCourse] = useState('')
+  const [accent, setAccent] = useState<Accent>(DEFAULT_ACCENT)
+  const [invalid, setInvalid] = useState<{ name?: string; course?: string }>({})
   const create = useCreateSpace(studentId)
-  const [invalid, setInvalid] = useState<string | null>(null)
-  const error = invalid ?? (create.error ? errorMessage(create.error, 'Could not create the Study Space.') : null)
+  const serverError = create.error ? errorMessage(create.error, 'Could not create the Study Space.') : null
 
   function close() {
-    setInvalid(null)
+    setInvalid({})
     create.reset()
     onClose()
   }
 
   function submit(e: FormEvent) {
     e.preventDefault()
-    const parsed = spaceNameSchema.safeParse(name)
-    if (!parsed.success) {
-      setInvalid(parsed.error.issues[0].message)
+    const parsedName = spaceNameSchema.safeParse(name)
+    const parsedCourse = spaceCourseSchema.safeParse(course)
+    if (!parsedName.success || !parsedCourse.success) {
+      setInvalid({
+        name: parsedName.success ? undefined : parsedName.error.issues[0].message,
+        course: parsedCourse.success ? undefined : parsedCourse.error.issues[0].message,
+      })
       return
     }
-    setInvalid(null)
+    setInvalid({})
     create.mutate(
-      { name: parsed.data, accent },
+      { name: parsedName.data, course: parsedCourse.data, accent },
       {
         onSuccess: () => {
           setName('')
-          setAccent('slate')
+          setCourse('')
+          setAccent(DEFAULT_ACCENT)
           close()
         },
       },
@@ -51,48 +58,76 @@ export function CreateSpaceDialog({ studentId, open, onClose }: { studentId: str
   return (
     <Dialog open={open} onOpenChange={(o) => !o && close()}>
       <DialogContent>
-        <form onSubmit={submit} className="flex flex-col gap-4">
+        <form onSubmit={submit} noValidate className="flex flex-col gap-4">
           <DialogHeader>
             <DialogTitle>New Study Space</DialogTitle>
-            <DialogDescription>One Study Space per subject keeps your Notes and answers separate.</DialogDescription>
+            <DialogDescription>One Space per subject. You can add notes right after.</DialogDescription>
           </DialogHeader>
-          <Input
-            autoFocus
-            aria-label="Study Space name"
-            placeholder="e.g. Biology"
-            maxLength={80}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-          <fieldset className="flex flex-wrap gap-2">
-            <legend className="mb-2 text-sm text-muted-foreground">Accent colour</legend>
-            {ACCENTS.map((a) => (
-              <label
-                key={a.value}
-                className={cn(
-                  'flex cursor-pointer items-center gap-2 rounded-lg border px-2 py-1 text-sm',
-                  accent === a.value && 'border-foreground font-medium',
-                )}
-              >
-                <input
-                  type="radio"
-                  name="accent"
-                  className="sr-only"
-                  checked={accent === a.value}
-                  onChange={() => setAccent(a.value)}
-                />
-                <span className={cn('size-3 rounded-full', a.swatch)} aria-hidden />
-                {a.label}
-              </label>
-            ))}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="space-name">Subject name</Label>
+            <Input
+              id="space-name"
+              autoFocus
+              placeholder="e.g. Genetics"
+              maxLength={80}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              aria-invalid={invalid.name ? true : undefined}
+              aria-describedby={invalid.name ? 'space-name-error' : undefined}
+            />
+            {invalid.name && (
+              <p id="space-name-error" className="text-sm text-destructive">
+                {invalid.name}
+              </p>
+            )}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="space-course">
+              Course <span className="font-normal text-muted-foreground">(optional)</span>
+            </Label>
+            <Input
+              id="space-course"
+              placeholder="e.g. BIO 202 · Prof. Weber"
+              maxLength={120}
+              value={course}
+              onChange={(e) => setCourse(e.target.value)}
+              aria-invalid={invalid.course ? true : undefined}
+            />
+            {invalid.course && <p className="text-sm text-destructive">{invalid.course}</p>}
+          </div>
+          <fieldset>
+            <legend className="mb-2 text-sm font-medium">Accent colour</legend>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {ACCENTS.map((a) => (
+                <label
+                  key={a.value}
+                  className="flex cursor-pointer items-center gap-2 rounded-md border p-2 text-sm has-[:checked]:border-foreground has-[:checked]:bg-muted has-[:checked]:font-medium has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring"
+                >
+                  <input
+                    type="radio"
+                    name="accent"
+                    value={a.value}
+                    className="sr-only"
+                    checked={accent === a.value}
+                    onChange={() => setAccent(a.value)}
+                  />
+                  <span className="size-4 flex-none rounded" style={{ backgroundColor: a.color }} aria-hidden />
+                  {a.label}
+                </label>
+              ))}
+            </div>
           </fieldset>
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {serverError && (
+            <p role="alert" className="text-sm text-destructive">
+              {serverError}
+            </p>
+          )}
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={close}>
               Cancel
             </Button>
             <Button type="submit" disabled={create.isPending || !name.trim()}>
-              Create
+              <Plus /> Create Space
             </Button>
           </DialogFooter>
         </form>

@@ -18,8 +18,10 @@ def test_refuses_to_run_without_space_id():
 def test_query_is_always_filtered_by_space_id():
     space_id = uuid.uuid4()
     compiled = build_query(space_id, VECTOR).compile(dialect=postgresql.dialect())
-    assert "chunks.space_id = %(space_id_1)s" in str(compiled)
-    assert compiled.params["space_id_1"] == space_id
+    sql = str(compiled)
+    assert "chunks.space_id = " in sql
+    assert sql.count("space_id = ") >= 3  # chunks, documents and learned_material
+    assert space_id in compiled.params.values()
 
 
 def test_query_only_reads_ready_enabled_documents_of_the_space():
@@ -27,3 +29,16 @@ def test_query_only_reads_ready_enabled_documents_of_the_space():
     assert "documents.space_id = " in sql
     assert "documents.enabled IS true" in sql
     assert "documents.status = " in sql
+
+
+def test_learned_material_is_joined_inside_the_space_and_filtered_by_status():
+    sql = str(
+        build_query(
+            uuid.uuid4(),
+            VECTOR,
+            source_types=("learned",),
+            learned_status=("approved",),
+        ).compile(dialect=postgresql.dialect())
+    )
+    assert "learned_material.space_id = " in sql
+    assert "learned_material.status IN " in sql

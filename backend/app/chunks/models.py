@@ -16,7 +16,17 @@ class Chunk(Base):
 
     __tablename__ = "chunks"
     __table_args__ = (
-        CheckConstraint("source_type IN ('notes', 'library')", name="source_type"),
+        CheckConstraint(
+            "source_type IN ('notes', 'library', 'learned')", name="source_type"
+        ),
+        # Notes and library chunks belong to a document, learned chunks to a Finding.
+        CheckConstraint(
+            "(source_type = 'learned' AND learned_material_id IS NOT NULL "
+            "AND document_id IS NULL) OR "
+            "(source_type <> 'learned' AND document_id IS NOT NULL "
+            "AND learned_material_id IS NULL)",
+            name="owner",
+        ),
         Index("ix_chunks_space_id_source_type", "space_id", "source_type"),
         Index(
             "ix_chunks_embedding",
@@ -33,8 +43,11 @@ class Chunk(Base):
         ForeignKey("spaces.id", ondelete="CASCADE")
     )
     source_type: Mapped[str] = mapped_column(String(10))
-    document_id: Mapped[uuid.UUID] = mapped_column(
+    document_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("documents.id", ondelete="CASCADE"), index=True
+    )
+    learned_material_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("learned_material.id", ondelete="CASCADE"), index=True
     )
     chunk_index: Mapped[int] = mapped_column(Integer)
     text: Mapped[str] = mapped_column(Text)

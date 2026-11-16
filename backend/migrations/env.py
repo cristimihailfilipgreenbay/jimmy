@@ -5,6 +5,8 @@ from app.chat import models as _chat_models  # noqa: F401
 from app.chunks import models as _chunks_models  # noqa: F401
 from app.db import Base, make_engine
 from app.documents import models as _documents_models  # noqa: F401
+from app.jobs import models as _jobs_models  # noqa: F401
+from app.learned import models as _learned_models  # noqa: F401
 from app.library import models as _library_models  # noqa: F401
 from app.spaces import models as _spaces_models  # noqa: F401
 from app.students import models as _students_models  # noqa: F401

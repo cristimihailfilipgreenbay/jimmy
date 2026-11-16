@@ -21,6 +21,11 @@ _WEB = """If Wikipedia does not answer it either, call `search_web`. Results fro
 Wikipedia and the web are Findings from outside the Study Space: say in the answer that \
 the point comes from the web."""
 
+_COMPARE = """If a Notes passage and a Subject Library or Learned Material passage seem to \
+say different things about the same point, call `compare_sources` with the Topic and the \
+two passage numbers before you answer. Never decide a disagreement yourself: if they \
+contradict, the Student is asked and you are told what they chose. Follow that choice."""
+
 _RULES = """{n}. Write the answer in short paragraphs. Every paragraph must be attributed, in \
 one of two ways:
    - From a search: end the paragraph with the numbers of the passages it relies on, like \
@@ -49,6 +54,7 @@ def build_prompt(
     wikipedia: bool = False,
     web: bool = False,
     learned: bool = False,
+    compare: bool = False,
 ) -> str:
     steps = [_NOTES]
     tools = ["`search_notes`"]
@@ -69,6 +75,8 @@ def build_prompt(
         steps.append(_WEB)
         tools.append("`search_web`")
         sources.append("web")
+    if compare:
+        steps.append(_COMPARE)
     numbered = "\n".join(f"{i}. {s}" for i, s in enumerate(steps, start=1))
     n = len(steps) + 1
     rules = _RULES.format(

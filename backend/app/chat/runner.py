@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 
 from langchain.agents.middleware.model_call_limit import ModelCallLimitExceededError
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
+from langgraph.types import Command
 from sqlalchemy.orm import Session
 
 from app.chat.agent import ModelNotConfigured, build_agent
@@ -26,6 +27,7 @@ TOOL_LABELS = {
     "search_learned_material": "Searching Learned Material…",
     "search_wikipedia": "Searching Wikipedia…",
     "search_web": "Searching the web…",
+    "compare_sources": "Comparing sources…",
 }
 
 
@@ -64,6 +66,28 @@ def redirect_turn(*, thread_id: uuid.UUID, reply: str) -> Iterator[Event]:
     )
 
 
+def config_for(thread_id, turn_id, space_id) -> dict:
+    # Each turn is its own LangGraph thread: the history is passed in, and a paused turn
+    # waits in the checkpointer under this id until the Student answers.
+    return {
+        "configurable": {"thread_id": f"{thread_id}:{turn_id}"},
+        "run_name": "tutor-chat",
+        "metadata": {"thread_id": str(thread_id), "space_id": str(space_id)},
+    }
+
+
+def pending_interrupt(agent, config) -> tuple[str, dict] | None:
+    """The pause this turn is waiting on: its id and what it shows the Student."""
+    try:
+        state = agent.get_state(config)
+    except ValueError:  # the agent has no checkpointer
+        return None
+    for task in state.tasks:
+        for found in task.interrupts:
+            return found.id, found.value
+    return None
+
+
 def run_turn(
     *,
     thread_id: uuid.UUID,
@@ -75,35 +99,122 @@ def run_turn(
     web: bool = False,
     space_name: str = "",
     learned: bool = False,
+    checkpointer=None,
+    turn_id: uuid.UUID | None = None,
+    compare_model=None,
 ) -> Iterator[Event]:
     """Stream the answer, then store it. Never raises: failures become `error` events."""
     sources = RunSources()
     try:
-        agent = build_agent(space_id, sources, model, library, web, learned)
+        agent = build_agent(
+            space_id, sources, model, library, web, learned, checkpointer, compare_model
+        )
     except ModelNotConfigured as exc:
         yield Event("error", {"code": "upstream_unavailable", "message": str(exc)})
         return
+    yield from _drive(
+        agent,
+        sources,
+        {"messages": [*history, HumanMessage(question)]},
+        config_for(thread_id, turn_id or uuid.uuid4(), space_id),
+        thread_id=thread_id,
+        space_id=space_id,
+        space_name=space_name,
+        checkpointer=checkpointer,
+    )
 
+
+def resume_turn(
+    *,
+    thread_id: uuid.UUID,
+    turn_id: uuid.UUID,
+    space_id: uuid.UUID,
+    decision: str,
+    model=None,
+    library: bool = False,
+    web: bool = False,
+    space_name: str = "",
+    learned: bool = False,
+    checkpointer=None,
+    compare_model=None,
+) -> Iterator[Event]:
+    """Continue a paused turn with the Student's decision."""
+    sources = RunSources()
+    try:
+        agent = build_agent(
+            space_id, sources, model, library, web, learned, checkpointer, compare_model
+        )
+    except ModelNotConfigured as exc:
+        yield Event("error", {"code": "upstream_unavailable", "message": str(exc)})
+        return
+    config = config_for(thread_id, turn_id, space_id)
+    # The Citations found before the pause travel with the paused turn.
+    for message in agent.get_state(config).values.get("messages", []):
+        if isinstance(message, ToolMessage) and isinstance(message.artifact, list):
+            sources.restore(message.artifact)
+    yield from _drive(
+        agent,
+        sources,
+        Command(resume=decision),
+        config,
+        thread_id=thread_id,
+        space_id=space_id,
+        space_name=space_name,
+        checkpointer=checkpointer,
+    )
+
+
+def _drive(
+    agent,
+    sources: RunSources,
+    agent_input,
+    config: dict,
+    *,
+    thread_id: uuid.UUID,
+    space_id: uuid.UUID,
+    space_name: str,
+    checkpointer,
+) -> Iterator[Event]:
+    paused = False
+    try:
+        for event in _stream(
+            agent, sources, agent_input, config, thread_id, space_id, space_name
+        ):
+            paused = paused or event.type == "interrupt"
+            yield event
+    finally:
+        # A finished turn leaves nothing to resume.
+        if checkpointer is not None and not paused:
+            try:
+                checkpointer.delete_thread(config["configurable"]["thread_id"])
+            except Exception:
+                log.warning(
+                    "Could not clear a finished turn's checkpoints", exc_info=True
+                )
+
+
+def _stream(
+    agent,
+    sources: RunSources,
+    agent_input,
+    config: dict,
+    thread_id: uuid.UUID,
+    space_id: uuid.UUID,
+    space_name: str,
+) -> Iterator[Event]:
     text, has_tools, current_id = "", False, None
     tokens_in = tokens_out = 0
     try:
-        stream = agent.stream(
-            {"messages": [*history, HumanMessage(question)]},
-            config={
-                "run_name": "tutor-chat",
-                "metadata": {"thread_id": str(thread_id), "space_id": str(space_id)},
-            },
-            stream_mode="messages",
-        )
+        stream = agent.stream(agent_input, config=config, stream_mode="messages")
         for chunk, _meta in stream:
             if isinstance(chunk, ToolMessage):
                 found = len(
                     re.findall(r"^\[\d+\] \(", str(chunk.content), re.MULTILINE)
                 )
-                yield Event(
-                    "tool_call",
-                    {"tool": chunk.name, "status": "finished", "found": found},
-                )
+                done = {"tool": chunk.name, "status": "finished"}
+                if chunk.name != "compare_sources":
+                    done["found"] = found
+                yield Event("tool_call", done)
                 continue
             if not isinstance(chunk, AIMessage):
                 continue
@@ -146,6 +257,19 @@ def run_turn(
             {
                 "code": "upstream_unavailable",
                 "message": "Jimmy could not reach the model. Try again in a moment.",
+            },
+        )
+        return
+
+    paused = pending_interrupt(agent, config)
+    if paused:
+        interrupt_id, value = paused
+        yield Event(
+            "interrupt",
+            {
+                "interrupt_id": interrupt_id,
+                "kind": value["kind"],
+                "payload": {k: v for k, v in value.items() if k != "kind"},
             },
         )
         return

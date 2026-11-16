@@ -30,7 +30,7 @@ def test_book_pages_use_the_books_own_numbers():
 
 def test_library_tool_is_offered_only_when_the_space_switch_is_on():
     assert _tool_names(False) == {"search_notes"}
-    assert _tool_names(True) == {"search_notes", "search_library"}
+    assert _tool_names(True) == {"search_notes", "search_library", "compare_sources"}
 
 
 def test_prompt_mentions_the_library_only_when_it_is_on():

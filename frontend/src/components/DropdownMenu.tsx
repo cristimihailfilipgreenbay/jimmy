@@ -8,13 +8,24 @@ export function DropdownMenu({
   children,
   align = 'left',
   className,
+  open: controlledOpen,
+  onOpenChange,
 }: {
   trigger: (menu: { open: boolean; toggle: () => void }) => ReactNode
   children: ReactNode
   align?: 'left' | 'right'
   className?: string
+  /** Pass both to control the menu from outside (for example, to open it on right-click). */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }) {
-  const [open, setOpen] = useState(false)
+  const [ownOpen, setOwnOpen] = useState(false)
+  const open = controlledOpen ?? ownOpen
+  const setOpen = (value: boolean | ((current: boolean) => boolean)) => {
+    const next = typeof value === 'function' ? value(open) : value
+    setOwnOpen(next)
+    onOpenChange?.(next)
+  }
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -29,6 +40,7 @@ export function DropdownMenu({
       document.removeEventListener('mousedown', onPointer)
       document.removeEventListener('keydown', onKey)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
   return (

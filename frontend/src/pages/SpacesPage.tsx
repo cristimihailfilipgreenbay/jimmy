@@ -94,7 +94,7 @@ function CreateDialog({
   onCreated: (space: Space) => void
 }) {
   const [name, setName] = useState('')
-  const [accent, setAccent] = useState<Accent>('default')
+  const [accent, setAccent] = useState<Accent>('slate')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -105,7 +105,7 @@ function CreateDialog({
     try {
       onCreated(await createSpace(name, accent))
       setName('')
-      setAccent('default')
+      setAccent('slate')
       onClose()
     } catch (err) {
       setError(message(err, 'Could not create the Study Space.'))

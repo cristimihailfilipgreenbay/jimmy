@@ -1,6 +1,16 @@
 export type Health = { status: 'ok' | 'degraded'; database: 'ok' | 'down' }
 export type Student = { id: string; display_name: string }
-export type Accent = 'default' | 'biology' | 'physics' | 'chemistry' | 'history' | 'math'
+export type Accent =
+  | 'slate'
+  | 'red'
+  | 'orange'
+  | 'amber'
+  | 'green'
+  | 'teal'
+  | 'blue'
+  | 'indigo'
+  | 'purple'
+  | 'pink'
 export type Space = { id: string; name: string; accent: Accent; library_enabled: boolean; created_at: string }
 
 const STUDENT_KEY = 'jimmy.studentId'

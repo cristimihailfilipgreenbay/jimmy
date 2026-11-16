@@ -2,28 +2,15 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Query
-from pydantic import BaseModel, StringConstraints
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
-from app.deps import SessionDep
+from app.db import SessionDep
 from app.errors import ApiError
-from app.models import Student
+from app.students.models import Student
+from app.students.schemas import StudentIn, StudentOut
 
 router = APIRouter(tags=["students"])
-
-
-class StudentOut(BaseModel):
-    id: uuid.UUID
-    display_name: str
-
-    model_config = {"from_attributes": True}
-
-
-class StudentIn(BaseModel):
-    display_name: Annotated[
-        str, StringConstraints(strip_whitespace=True, min_length=1, max_length=80)
-    ]
 
 
 @router.get("/students", response_model=list[StudentOut])

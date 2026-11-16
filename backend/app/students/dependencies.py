@@ -2,13 +2,10 @@ import uuid
 from typing import Annotated
 
 from fastapi import Depends, Header
-from sqlalchemy.orm import Session
 
-from app.db import get_session
+from app.db import SessionDep
 from app.errors import ApiError
-from app.models import Student
-
-SessionDep = Annotated[Session, Depends(get_session)]
+from app.students.models import Student
 
 
 def current_student(

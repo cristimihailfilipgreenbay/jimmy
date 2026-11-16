@@ -9,7 +9,8 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.db import engine
 from app.errors import install_error_handlers
-from app.routers import spaces, students
+from app.spaces.router import router as spaces_router
+from app.students.router import router as students_router
 from app.tracing import run_trace_check
 
 logging.basicConfig(level=logging.INFO)
@@ -25,8 +26,8 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title="Jimmy", lifespan=lifespan)
 install_error_handlers(app)
-app.include_router(students.router)
-app.include_router(spaces.router)
+app.include_router(students_router)
+app.include_router(spaces_router)
 
 
 @app.get("/health")

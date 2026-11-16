@@ -1,48 +1,16 @@
 import uuid
-from datetime import datetime
-from typing import Annotated, Literal
 
 from fastapi import APIRouter, Response
-from pydantic import BaseModel, StringConstraints
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
-from app.deps import SessionDep, StudentDep
+from app.db import SessionDep
 from app.errors import ApiError
-from app.models import Space
+from app.spaces.models import Space
+from app.spaces.schemas import SpaceIn, SpaceOut
+from app.students.dependencies import StudentDep
 
 router = APIRouter(tags=["spaces"])
-
-# The accent is only a colour the Student picked; it says nothing about the subject.
-Accent = Literal[
-    "slate",
-    "red",
-    "orange",
-    "amber",
-    "green",
-    "teal",
-    "blue",
-    "indigo",
-    "purple",
-    "pink",
-]
-
-
-class SpaceOut(BaseModel):
-    id: uuid.UUID
-    name: str
-    accent: str
-    library_enabled: bool
-    created_at: datetime
-
-    model_config = {"from_attributes": True}
-
-
-class SpaceIn(BaseModel):
-    name: Annotated[
-        str, StringConstraints(strip_whitespace=True, min_length=1, max_length=80)
-    ]
-    accent: Accent = "slate"
 
 
 def _duplicate() -> ApiError:

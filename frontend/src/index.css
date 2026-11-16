@@ -128,3 +128,22 @@
     @apply font-sans;
     }
 }
+/* Sign-in "peek" layout: Jimmy rises over the card edge, then says hello.
+   Uses the individual `translate` and `scale` properties so it composes with
+   Tailwind's own translate utilities. */
+.peek-jimmy svg {
+  animation: peek-up 0.6s 0.15s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.peek-bubble {
+  animation: bubble-in 0.35s 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  transform-origin: bottom left;
+}
+@keyframes peek-up {
+  from { translate: 0 40%; }
+}
+@keyframes bubble-in {
+  from { opacity: 0; scale: 0.85; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .peek-jimmy svg, .peek-bubble { animation: none; }
+}

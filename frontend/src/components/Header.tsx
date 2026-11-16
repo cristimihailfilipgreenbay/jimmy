@@ -50,7 +50,7 @@ function SpaceMenu({ spaces, space }: { spaces: Space[]; space: Space }) {
     <DropdownMenu
       className="w-60"
       trigger={({ open, toggle }) => (
-        <Button variant="ghost" size="sm" className="-ml-1 font-medium" onClick={toggle} aria-haspopup="menu" aria-expanded={open}>
+        <Button variant="ghost" size="sm" className="-ml-1 font-semibold" onClick={toggle} aria-haspopup="menu" aria-expanded={open}>
           <span className="size-2.5 rounded-sm bg-space" aria-hidden />
           {space.name}
           <ChevronDown className="size-3.5 opacity-60" aria-hidden />

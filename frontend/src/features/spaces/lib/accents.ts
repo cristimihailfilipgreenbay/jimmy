@@ -1,18 +1,31 @@
 import type { Accent } from '../schemas/space'
 
-// Ten colours a Student can pick for a Study Space. The name is what is stored;
-// class names are written out in full so Tailwind can see them.
-export const ACCENTS: { value: Accent; label: string; swatch: string }[] = [
-  { value: 'slate', label: 'Slate', swatch: 'bg-slate-700' },
-  { value: 'red', label: 'Red', swatch: 'bg-red-700' },
-  { value: 'orange', label: 'Orange', swatch: 'bg-orange-700' },
-  { value: 'amber', label: 'Amber', swatch: 'bg-amber-600' },
-  { value: 'green', label: 'Green', swatch: 'bg-green-700' },
-  { value: 'teal', label: 'Teal', swatch: 'bg-teal-700' },
-  { value: 'blue', label: 'Blue', swatch: 'bg-blue-700' },
-  { value: 'indigo', label: 'Indigo', swatch: 'bg-indigo-700' },
-  { value: 'purple', label: 'Purple', swatch: 'bg-purple-700' },
-  { value: 'pink', label: 'Pink', swatch: 'bg-pink-700' },
+type AccentInfo = {
+  value: Accent
+  label: string
+  /** Solid colour: card bar, swatches. */
+  color: string
+  /** Pale tint for icon tiles. */
+  soft: string
+  /** Dark shade for text on the tint. */
+  ink: string
+}
+
+// The design's ten colours with its exact values. The name is what is stored.
+export const ACCENTS: AccentInfo[] = [
+  { value: 'leaf-green', label: 'Leaf green', color: 'hsl(152 56% 28%)', soft: 'hsl(146 42% 94%)', ink: 'hsl(152 60% 22%)' },
+  { value: 'ink-blue', label: 'Ink blue', color: 'hsl(214 72% 40%)', soft: 'hsl(214 80% 95.5%)', ink: 'hsl(214 75% 32%)' },
+  { value: 'copper', label: 'Copper', color: 'hsl(22 82% 36%)', soft: 'hsl(30 85% 94%)', ink: 'hsl(22 85% 28%)' },
+  { value: 'rosewood', label: 'Rosewood', color: 'hsl(344 58% 40%)', soft: 'hsl(344 60% 96%)', ink: 'hsl(344 62% 32%)' },
+  { value: 'plum', label: 'Plum', color: 'hsl(268 45% 45%)', soft: 'hsl(268 50% 96%)', ink: 'hsl(268 50% 35%)' },
+  { value: 'teal', label: 'Teal', color: 'hsl(184 70% 26%)', soft: 'hsl(182 45% 94%)', ink: 'hsl(186 75% 20%)' },
+  { value: 'indigo', label: 'Indigo', color: 'hsl(236 48% 46%)', soft: 'hsl(236 60% 96%)', ink: 'hsl(238 50% 36%)' },
+  { value: 'ochre', label: 'Ochre', color: 'hsl(38 85% 30%)', soft: 'hsl(42 80% 93%)', ink: 'hsl(34 85% 24%)' },
+  { value: 'olive', label: 'Olive', color: 'hsl(78 45% 27%)', soft: 'hsl(75 35% 93%)', ink: 'hsl(80 50% 20%)' },
+  { value: 'slate', label: 'Slate', color: 'hsl(215 22% 34%)', soft: 'hsl(215 20% 94%)', ink: 'hsl(215 28% 25%)' },
 ]
 
-export const swatchFor = (accent: Accent) => ACCENTS.find((a) => a.value === accent)?.swatch ?? 'bg-slate-700'
+// The design pre-selects Rosewood in the new Study Space dialog.
+export const DEFAULT_ACCENT: Accent = 'rosewood'
+
+export const accentInfo = (accent: Accent): AccentInfo => ACCENTS.find((a) => a.value === accent) ?? ACCENTS[ACCENTS.length - 1]

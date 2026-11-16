@@ -56,7 +56,6 @@ The empty Chat (`features/chat/components/ChatEmpty.tsx`) follows the prototype 
 
 | Element | Prototype behaviour | Built in |
 | --- | --- | --- |
-| Weak topic starter tile | "Explain *weak topic* step by step", first of four starters, and the weak-topic count in the stats line. Without it the Space with Notes shows three starters. | [#11](https://github.com/cristimihailfilipgreenbay/jimmy/issues/11) |
 | New chat | "New chat" button in the conversation header, and "Back to your previous conversation" under the empty card. The app keeps one conversation per Study Space today. | Not assigned yet |
 
 ## 6. Feedback and personalisation

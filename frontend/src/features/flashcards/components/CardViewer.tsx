@@ -13,7 +13,8 @@ const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matche
 const GAP = 20
 const place = (offset: number) => ({
   transform: `translateX(calc(${offset * 100}% + ${offset * GAP}px)) scale(${offset === 0 ? 1 : 0.86})`,
-  opacity: offset === 0 ? 1 : Math.abs(offset) === 1 ? 0.45 : 0,
+  opacity: offset === 0 ? 1 : Math.abs(offset) === 1 ? 0.25 : 0,
+  filter: offset === 0 ? 'none' : 'blur(3px)',
   zIndex: 10 - Math.abs(offset),
 })
 
@@ -82,7 +83,7 @@ export function CardViewer({ cards, start, onClose }: { cards: Card[]; start: nu
     return () => document.removeEventListener('keydown', onKey)
   }, [])
 
-  const ease = reduceMotion() ? undefined : 'transform .5s cubic-bezier(.22,.8,.24,1), opacity .4s ease'
+  const ease = reduceMotion() ? undefined : 'transform .5s cubic-bezier(.22,.8,.24,1), opacity .4s ease, filter .4s ease'
 
   return (
     <main id="main" className="overflow-x-clip py-6 pb-28">
@@ -146,7 +147,7 @@ export function CardViewer({ cards, start, onClose }: { cards: Card[]; start: nu
                 </div>
                 {/* A neighbour is a button: click it to bring it to the middle. */}
                 {Math.abs(offset) === 1 && (
-                  <button type="button" tabIndex={-1} aria-hidden className="absolute inset-0 z-20 rounded-lg opacity-70 hover:bg-card/30" onClick={() => move(k)} />
+                  <button type="button" tabIndex={-1} aria-hidden className="absolute inset-0 z-20 rounded-lg" onClick={() => move(k)} />
                 )}
               </div>
             )

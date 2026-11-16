@@ -36,7 +36,9 @@ def upgrade() -> None:
             server_default=sa.text("now()"),
             nullable=False,
         ),
-        sa.CheckConstraint("kind IN ('notes', 'library')", name=op.f("ck_documents_kind")),
+        sa.CheckConstraint(
+            "kind IN ('notes', 'library')", name=op.f("ck_documents_kind")
+        ),
         sa.CheckConstraint(
             "status IN ('uploaded', 'extracting', 'rejected', 'awaiting_topic_review', "
             "'embedding', 'ready', 'failed')",

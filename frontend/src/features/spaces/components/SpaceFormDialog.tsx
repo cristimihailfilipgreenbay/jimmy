@@ -1,12 +1,14 @@
 import { useState, type FormEvent } from 'react'
-import { Book, X } from 'lucide-react'
+import { Book, Pencil, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { errorMessage } from '@/lib/http'
+import { toast } from '@/lib/toast'
 import { ACCENTS, accentInfo, accentStyle } from '../lib/accents'
-import { courseLine } from '../lib/course'
+import { courseLine, splitCourse } from '../lib/course'
 import { useCreateSpace } from '../queries/useCreateSpace'
+import { useUpdateSpace } from '../queries/useUpdateSpace'
 import { spaceCourseSchema, spaceNameSchema, type Accent, type Space } from '../schemas/space'
 import { AccentSwatches } from './AccentSwatches'
 
@@ -16,24 +18,34 @@ const firstUnusedAccent = (spaces: Space[]): Accent => {
   return (ACCENTS.find((a) => !used.has(a.value)) ?? ACCENTS[0]).value
 }
 
-export function CreateSpaceDialog({
+/**
+ * One form for a Study Space's name, course details and colour. Without `space`
+ * it creates one; with `space` it edits that one, prefilled.
+ */
+export function SpaceFormDialog({
   studentId,
   spaces,
+  space,
   open,
   onClose,
 }: {
   studentId: string
   spaces: Space[]
+  space?: Space
   open: boolean
   onClose: () => void
 }) {
-  const [name, setName] = useState('')
-  const [code, setCode] = useState('')
-  const [lecturer, setLecturer] = useState('')
-  const [accent, setAccent] = useState<Accent>(() => firstUnusedAccent(spaces))
+  const edit = space !== undefined
+  const [initialCode, initialLecturer] = splitCourse(space?.course ?? null)
+  const [name, setName] = useState(space?.name ?? '')
+  const [code, setCode] = useState(initialCode)
+  const [lecturer, setLecturer] = useState(initialLecturer)
+  const [accent, setAccent] = useState<Accent>(() => space?.accent ?? firstUnusedAccent(spaces))
   const [invalid, setInvalid] = useState<{ name?: string; course?: string }>({})
   const create = useCreateSpace(studentId)
-  const serverError = create.error ? errorMessage(create.error, 'Could not create the Study Space.') : null
+  const update = useUpdateSpace(studentId)
+  const saving = edit ? update : create
+  const serverError = saving.error ? errorMessage(saving.error, edit ? 'Could not save your changes.' : 'Could not create the Study Space.') : null
   const course = courseLine(code, lecturer)
 
   function submit(e: FormEvent) {
@@ -48,7 +60,19 @@ export function CreateSpaceDialog({
       return
     }
     setInvalid({})
-    create.mutate({ name: parsedName.data, course: parsedCourse.data, accent }, { onSuccess: onClose })
+    if (space) {
+      update.mutate(
+        { id: space.id, changes: { name: parsedName.data, course: parsedCourse.data, accent } },
+        {
+          onSuccess: () => {
+            onClose()
+            toast(`Saved changes to ${parsedName.data}`, Pencil)
+          },
+        },
+      )
+    } else {
+      create.mutate({ name: parsedName.data, course: parsedCourse.data, accent }, { onSuccess: onClose })
+    }
   }
 
   return (
@@ -57,8 +81,12 @@ export function CreateSpaceDialog({
         <form onSubmit={submit} noValidate className="p-5 sm:p-6">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <DialogTitle className="text-lg font-semibold tracking-tight">New Study Space</DialogTitle>
-              <DialogDescription className="mt-0.5">One Space per subject. You can add notes right after.</DialogDescription>
+              <DialogTitle className="text-lg font-semibold tracking-tight">{edit ? 'Edit Space' : 'New Study Space'}</DialogTitle>
+              <DialogDescription className="mt-0.5">
+                {edit
+                  ? 'Change the name, course details or colour. Notes and chats stay as they are.'
+                  : 'One Space per subject. You can add notes right after.'}
+              </DialogDescription>
             </div>
             <DialogClose render={<Button type="button" variant="ghost" size="icon-sm" className="-mt-1 -mr-2" aria-label="Close" />}>
               <X />
@@ -74,7 +102,7 @@ export function CreateSpaceDialog({
               </span>
               <div className="min-w-0">
                 <p className="truncate font-semibold">{name.trim() || <span className="text-muted-foreground">Your subject</span>}</p>
-                <p className="truncate text-xs text-muted-foreground">{course || 'Preview of your new Space'}</p>
+                <p className="truncate text-xs text-muted-foreground">{course || (edit ? 'Preview of your Space' : 'Preview of your new Space')}</p>
               </div>
             </div>
           </div>
@@ -87,6 +115,7 @@ export function CreateSpaceDialog({
               <Input
                 id="space-name"
                 autoFocus
+                onFocus={(e) => edit && e.currentTarget.select()}
                 className="h-10 text-[15px]"
                 placeholder="e.g. Genetics"
                 maxLength={80}
@@ -141,8 +170,8 @@ export function CreateSpaceDialog({
             <Button type="button" variant="ghost" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={create.isPending || !name.trim()}>
-              Create Space
+            <Button type="submit" disabled={saving.isPending || !name.trim()}>
+              {edit ? 'Save changes' : 'Create Space'}
             </Button>
           </DialogFooter>
         </form>

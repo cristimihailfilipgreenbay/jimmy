@@ -6,10 +6,10 @@ import { useSignedInStudent } from '@/features/auth/hooks/useSignedInStudent'
 import { errorMessage } from '@/lib/http'
 import { cardClass } from '@/lib/styles'
 import { toast } from '@/lib/toast'
-import { CreateSpaceDialog } from './components/CreateSpaceDialog'
 import { DeleteSpaceDialog } from './components/DeleteSpaceDialog'
 import { RenameSpaceDialog } from './components/RenameSpaceDialog'
 import { SpaceContextMenu } from './components/SpaceContextMenu'
+import { SpaceFormDialog } from './components/SpaceFormDialog'
 import { accentInfo, accentStyle } from './lib/accents'
 import { createdLabel } from './lib/relativeTime'
 import { useSpaces } from './queries/useSpaces'
@@ -86,7 +86,7 @@ export function SpacesPage() {
           onColour={(accent) => changeColour(menu.space, accent)}
         />
       )}
-      <CreateSpaceDialog
+      <SpaceFormDialog
         key={create.n}
         studentId={student.id}
         spaces={spaces ?? []}

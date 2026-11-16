@@ -5,8 +5,9 @@ import { DropdownMenu, MenuButton } from '@/components/DropdownMenu'
 import { Placeholder } from '@/components/Placeholder'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { useSignedInStudent } from '@/features/auth/hooks/useSignedInStudent'
+import { cn } from '@/lib/utils'
 import { DeleteSpaceDialog } from './components/DeleteSpaceDialog'
-import { RenameSpaceDialog } from './components/RenameSpaceDialog'
+import { SpaceFormDialog } from './components/SpaceFormDialog'
 import { useSpaces } from './queries/useSpaces'
 
 // A Study Space's dashboard: its header, with the "⋯" menu that deletes it. The
@@ -18,7 +19,8 @@ export function SpaceDashboardPage() {
   const navigate = useNavigate()
   const { data: spaces, isPending } = useSpaces(student.id)
   const [deleting, setDeleting] = useState(false)
-  const [rename, setRename] = useState({ open: false, n: 0 })
+  const [edit, setEdit] = useState({ open: false, n: 0 })
+  const openEdit = () => setEdit((e) => ({ open: true, n: e.n + 1 }))
   const space = spaces?.find((s) => s.id === spaceId)
 
   if (isPending) return null
@@ -31,10 +33,26 @@ export function SpaceDashboardPage() {
           <span className="grid size-11 place-items-center rounded-lg bg-space text-white" aria-hidden>
             <Book className="size-5" />
           </span>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">{space.name}</h1>
-            <p className="text-sm text-muted-foreground">{space.course ?? 'No course set'}</p>
-          </div>
+          <h1 className="sr-only">{space.name}</h1>
+          {/* The title is a button: click it to edit the name, course details and colour. */}
+          <button
+            type="button"
+            onClick={openEdit}
+            aria-label={`Edit ${space.name}: name, course details and colour`}
+            className="group/title -m-1.5 rounded-lg p-1.5 text-left transition-colors hover:bg-muted"
+          >
+            <span className="flex items-center gap-2">
+              <span className="text-2xl font-semibold tracking-tight" aria-hidden>
+                {space.name}
+              </span>
+              <span className="text-muted-foreground opacity-0 transition-opacity duration-200 group-hover/title:opacity-100 group-focus-visible/title:opacity-100" aria-hidden>
+                <Pencil className="size-4" />
+              </span>
+            </span>
+            <span className={cn('block text-sm', space.course ? 'text-muted-foreground' : 'text-muted-foreground/80 italic')}>
+              {space.course ?? 'Add course code and lecturer'}
+            </span>
+          </button>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Link to={`/spaces/${space.id}/chat`} className={buttonVariants({ variant: 'space' })}>
@@ -49,8 +67,8 @@ export function SpaceDashboardPage() {
               </Button>
             )}
           >
-            <MenuButton onClick={() => setRename((r) => ({ open: true, n: r.n + 1 }))}>
-              <Pencil className="size-4" aria-hidden /> Rename Space…
+            <MenuButton onClick={openEdit}>
+              <Pencil className="size-4" aria-hidden /> Edit Space…
             </MenuButton>
             <MenuButton destructive onClick={() => setDeleting(true)}>
               <Trash2 className="size-4" aria-hidden /> Delete Space…
@@ -60,12 +78,13 @@ export function SpaceDashboardPage() {
       </div>
       <p className="text-muted-foreground">Notes, Topics, Weak Topics and Learned Material.</p>
 
-      <RenameSpaceDialog
-        key={rename.n}
+      <SpaceFormDialog
+        key={edit.n}
         studentId={student.id}
+        spaces={spaces ?? []}
         space={space}
-        open={rename.open}
-        onClose={() => setRename((r) => ({ ...r, open: false }))}
+        open={edit.open}
+        onClose={() => setEdit((e) => ({ ...e, open: false }))}
       />
       <DeleteSpaceDialog
         studentId={student.id}

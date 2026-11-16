@@ -21,7 +21,7 @@ export function PasswordField({ id, error, right, below, ...input }: Props) {
           type={shown ? 'text' : 'password'}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? `${id}-error` : undefined}
-          className="pr-11"
+          className="h-10 pr-11 text-[15px]"
           {...input}
         />
         <button

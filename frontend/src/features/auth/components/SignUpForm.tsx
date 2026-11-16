@@ -37,6 +37,7 @@ export function SignUpForm() {
       <form onSubmit={submit} noValidate className="flex flex-col gap-4">
         <Field id="email" label="Email" error={errors.email} hint="Only used to sign you in.">
           <Input
+            className="h-10 text-[15px]"
             id="email"
             type="email"
             autoComplete="email"
@@ -74,7 +75,7 @@ export function SignUpForm() {
             </p>
           )}
         </div>
-        <Button type="submit" size="lg" className="w-full" disabled={signUp.isPending} aria-busy={signUp.isPending}>
+        <Button type="submit" variant="space" size="lg" className="w-full" disabled={signUp.isPending} aria-busy={signUp.isPending}>
           {signUp.isPending ? (
             <>
               <LoaderCircle className="animate-spin" /> Creating your account…

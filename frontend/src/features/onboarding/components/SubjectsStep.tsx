@@ -19,7 +19,7 @@ export function SubjectsStep({ form, update }: StepProps) {
   function toggle(name: string) {
     const exists = form.subjects.some((s) => same(s.name, name))
     if (exists) update({ subjects: form.subjects.filter((s) => !same(s.name, name)) })
-    else if (form.subjects.length < MAX_SUBJECTS) update({ subjects: [...form.subjects, { name, course: '', accent: null }] })
+    else if (form.subjects.length < MAX_SUBJECTS) update({ subjects: [...form.subjects, { name, course: '', lecturer: '', accent: null }] })
   }
 
   function add(e: FormEvent) {
@@ -27,7 +27,7 @@ export function SubjectsStep({ form, update }: StepProps) {
     const name = extra.trim()
     if (!name) return
     if (!form.subjects.some((s) => same(s.name, name)) && form.subjects.length < MAX_SUBJECTS) {
-      update({ subjects: [...form.subjects, { name, course: '', accent: null }] })
+      update({ subjects: [...form.subjects, { name, course: '', lecturer: '', accent: null }] })
     }
     setExtra('')
   }

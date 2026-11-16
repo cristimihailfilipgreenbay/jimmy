@@ -31,6 +31,7 @@ export function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
       </div>
       <Field id="email" label="Email" error={error}>
         <Input
+          className="h-10 text-[15px]"
           id="email"
           type="email"
           autoComplete="email"
@@ -47,7 +48,7 @@ export function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
           Password reset isn’t available yet. Jimmy runs on your own computer and can’t send email.
         </p>
       )}
-      <Button type="submit" size="lg" className="w-full">
+      <Button type="submit" variant="space" size="lg" className="w-full">
         Send reset link
       </Button>
       <Button type="button" variant="ghost" onClick={onBack} className="w-full">

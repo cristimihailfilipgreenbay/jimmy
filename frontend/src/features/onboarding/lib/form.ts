@@ -1,4 +1,5 @@
 import { ACCENTS } from '@/features/spaces/lib/accents'
+import { courseLine } from '@/features/spaces/lib/course'
 import type { Accent } from '@/features/spaces/schemas/space'
 import { onboardingRequestSchema, type Goal, type OnboardingRequest, type Style, type Year } from '../schemas/onboarding'
 
@@ -6,7 +7,7 @@ export const STEPS = ['You', 'Studies', 'Subjects', 'Spaces', 'Preferences'] as 
 export const LAST_STEP = STEPS.length - 1
 export const DONE = STEPS.length
 
-export type SubjectDraft = { name: string; course: string; accent: Accent | null }
+export type SubjectDraft = { name: string; course: string; lecturer: string; accent: Accent | null }
 
 export type OnboardingForm = {
   step: number
@@ -72,7 +73,7 @@ export function toRequest(form: OnboardingForm): { ok: true; body: OnboardingReq
   const parsed = onboardingRequestSchema.safeParse({
     name: form.name,
     studies: { course: form.course, university: form.university, year: form.year },
-    subjects: withDefaultAccents(form.subjects).map((s) => ({ name: s.name, course: s.course, accent: s.accent })),
+    subjects: withDefaultAccents(form.subjects).map((s) => ({ name: s.name, course: courseLine(s.course, s.lecturer), accent: s.accent })),
     preferences: { goals: form.goals, explanation_style: form.style, web_search: form.web },
   })
   return parsed.success ? { ok: true, body: parsed.data } : { ok: false, message: parsed.error.issues[0].message }

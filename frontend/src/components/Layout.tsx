@@ -1,57 +1,42 @@
-import { NavLink, Outlet, useParams } from 'react-router'
-import { ApiStatus } from '@/features/health/components/ApiStatus'
-import { UserMenu } from '@/features/auth/components/UserMenu'
+import { useState } from 'react'
+import { Outlet, useLocation, useParams } from 'react-router'
+import { Header } from '@/components/Header'
+import { MobileSpaceNav } from '@/components/SpaceTabs'
+import { useSignedInStudent } from '@/features/auth/hooks/useSignedInStudent'
+import { accentStyle } from '@/features/spaces/lib/accents'
+import { spaceTabIndex, tabDirection } from '@/lib/spaceTabs'
 import { cn } from '@/lib/utils'
+import { useSpaces } from '@/features/spaces/queries/useSpaces'
 
-const link = ({ isActive }: { isActive: boolean }) =>
-  cn(
-    'rounded-md px-3 py-2 text-sm hover:bg-muted',
-    isActive ? 'bg-muted font-medium' : 'text-muted-foreground',
-  )
-
+// The app shell from the design: a top header, and the screen below it. Inside a
+// Study Space the whole screen takes that Space's colour.
 export function Layout() {
   const { spaceId } = useParams()
-  const base = spaceId ? `/spaces/${spaceId}` : null
+  const { pathname } = useLocation()
+  const student = useSignedInStudent()
+  const { data: spaces = [] } = useSpaces(student.id)
+  const space = spaceId ? spaces.find((s) => s.id === spaceId) : undefined
+
+  // Moving between a Space's tabs slides the screen towards the tab (Dashboard < Chat < Study <
+  // Flashcards); every other change fades it up. Adjusting state while rendering is the React
+  // way to compare with the previous tab.
+  const tab = spaceId ? spaceTabIndex(pathname, spaceId) : -1
+  const [motion, setMotion] = useState<{ spaceId?: string; tab: number; dir: 'next' | 'prev' | null }>({ spaceId, tab, dir: null })
+  if (motion.spaceId !== spaceId || motion.tab !== tab) setMotion({ spaceId, tab, dir: tabDirection(motion, { spaceId, tab }) })
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="flex w-56 flex-none flex-col gap-1 border-r p-4">
-        <h1 className="mb-4 text-xl font-semibold">Jimmy</h1>
-        <UserMenu />
-        <nav className="flex flex-col gap-1" aria-label="Main">
-          <NavLink to="/" end className={link}>
-            Study Spaces
-          </NavLink>
-          {base && (
-            <>
-              <NavLink to={base} end className={link}>
-                Dashboard
-              </NavLink>
-              <NavLink to={`${base}/chat`} className={link}>
-                Chat
-              </NavLink>
-              <NavLink to={`${base}/study`} className={link}>
-                Study
-              </NavLink>
-              <NavLink to={`${base}/flashcards`} className={link}>
-                Flashcards
-              </NavLink>
-            </>
-          )}
-          <NavLink to="/settings" className={link}>
-            Settings
-          </NavLink>
-          <NavLink to="/developer" className={link}>
-            Developer
-          </NavLink>
-        </nav>
-        <div className="mt-auto">
-          <ApiStatus />
+    <div style={space ? accentStyle(space.accent) : undefined}>
+      <a href="#main" className="skip rounded-md bg-primary px-3 py-2 text-sm text-white">
+        Skip to content
+      </a>
+      <Header student={student} spaces={spaces} space={space} />
+      <main id="main" tabIndex={-1} className="mx-auto max-w-7xl px-4 pb-28 outline-none">
+        {/* Remounted on every route change so each screen animates in as it arrives. */}
+        <div key={pathname} className={cn('overflow-x-clip', motion.dir ? `tab-${motion.dir}` : 'page-in')}>
+          <Outlet />
         </div>
-      </aside>
-      <main className="flex-1 p-8">
-        <Outlet />
       </main>
+      {space && <MobileSpaceNav spaceId={space.id} />}
     </div>
   )
 }

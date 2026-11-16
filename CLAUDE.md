@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-Jimmy is an AI study tutor for university students (FastAPI + LangGraph backend, React frontend, Postgres/pgvector). **Issues #1, #2, #22 and #23 are built: `docker-compose.yml`, `.env.example`, a FastAPI backend with `/health`, Alembic and the `students`/`spaces` tables, sign-up and sign-in (email and password, JWT cookie), Study Spaces (create, list, delete) owned by the signed-in Student, a five-step onboarding page that every new Student must finish (the app is closed until `onboarded` is true), and a React shell with a sign-in/sign-up page and a Study Spaces page. Everything else is still to build.** The build is tracked as ordered vertical-slice GitHub issues; each issue names its prerequisites. Frontend: Vite, TypeScript, Tailwind v4, shadcn, oxlint, TanStack Query (React Query) for all server state: fetch through query/mutation hooks in each feature's `queries/` folder, not `useEffect`.
+Jimmy is an AI study tutor for university students (FastAPI + LangGraph backend, React frontend, Postgres/pgvector). **Issues #1, #2, #22, #23 and #28 are built: `docker-compose.yml`, `.env.example`, a FastAPI backend with `/health`, Alembic and the `students`/`spaces` tables, sign-up and sign-in (email and password, JWT cookie), Study Spaces (create, list, delete) owned by the signed-in Student, a five-step onboarding page that every new Student must finish (the app is closed until `onboarded` is true), and a React shell with a sign-in/sign-up page and a Study Spaces page. Everything else is still to build.** The build is tracked as ordered vertical-slice GitHub issues; each issue names its prerequisites. Frontend: Vite, TypeScript, Tailwind v4, shadcn, oxlint, TanStack Query (React Query) for all server state: fetch through query/mutation hooks in each feature's `queries/` folder, not `useEffect`.
 
 The docs in `docs/` are the source of truth. Read the relevant one before implementing:
 `architecture.md` (stack, graphs, test seams), `domain.md` (invariants, lifecycles), `api.md` (HTTP/SSE contract), `database.md` (schema, migration rules), `spec.md` (requirements), `design.md` (product behaviour), `Features.md` (features mapped to issues), `adr/` (decisions).
@@ -12,6 +12,10 @@ The docs in `docs/` are the source of truth. Read the relevant one before implem
 ## Design artifact
 
 A design artifact already exists for the UI: "Jimmy — Study Tutor Prototype" (https://claude.ai/artifact/TSNW2vrvQXEA6QRmi1WLDt). Read it (Artifact tool, `action: "read"`) before building or changing frontend screens, and update that artifact rather than creating a new one.
+
+**Build UI from the prototype's source, not from memory or shadcn defaults.** The artifact saves its full HTML; read the markup, classes and motion for the screen you are building and reproduce them. The theme (colour tokens, Inter and Source Serif 4, radii, focus ring, motion) lives in `frontend/src/index.css`, copied from the prototype. Do not add elements, copy or behaviour the prototype does not have, and do not drop any it has. Where the data does not exist yet (for example a Space's Notes count), keep the element and show the true value. To tint a screen with a Study Space's colour, wrap it in `style={accentStyle(accent)}` (`features/spaces/lib/accents.ts`), then use `bg-space`, `bg-space-soft` and `text-space-ink`.
+
+Deliberate differences from the prototype, asked for by the user (do not "fix" them): Space tabs slide the screen in the direction of the tab (`lib/spaceTabs.ts`, `.tab-next` / `.tab-prev` in `index.css`) instead of only fading; and menu items show their highlight on keyboard focus only (`focus-visible`), so a menu opened with the mouse does not look as if its first item were selected.
 
 ## Commands
 

@@ -15,7 +15,7 @@ export function Switch({ checked, onCheckedChange, className, ...props }: Props)
       onClick={() => onCheckedChange(!checked)}
       className={cn(
         'relative h-[22px] w-10 flex-none rounded-full transition-colors focus-visible:ring-3 focus-visible:ring-ring/50',
-        checked ? 'bg-primary' : 'bg-input',
+        checked ? 'bg-space' : 'bg-input',
         className,
       )}
       {...props}

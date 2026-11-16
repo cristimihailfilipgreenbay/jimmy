@@ -33,7 +33,7 @@ Postgres schema, conventions and migrations. See [architecture.md](./architectur
 ### Study Spaces and knowledge
 | Table | Purpose | Key columns *(proposed)* |
 |---|---|---|
-| `spaces` | A Study Space | `id`, `student_id` (FK), `name`, `course` (optional course code or lecturer), `accent` (a colour name, not a subject), `library_enabled`. Unique on (`student_id`, lower(`name`)) |
+| `spaces` | A Study Space | `id`, `student_id` (FK), `name`, `course` (optional, one line "code · lecturer", for example "BIO 202 · Prof. Weber"; the screens edit the two parts separately), `accent` (a colour name, not a subject), `library_enabled`. Unique on (`student_id`, lower(`name`)) |
 | `library_packs` | Available Subject Library packs | `id`, `slug`, `title`, `author`, `license`, `source_url`, `subject` |
 | `documents` | Notes and library documents in a Space | `id`, `space_id`, `kind` (notes, library), `pack_id` (null for Notes), `title`, `author`, `filename`, `mime_type`, `size_bytes`, `page_count`, `status`, `rejection_reason`, `enabled` |
 | `learned_material` | Web-sourced items promoted into a Space | `id`, `space_id`, `title`, `publisher`, `url`, `status` (unreviewed, approved), `job_id`, `approved_at` |

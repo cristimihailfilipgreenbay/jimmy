@@ -46,3 +46,32 @@ class SpaceIn(BaseModel):
         if len(value) > 120:
             raise ValueError("Use 120 characters or fewer.")
         return value or None
+
+
+class SpaceUpdate(BaseModel):
+    """Only the fields that are sent change. Sending `course` as null (or blank) clears it."""
+
+    name: (
+        Annotated[
+            str, StringConstraints(strip_whitespace=True, min_length=1, max_length=80)
+        ]
+        | None
+    ) = None
+    course: str | None = None
+    accent: Accent | None = None
+
+    @field_validator("course")
+    @classmethod
+    def blank_course_is_none(cls, value: str | None) -> str | None:
+        value = (value or "").strip()
+        if len(value) > 120:
+            raise ValueError("Use 120 characters or fewer.")
+        return value or None
+
+    @field_validator("name", "accent", mode="before")
+    @classmethod
+    def not_null(cls, value):
+        # A name or accent can be left out, but not set to null.
+        if value is None:
+            raise ValueError("This field cannot be null.")
+        return value

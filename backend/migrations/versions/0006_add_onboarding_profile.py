@@ -38,7 +38,9 @@ def upgrade() -> None:
             server_default="balanced",
             nullable=False,
         ),
-        sa.Column("web_search_enabled", sa.Boolean(), server_default="true", nullable=False),
+        sa.Column(
+            "web_search_enabled", sa.Boolean(), server_default="true", nullable=False
+        ),
         sa.ForeignKeyConstraint(
             ["student_id"],
             ["students.id"],

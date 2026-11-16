@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from app.db import SessionDep
 from app.errors import ApiError
 from app.spaces.models import Space
-from app.spaces.schemas import SpaceIn, SpaceOut
+from app.spaces.schemas import SpaceIn, SpaceOut, SpaceUpdate
 from app.students.dependencies import StudentDep
 
 router = APIRouter(tags=["spaces"])
@@ -58,6 +58,36 @@ def create_space(body: SpaceIn, session: SessionDep, student: StudentDep):
 @router.get("/spaces/{space_id}", response_model=SpaceOut)
 def get_space(space_id: uuid.UUID, session: SessionDep, student: StudentDep):
     return _get_owned(session, student, space_id)
+
+
+@router.patch("/spaces/{space_id}", response_model=SpaceOut)
+def update_space(
+    space_id: uuid.UUID, body: SpaceUpdate, session: SessionDep, student: StudentDep
+):
+    """Rename, change the course or the colour. Fields that are not sent stay as they are."""
+    space = _get_owned(session, student, space_id)
+    sent = body.model_fields_set
+    if "name" in sent and body.name is not None:
+        clash = session.scalar(
+            select(Space.id).where(
+                Space.student_id == student.id,
+                func.lower(Space.name) == body.name.lower(),
+                Space.id != space.id,
+            )
+        )
+        if clash:
+            raise _duplicate()
+        space.name = body.name
+    if "course" in sent:
+        space.course = body.course
+    if "accent" in sent and body.accent is not None:
+        space.accent = body.accent
+    try:
+        session.commit()
+    except IntegrityError:
+        session.rollback()
+        raise _duplicate()
+    return space
 
 
 @router.delete("/spaces/{space_id}", status_code=204)

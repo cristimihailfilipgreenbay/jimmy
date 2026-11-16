@@ -189,7 +189,7 @@ def _run(study: StudySession, payload) -> None:
 
 @router.post("/spaces/{space_id}/sessions", response_model=SessionOut, status_code=201)
 def start_session(body: SessionIn, space: SpaceDep, session: SessionDep):
-    """Start a Quiz. The first question is written before this returns."""
+    """Start a Quiz or a Test. The first question is written before this returns."""
     topics = list(
         session.scalars(
             select(Topic).where(
@@ -201,7 +201,7 @@ def start_session(body: SessionIn, space: SpaceDep, session: SessionDep):
     )
     if not topics:
         raise ApiError(
-            409, "no_topics", "Upload Notes and review their Topics before a Quiz."
+            409, "no_topics", "Upload Notes and review their Topics before studying."
         )
     by_id = {t.id: t for t in topics}
     if body.topic_ids:
@@ -211,7 +211,11 @@ def start_session(body: SessionIn, space: SpaceDep, session: SessionDep):
         chosen = list(dict.fromkeys(body.topic_ids))
     else:
         chosen = list(by_id)
-    thread = Thread(space_id=space.id, kind="session", title="Quiz")
+    thread = Thread(
+        space_id=space.id,
+        kind="session",
+        title="Test" if body.kind == "test" else "Quiz",
+    )
     session.add(thread)
     session.flush()
     study = StudySession(
@@ -229,6 +233,7 @@ def start_session(body: SessionIn, space: SpaceDep, session: SessionDep):
             {
                 "session_id": str(study.id),
                 "space_id": str(space.id),
+                "kind": study.kind,
                 "topic_ids": study.topic_ids,
                 "total": study.question_count,
                 "answered": 0,
@@ -291,7 +296,10 @@ def _resume(
     session.refresh(study)
     attempt = _attempt(session, question)
     return AnswerOut(
-        feedback=_feedback(session, question, attempt) if attempt else None,
+        # A Test withholds the feedback until the recap.
+        feedback=_feedback(session, question, attempt)
+        if attempt and study.kind == "quiz"
+        else None,
         session=_session_out(session, study),
     )
 

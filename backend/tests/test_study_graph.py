@@ -99,7 +99,7 @@ def db():
     return engine
 
 
-def _start(engine, total=3, grader=None):
+def _start(engine, total=3, grader=None, kind="quiz"):
     with Session(engine) as s:
         topic = Topic(space_id=SPACE, name="Photosynthesis")
         s.add(topic)
@@ -108,6 +108,7 @@ def _start(engine, total=3, grader=None):
                 id=(sid := uuid.uuid4()),
                 space_id=SPACE,
                 thread_id=THREAD,
+                kind=kind,
                 question_count=total,
                 topic_ids=[str(topic.id)],
             )
@@ -127,6 +128,7 @@ def _start(engine, total=3, grader=None):
         {
             "session_id": str(sid),
             "space_id": str(SPACE),
+            "kind": kind,
             "topic_ids": [str(topic_id)],
             "total": total,
             "answered": 0,
@@ -287,3 +289,22 @@ def test_the_decision_feeds_the_difficulty(db, written):
         _submit(graph, config, "correct")
     with Session(db) as s:
         assert s.get(StudySession, sid).difficulty == "hard"  # two right in a row
+
+
+def test_a_test_never_pauses_for_a_dispute(db, written):
+    graph, config, _sid, _topic = _start(db, grader=UnsureGrader(0.5, 0.9), kind="test")
+    _submit(graph, config)
+    assert _pending(graph, config)[0]["kind"] == "answer"  # on to the next question
+    with Session(db) as s:
+        assert s.scalar(select(QuizAttempt)).graded_by == "auto"
+        assert s.scalar(select(Dispute)) is None
+
+
+def test_a_test_keeps_one_difficulty_and_finishes_with_a_score(db):
+    graph, config, sid, _topic = _start(db, total=3, kind="test")
+    for right in (True, True, False):
+        _answer(db, graph, config, sid, right)
+    with Session(db) as s:
+        row = s.get(StudySession, sid)
+        assert row.difficulty == "medium"  # a Quiz would have gone to hard
+        assert row.status == "finished" and row.score == 2

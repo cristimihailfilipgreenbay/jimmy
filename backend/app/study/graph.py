@@ -1,4 +1,4 @@
-"""The Study Session graph (docs/architecture.md, section 4.2), for a Quiz.
+"""The Study Session graph (docs/architecture.md, section 4.2), for a Quiz or a Test.
 
     pick Topic (Weak Topics weighted) -> write a question from a passage
       -> wait for the Student's answer (interrupt) -> grade
@@ -40,6 +40,9 @@ MC_SHARE = 0.6
 class StudyState(TypedDict, total=False):
     session_id: str
     space_id: str
+    # "quiz" or "test": a Test shows nothing until the recap, so it never pauses for a
+    # Dispute and keeps one difficulty.
+    kind: str
     topic_ids: list[str]
     total: int
     answered: int
@@ -146,6 +149,8 @@ def build_study_graph(
 
     def route(state: StudyState) -> str:
         grade_ = state["grade"]
+        if state.get("kind") == "test":
+            return "record"
         unsure = needs_dispute(
             grade_["score"],
             grade_["confidence"],
@@ -207,6 +212,8 @@ def build_study_graph(
         return "adapt" if state["answered"] < state["total"] else "finish"
 
     def adapt(state: StudyState) -> StudyState:
+        if state.get("kind") == "test":
+            return {}
         level = next_difficulty(state["difficulty"], state["recent"])
         with factory() as session:
             session.get(StudySession, uuid.UUID(state["session_id"])).difficulty = level

@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 
 class SessionIn(BaseModel):
-    kind: Literal["quiz"] = "quiz"
+    kind: Literal["quiz", "test"] = "quiz"
     # Empty means every Topic in the Study Space.
     topic_ids: list[uuid.UUID] = []
     question_count: int = Field(default=5, ge=1, le=20)

@@ -1,4 +1,5 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   createStudent,
   forgetStudentIds,
@@ -19,48 +20,42 @@ type StudentState = {
 }
 
 const Ctx = createContext<StudentState | null>(null)
+const STUDENTS_KEY = ['students']
+
+async function loadStudents(): Promise<Student[]> {
+  const known = getKnownStudentIds()
+  const list = await listStudents(known)
+  // Forget profiles that no longer exist, including a remembered current one.
+  forgetStudentIds(known.filter((id) => !list.some((s) => s.id === id)))
+  const stored = getStoredStudentId()
+  if (stored && !list.some((s) => s.id === stored)) storeStudentId(null)
+  return list
+}
 
 export function StudentProvider({ children }: { children: ReactNode }) {
-  const [students, setStudents] = useState<Student[]>([])
+  const qc = useQueryClient()
   const [currentId, setCurrentId] = useState<string | null>(getStoredStudentId())
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    const known = getKnownStudentIds()
-    listStudents(known)
-      .then((list) => {
-        setStudents(list)
-        forgetStudentIds(known.filter((id) => !list.some((s) => s.id === id)))
-        // A remembered profile that no longer exists is dropped.
-        if (currentId && !list.some((s) => s.id === currentId)) {
-          storeStudentId(null)
-          setCurrentId(null)
-        }
-      })
-      .catch(() => setStudents([]))
-      .finally(() => setLoading(false))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  const { data, isPending } = useQuery({ queryKey: STUDENTS_KEY, queryFn: loadStudents })
 
   const select = useCallback((id: string) => {
     storeStudentId(id)
     setCurrentId(id)
   }, [])
 
-  const create = useCallback(
-    async (name: string) => {
-      const student = await createStudent(name)
+  const createMutation = useMutation({
+    mutationFn: createStudent,
+    onSuccess: (student) => {
       rememberStudentId(student.id)
-      setStudents((prev) => [...prev, student])
+      qc.setQueryData<Student[]>(STUDENTS_KEY, (prev) => [...(prev ?? []), student])
       select(student.id)
     },
-    [select],
-  )
+  })
+  const create = useCallback(async (name: string) => void (await createMutation.mutateAsync(name)), [createMutation])
 
-  const value = useMemo(
-    () => ({ students, current: students.find((s) => s.id === currentId) ?? null, loading, select, create }),
-    [students, currentId, loading, select, create],
-  )
+  const value = useMemo(() => {
+    const students = data ?? []
+    return { students, current: students.find((s) => s.id === currentId) ?? null, loading: isPending, select, create }
+  }, [data, currentId, isPending, select, create])
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }
 

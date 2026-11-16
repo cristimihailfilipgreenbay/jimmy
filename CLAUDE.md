@@ -20,7 +20,7 @@ Deliberate differences from the prototype, asked for by the user (do not "fix" t
 ## Commands
 
 ```bash
-cp .env.example .env              # fill in OPENROUTER / TAVILY / LANGSMITH keys; never commit .env
+cp .env.example .env              # OPENROUTER / TAVILY / LANGSMITH keys come from your shell environment, not .env; never commit .env
 docker compose up -d              # db (pgvector), backend (FastAPI), frontend (Vite dev server)
 docker compose logs -f backend
 docker compose down               # add -v to delete the database volume

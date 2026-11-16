@@ -225,3 +225,10 @@
 .menu-out-up { animation: menu-out-up 0.15s ease-in forwards; }
 @keyframes toast-in { from { opacity: 0; transform: translateX(18px); } }
 .toast-in { animation: toast-in 0.3s cubic-bezier(0.2, 0.7, 0.2, 1); }
+
+/* Moving between a Space's tabs: the screen slides in from the side of the tab
+   you are going to. (The prototype just fades; this is a deliberate addition.) */
+@keyframes tab-in-next { from { opacity: 0; transform: translateX(28px); } }
+@keyframes tab-in-prev { from { opacity: 0; transform: translateX(-28px); } }
+.tab-next { animation: tab-in-next 0.3s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.tab-prev { animation: tab-in-prev 0.3s cubic-bezier(0.2, 0.7, 0.2, 1); }

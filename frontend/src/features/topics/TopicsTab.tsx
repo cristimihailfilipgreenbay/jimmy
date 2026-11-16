@@ -102,7 +102,7 @@ export function TopicsTab({ studentId, spaceId }: { studentId: string; spaceId: 
             key={t.id}
             className={cn(
               'flex items-center gap-3 px-3 py-2.5 transition-colors duration-200',
-              selected.includes(t.id) ? 'bg-space/[.06]' : 'hover:bg-muted/40',
+              selected.includes(t.id) ? 'bg-space/5' : 'hover:bg-muted/40',
             )}
           >
             <input

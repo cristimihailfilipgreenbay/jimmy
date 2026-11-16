@@ -19,6 +19,7 @@ from app.learned.router import router as learned_router
 from app.library.router import router as library_router
 from app.onboarding.router import router as onboarding_router
 from app.spaces.router import router as spaces_router
+from app.study.router import router as study_router
 from app.topics.router import router as topics_router
 from app.tracing import run_trace_check
 
@@ -47,6 +48,7 @@ app.include_router(topics_router)
 app.include_router(library_router)
 app.include_router(learned_router)
 app.include_router(conflicts_router)
+app.include_router(study_router)
 app.include_router(jobs_router)
 
 

@@ -33,7 +33,7 @@ export function Composer({ spaceName, busy, onSend, onStop }: { spaceName: strin
             type="button"
             disabled={busy}
             onClick={() => onSend(s)}
-            className="flex-none rounded-full border border-border bg-card px-3 py-1 text-xs hover:bg-muted disabled:opacity-50"
+            className="flex-none rounded-full border border-border bg-card px-3 py-1 text-xs enabled:hover:bg-muted disabled:opacity-50"
           >
             {s}
           </button>

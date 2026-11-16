@@ -1,27 +1,46 @@
-import { useState } from 'react'
-import { ArrowRight, Book, Layers, MoreHorizontal, Plus, Trash2 } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { ArrowRight, Book, Layers, Palette, Plus } from 'lucide-react'
 import { Link } from 'react-router'
-import { useSignedInStudent } from '@/features/auth/hooks/useSignedInStudent'
-import { DropdownMenu, MenuButton, MenuLink } from '@/components/DropdownMenu'
 import { Button } from '@/components/ui/button'
+import { useSignedInStudent } from '@/features/auth/hooks/useSignedInStudent'
 import { errorMessage } from '@/lib/http'
 import { cardClass } from '@/lib/styles'
+import { toast } from '@/lib/toast'
 import { CreateSpaceDialog } from './components/CreateSpaceDialog'
 import { DeleteSpaceDialog } from './components/DeleteSpaceDialog'
-import { accentStyle } from './lib/accents'
+import { RenameSpaceDialog } from './components/RenameSpaceDialog'
+import { SpaceContextMenu } from './components/SpaceContextMenu'
+import { accentInfo, accentStyle } from './lib/accents'
 import { createdLabel } from './lib/relativeTime'
 import { useSpaces } from './queries/useSpaces'
+import { useUpdateSpace } from './queries/useUpdateSpace'
 import type { Space } from './schemas/space'
 
 // What each Study Space shows under its name. The features that own this data
 // (Notes, Flashcards, Weak Topics) do not exist yet, so for now there is none.
 const NO_STATS = { notes: 0, flashcards: 0, weak: 0 }
 
+type MenuState = { space: Space; x: number; y: number; returnTo: HTMLElement | null }
+// A dialog keeps its Space while it fades out, and `n` gives each opening fresh fields.
+type DialogState = { space: Space; open: boolean; n: number }
+
 export function SpacesPage() {
   const student = useSignedInStudent()
   const { data: spaces, error } = useSpaces(student.id)
-  const [creating, setCreating] = useState(false)
+  const update = useUpdateSpace(student.id)
+  const [create, setCreate] = useState({ open: false, n: 0 })
+  const [menu, setMenu] = useState<MenuState | null>(null)
+  const [renaming, setRenaming] = useState<DialogState | null>(null)
+  const [deleting, setDeleting] = useState<DialogState | null>(null)
   const firstName = student.display_name?.trim().split(/\s+/)[0]
+  const openCreate = () => setCreate((c) => ({ open: true, n: c.n + 1 }))
+
+  function changeColour(space: Space, accent: Space['accent']) {
+    update.mutate(
+      { id: space.id, changes: { accent } },
+      { onSuccess: () => toast(`${space.name} is now ${accentInfo(accent).label}`, Palette) },
+    )
+  }
 
   return (
     <section className="py-8">
@@ -31,7 +50,7 @@ export function SpacesPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Your Study Spaces</h1>
         </div>
         {spaces && spaces.length > 0 && (
-          <Button onClick={() => setCreating(true)}>
+          <Button onClick={openCreate}>
             <Plus /> New Space
           </Button>
         )}
@@ -39,16 +58,16 @@ export function SpacesPage() {
 
       {error && <p className="text-sm text-destructive">{errorMessage(error, 'Could not load your Study Spaces.')}</p>}
       {!spaces && !error && <Skeletons />}
-      {spaces && spaces.length === 0 && <EmptyState onCreate={() => setCreating(true)} />}
+      {spaces && spaces.length === 0 && <EmptyState onCreate={openCreate} />}
       {spaces && spaces.length > 0 && (
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {spaces.map((space) => (
-            <SpaceCard key={space.id} space={space} studentId={student.id} />
+            <SpaceCard key={space.id} space={space} onMenu={(x, y, returnTo) => setMenu({ space, x, y, returnTo })} />
           ))}
           <li>
             <button
               type="button"
-              onClick={() => setCreating(true)}
+              onClick={openCreate}
               className="flex h-full min-h-[190px] w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed text-sm font-medium text-muted-foreground transition-colors hover:border-input hover:bg-card"
             >
               <Plus className="size-5" aria-hidden /> New Space
@@ -57,38 +76,105 @@ export function SpacesPage() {
         </ul>
       )}
 
-      <CreateSpaceDialog studentId={student.id} open={creating} onClose={() => setCreating(false)} />
+      {menu && (
+        <SpaceContextMenu
+          key={`${menu.space.id}-${menu.x}-${menu.y}`}
+          {...menu}
+          onClose={() => setMenu(null)}
+          onRename={() => setRenaming((r) => ({ space: menu.space, open: true, n: (r?.n ?? 0) + 1 }))}
+          onDelete={() => setDeleting((d) => ({ space: menu.space, open: true, n: (d?.n ?? 0) + 1 }))}
+          onColour={(accent) => changeColour(menu.space, accent)}
+        />
+      )}
+      <CreateSpaceDialog
+        key={create.n}
+        studentId={student.id}
+        spaces={spaces ?? []}
+        open={create.open}
+        onClose={() => setCreate((c) => ({ ...c, open: false }))}
+      />
+      {renaming && (
+        <RenameSpaceDialog
+          key={renaming.n}
+          studentId={student.id}
+          space={renaming.space}
+          open={renaming.open}
+          onClose={() => setRenaming((r) => r && { ...r, open: false })}
+        />
+      )}
+      {deleting && (
+        <DeleteSpaceDialog
+          key={deleting.n}
+          studentId={student.id}
+          space={deleting.space}
+          open={deleting.open}
+          onClose={() => setDeleting((d) => d && { ...d, open: false })}
+          onDeleted={() => setDeleting((d) => d && { ...d, open: false })}
+        />
+      )}
     </section>
   )
 }
 
-function SpaceCard({ space, studentId }: { space: Space; studentId: string }) {
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [deleting, setDeleting] = useState(false)
+const LONG_PRESS_MS = 520
+
+function SpaceCard({ space, onMenu }: { space: Space; onMenu: (x: number, y: number, returnTo: HTMLElement | null) => void }) {
+  const link = useRef<HTMLAnchorElement>(null)
+  const pressTimer = useRef<number | null>(null)
+  const pressFired = useRef(false)
+  const clearPress = () => {
+    if (pressTimer.current) window.clearTimeout(pressTimer.current)
+    pressTimer.current = null
+  }
+
   return (
-    // Right-clicking anywhere on the card opens the same menu as the "⋯" button.
+    // The menu opens by right-click, by a long press, or with the Menu key (Shift+F10).
     <li
       style={accentStyle(space.accent)}
-      className="group relative"
+      className="relative"
       onContextMenu={(e) => {
-        // The dialog is portalled out of the card but its events still bubble here.
+        // The dialogs are portalled out of the card but their events still bubble here.
         if (!e.currentTarget.contains(e.target as Node)) return
         e.preventDefault()
-        setMenuOpen(true)
+        onMenu(e.clientX, e.clientY, link.current)
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) {
+          e.preventDefault()
+          const box = (e.target as HTMLElement).getBoundingClientRect()
+          onMenu(box.left + 16, box.top + 40, e.target as HTMLElement)
+        }
+      }}
+      onTouchStart={(e) => {
+        const touch = e.touches[0]
+        pressFired.current = false
+        pressTimer.current = window.setTimeout(() => {
+          pressFired.current = true
+          navigator.vibrate?.(10)
+          onMenu(touch.clientX, touch.clientY, link.current)
+        }, LONG_PRESS_MS)
+      }}
+      onTouchMove={clearPress}
+      onTouchCancel={clearPress}
+      onTouchEnd={(e) => {
+        // A long press must not also follow the link.
+        if (pressFired.current) e.preventDefault()
+        clearPress()
       }}
     >
       <Link
+        ref={link}
         to={`/spaces/${space.id}`}
-        className={`group block h-full overflow-hidden transition hover:-translate-y-px hover:shadow-md ${cardClass}`}
+        className={`group block h-full overflow-hidden transition-[translate,box-shadow] duration-300 ease-[cubic-bezier(0.2,0.7,0.2,1)] hover:-translate-y-px hover:shadow-md ${cardClass}`}
       >
         <div className="h-1.5 bg-space" />
         <div className="p-5">
           <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0 pr-8">
-              <h2 className="truncate text-lg font-semibold tracking-tight">{space.name}</h2>
-              <p className="mt-0.5 truncate text-sm text-muted-foreground">{space.course ?? 'No course set'}</p>
+            <div>
+              <h3 className="text-lg font-semibold tracking-tight">{space.name}</h3>
+              <p className="mt-0.5 text-sm text-muted-foreground">{space.course ?? 'No course set'}</p>
             </div>
-            <span className="grid size-9 flex-none place-items-center rounded-md bg-space-soft text-space-ink">
+            <span className="grid size-9 place-items-center rounded-md bg-space-soft text-space-ink">
               <Book className="size-4" aria-hidden />
             </span>
           </div>
@@ -114,27 +200,6 @@ function SpaceCard({ space, studentId }: { space: Space; studentId: string }) {
           </p>
         </div>
       </Link>
-      <div className="absolute top-3.5 right-14 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:has-[[aria-expanded=true]]:opacity-100 sm:focus-within:opacity-100">
-        <DropdownMenu
-          align="right"
-          className="w-48"
-          open={menuOpen}
-          onOpenChange={setMenuOpen}
-          trigger={({ open, toggle }) => (
-            <Button variant="ghost" size="icon-sm" onClick={toggle} aria-label={`Options for ${space.name}`} aria-haspopup="menu" aria-expanded={open}>
-              <MoreHorizontal />
-            </Button>
-          )}
-        >
-          <MenuLink to={`/spaces/${space.id}`}>
-            <ArrowRight className="size-4" aria-hidden /> Open
-          </MenuLink>
-          <MenuButton destructive onClick={() => setDeleting(true)}>
-            <Trash2 className="size-4" aria-hidden /> Delete Space…
-          </MenuButton>
-        </DropdownMenu>
-      </div>
-      <DeleteSpaceDialog studentId={studentId} space={space} open={deleting} onClose={() => setDeleting(false)} onDeleted={() => setDeleting(false)} />
     </li>
   )
 }

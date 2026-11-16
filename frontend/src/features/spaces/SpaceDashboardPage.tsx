@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { Book, MessageSquare, Trash2 } from 'lucide-react'
+import { Book, MessageSquare, Pencil, Trash2 } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { DropdownMenu, MenuButton } from '@/components/DropdownMenu'
 import { Placeholder } from '@/components/Placeholder'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { useSignedInStudent } from '@/features/auth/hooks/useSignedInStudent'
 import { DeleteSpaceDialog } from './components/DeleteSpaceDialog'
+import { RenameSpaceDialog } from './components/RenameSpaceDialog'
 import { useSpaces } from './queries/useSpaces'
 
 // A Study Space's dashboard: its header, with the "⋯" menu that deletes it. The
@@ -17,6 +18,7 @@ export function SpaceDashboardPage() {
   const navigate = useNavigate()
   const { data: spaces, isPending } = useSpaces(student.id)
   const [deleting, setDeleting] = useState(false)
+  const [rename, setRename] = useState({ open: false, n: 0 })
   const space = spaces?.find((s) => s.id === spaceId)
 
   if (isPending) return null
@@ -47,6 +49,9 @@ export function SpaceDashboardPage() {
               </Button>
             )}
           >
+            <MenuButton onClick={() => setRename((r) => ({ open: true, n: r.n + 1 }))}>
+              <Pencil className="size-4" aria-hidden /> Rename Space…
+            </MenuButton>
             <MenuButton destructive onClick={() => setDeleting(true)}>
               <Trash2 className="size-4" aria-hidden /> Delete Space…
             </MenuButton>
@@ -55,6 +60,13 @@ export function SpaceDashboardPage() {
       </div>
       <p className="text-muted-foreground">Notes, Topics, Weak Topics and Learned Material.</p>
 
+      <RenameSpaceDialog
+        key={rename.n}
+        studentId={student.id}
+        space={space}
+        open={rename.open}
+        onClose={() => setRename((r) => ({ ...r, open: false }))}
+      />
       <DeleteSpaceDialog
         studentId={student.id}
         space={space}

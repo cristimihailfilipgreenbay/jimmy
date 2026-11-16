@@ -134,7 +134,9 @@ Every table under `spaces` cascades on delete.
 
 **Seed data is not a migration.** Demo Study Spaces, OpenStax chapters and their embeddings are loaded by a separate seed command that is safe to run twice. Migrations never call external services or the embedding model.
 
-**Resetting.** During development the database can be dropped and recreated from migrations at any time: stop the stack, remove the volume, start it again, then run the seed command.
+**Resetting.** During development the database can be dropped and recreated from migrations at any time: stop the stack (`docker compose down -v` removes the volume), start it again, then run the seed command. This is also how a changed `POSTGRES_USER`, `POSTGRES_PASSWORD` or `POSTGRES_DB` takes effect on an existing database, because PostgreSQL only reads them when it creates a volume.
+
+**Connection settings.** The backend builds its connection from `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, `POSTGRES_PORT` and `POSTGRES_DB` (the password is URL-escaped). A non-empty `DATABASE_URL` overrides them. Inside Docker Compose the host is `db` and the port 5432; `POSTGRES_PORT` in `.env` only sets the port published on `127.0.0.1` for database tools.
 
 **Backups.** Out of scope for a local-only app. The Docker volume is the only copy.
 

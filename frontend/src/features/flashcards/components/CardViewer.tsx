@@ -50,12 +50,14 @@ export function CardViewer({ cards, start, onClose }: { cards: Card[]; start: nu
     setLeaving(next)
     setTimeout(go, 160)
   }
-  const rate = () => move(index + 1)
+  // Again and Hard turn the card back to its front; Got it moves on. Nothing is stored yet.
+  const again = () => flip()
+  const gotIt = () => move(index + 1)
 
   // Keys while the viewer is open (not while typing).
-  const keys = useRef({ flip, move, rate, flipped, index })
+  const keys = useRef({ flip, move, again, gotIt, flipped, index })
   useEffect(() => {
-    keys.current = { flip, move, rate, flipped, index }
+    keys.current = { flip, move, again, gotIt, flipped, index }
   })
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -66,7 +68,8 @@ export function CardViewer({ cards, start, onClose }: { cards: Card[]; start: nu
         k.flip()
       } else if (e.key === 'ArrowRight') k.move(k.index + 1)
       else if (e.key === 'ArrowLeft') k.move(k.index - 1)
-      else if (k.flipped && ['1', '2', '3'].includes(e.key)) k.rate()
+      else if (k.flipped && (e.key === '1' || e.key === '2')) k.again()
+      else if (k.flipped && e.key === '3') k.gotIt()
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
@@ -159,13 +162,13 @@ export function CardViewer({ cards, start, onClose }: { cards: Card[]; start: nu
           </Button>
           {flipped ? (
             <>
-              <Button variant="outline" onClick={rate}>
+              <Button variant="outline" onClick={again}>
                 Again
               </Button>
-              <Button variant="outline" onClick={rate}>
+              <Button variant="outline" onClick={again}>
                 Hard
               </Button>
-              <Button variant="space" data-rate="good" onClick={rate}>
+              <Button variant="space" data-rate="good" onClick={gotIt}>
                 Got it
               </Button>
             </>

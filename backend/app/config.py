@@ -1,6 +1,7 @@
 import logging
 import secrets
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import URL
@@ -37,6 +38,10 @@ class Settings(BaseSettings):
     background_model: str = ""
     embedding_model: str = "openai/text-embedding-3-small"
     embedding_dimensions: int = 1536
+
+    # Where the seed command puts the Subject Library chapters (data/seed in the repo,
+    # /data/seed in Docker, where ./data is mounted).
+    seed_dir: str = str(Path(__file__).resolve().parents[2] / "data" / "seed")
 
     # LangSmith reads LANGSMITH_* straight from the environment; these are only
     # needed to decide whether to run the startup trace.

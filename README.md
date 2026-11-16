@@ -34,7 +34,13 @@ docker compose ps                # check that all three are running
 docker compose down              # stop everything (add -v to also delete the database volume)
 ```
 
-Demo data (open-licensed OpenStax chapters for Biology and Physics) is loaded separately with a seed command, so it is safe to run more than once.
+Demo data (open-licensed OpenStax chapters for Biology and Physics) is loaded separately with a seed command, so it is safe to run more than once:
+
+```bash
+docker compose exec backend python -m app.library.seed
+```
+
+It downloads the two books (about 660 MB, once), keeps three chapters of each in `data/seed/` with an `ATTRIBUTION.md`, and registers the packs. A Study Space can then add one or more of them from its Subject Library card.
 
 ### Configuration
 
@@ -92,4 +98,4 @@ jimmy/
 
 ## Licence
 
-Apache License 2.0. See [LICENSE](LICENSE). Demo textbook content from OpenStax is used under its own CC BY licence and is credited in the seed data's attribution file.
+Apache License 2.0. See [LICENSE](LICENSE). Demo textbook content from OpenStax is used under its own open licence (CC BY-NC-SA 4.0) and is credited in the seed data's attribution file.

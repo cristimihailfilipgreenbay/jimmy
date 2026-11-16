@@ -13,6 +13,7 @@ from app.checkpointer import close_checkpointer, get_checkpointer
 from app.db import engine
 from app.documents.router import router as documents_router
 from app.errors import install_error_handlers
+from app.library.router import router as library_router
 from app.onboarding.router import router as onboarding_router
 from app.spaces.router import router as spaces_router
 from app.topics.router import router as topics_router
@@ -40,6 +41,7 @@ app.include_router(spaces_router)
 app.include_router(documents_router)
 app.include_router(chat_router)
 app.include_router(topics_router)
+app.include_router(library_router)
 
 
 @app.get("/health")

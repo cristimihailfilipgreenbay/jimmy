@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { errorMessage } from '@/lib/http'
 import { useStudent } from '../hooks/useStudent'
+import { studentNameSchema } from '../queries/students'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -13,8 +14,13 @@ export function ProfileSwitcher() {
   async function submit(e: FormEvent) {
     e.preventDefault()
     setError(null)
+    const parsed = studentNameSchema.safeParse(name)
+    if (!parsed.success) {
+      setError(parsed.error.issues[0].message)
+      return
+    }
     try {
-      await create(name)
+      await create(parsed.data)
       setName('')
       setAdding(false)
     } catch (err) {

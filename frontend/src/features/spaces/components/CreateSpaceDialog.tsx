@@ -11,7 +11,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { errorMessage } from '@/lib/http'
 import { cn } from '@/lib/utils'
-import type { Accent } from '../queries/spaces'
+import { spaceNameSchema, type Accent } from '../queries/spaces'
 import { useCreateSpace } from '../queries/useCreateSpace'
 import { ACCENTS } from '../lib/accents'
 
@@ -19,17 +19,25 @@ export function CreateSpaceDialog({ studentId, open, onClose }: { studentId: str
   const [name, setName] = useState('')
   const [accent, setAccent] = useState<Accent>('slate')
   const create = useCreateSpace(studentId)
-  const error = create.error ? errorMessage(create.error, 'Could not create the Study Space.') : null
+  const [invalid, setInvalid] = useState<string | null>(null)
+  const error = invalid ?? (create.error ? errorMessage(create.error, 'Could not create the Study Space.') : null)
 
   function close() {
+    setInvalid(null)
     create.reset()
     onClose()
   }
 
   function submit(e: FormEvent) {
     e.preventDefault()
+    const parsed = spaceNameSchema.safeParse(name)
+    if (!parsed.success) {
+      setInvalid(parsed.error.issues[0].message)
+      return
+    }
+    setInvalid(null)
     create.mutate(
-      { name, accent },
+      { name: parsed.data, accent },
       {
         onSuccess: () => {
           setName('')

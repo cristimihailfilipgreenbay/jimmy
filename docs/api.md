@@ -66,7 +66,7 @@ The app is closed to a Student who has not finished onboarding: the frontend sen
 ### Documents (Notes and library)
 | Method | Path | Purpose |
 |---|---|---|
-| POST | `/spaces/{space_id}/documents` | Upload Notes (multipart). Returns `202` with the document (the ingestion `thread_id` arrives with Topic review, which is the first pause in the run). Rejects with `413`, `422 unsupported_type`, `422 too_many_pages` or `422 scanned_document` |
+| POST | `/spaces/{space_id}/documents` | Upload Notes (multipart). Returns `202` with the document, which carries the ingestion `thread_id`. The run extracts Topics and then pauses for Topic review (section 4); the document is `awaiting_topic_review` until the Student answers. Rejects with `413`, `422 unsupported_type`, `422 too_many_pages` or `422 scanned_document` |
 | GET | `/spaces/{space_id}/documents` | List with processing status |
 | GET | `/spaces/{space_id}/documents/{id}` | One document |
 | DELETE | `/spaces/{space_id}/documents/{id}` | Delete the document and its chunks |
@@ -78,9 +78,9 @@ Document status values: `uploaded`, `extracting`, `rejected`, `awaiting_topic_re
 ### Topics
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/spaces/{space_id}/topics` | List Topics |
-| PATCH | `/spaces/{space_id}/topics/{id}` | Rename |
-| POST | `/spaces/{space_id}/topics/merge` | Merge several Topics into one (`ids`, `name`) |
+| GET | `/spaces/{space_id}/topics` | List Topics (merged ones are left out) |
+| PATCH | `/spaces/{space_id}/topics/{id}` | Rename. `409 topic_exists` if the Space has a Topic with that name (ignoring case) |
+| POST | `/spaces/{space_id}/topics/merge` | Merge several Topics into the first of `ids`, which takes `name`. `409 topic_exists` as above |
 
 Topic review after an upload is not a plain edit; it is a pause in the ingestion run (section 4).
 
@@ -166,14 +166,14 @@ POST /threads/{thread_id}/resume
 { "interrupt_id": "...", "decision": { ... } }
 ```
 
-The response is an event stream that continues the run. Resuming an interrupt that was already answered or no longer exists returns `409 nothing_to_resume`.
+The response is an event stream that continues the run, except for `topic_review`: indexing is a background job, so that answer returns `202` with the document and the Student follows its `status`. Resuming an interrupt that was already answered or no longer exists returns `409 nothing_to_resume`.
 
 | `kind` | Payload shown to the Student | `decision` |
 |---|---|---|
 | `conflict` | The Topic; the Notes passage and the other passage (Library, Learned Material or Tutor Knowledge), each with its Citation | `keep_notes`, `accept_other` or `unsure` |
 | `dispute` | The question, the Student's answer, the Source passage, the automatic score and confidence | `correct` or `incorrect` |
 | `flashcard_review` | Drafted cards with their Source passages | A list: for each card `approve`, `reject`, or `edit` with new front and back |
-| `topic_review` | Proposed Topics for a document | A list: for each Topic `approve`, `rename` with a name, or `merge` into another |
+| `topic_review` | `document_id`, `proposed` (each with `id`, `name` and `existing_id`, set when the Space already has a Topic of that name) and `existing` (the Space's Topics) | A list with one entry per Topic: `{id, action}` where `action` is `approve`, `rename` (with `name`), `merge` (with `into`: the id of another proposed Topic or of an existing one) or `remove`. A Topic with no entry is approved. A review that makes no sense returns `422 invalid_topic_review` and the run stays paused |
 
 Deleting Notes or a Study Space, approving Learned Material and approving a Profile change are plain requests with a frontend confirmation, not interrupts.
 

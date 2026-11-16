@@ -53,6 +53,7 @@ async def _stream(space_id):
     # Only work that finishes while the page is open: nothing is replayed.
     since = datetime.now(UTC)
     quiet = 0.0
+    yield ": connected\n\n"  # lets proxies and the browser see the stream open
     while True:
         jobs = await asyncio.to_thread(finished_since, space_id, since)
         for job in jobs:

@@ -4,6 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from app.flashcards.schemas import FlashcardDecision
 from app.topics.review import MAX_NAME
 
 
@@ -39,8 +40,9 @@ class TopicDecision(BaseModel):
 
 class ResumeIn(BaseModel):
     interrupt_id: str
-    # A Topic review answers with a list; a Conflict in a chat with one word.
-    decision: list[TopicDecision] | str
+    # A Topic review or a Flashcard review answers with a list; a Conflict in a chat or a
+    # Dispute with one word.
+    decision: list[TopicDecision] | list[FlashcardDecision] | str
 
 
 class InterruptOut(BaseModel):

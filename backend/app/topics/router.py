@@ -13,6 +13,7 @@ from app.documents.ingestion import resume_ingestion
 from app.documents.models import Document
 from app.documents.schemas import DocumentOut
 from app.errors import ApiError
+from app.flashcards.router import resume_flashcards
 from app.spaces.dependencies import get_owned_space
 from app.spaces.models import Space
 from app.students.dependencies import StudentDep
@@ -182,13 +183,21 @@ def resume_thread(
 ):
     """Answer a pause. A chat continues as an event stream; a Topic review checks the
     answer and finishes indexing in the background; a Dispute in a Quiz returns the
-    feedback."""
+    feedback; a Flashcard review applies the decisions."""
     if thread.kind == "session":
         if not isinstance(body.decision, str):
             raise ApiError(422, "invalid_decision", "Choose yes, no or not sure.")
         return JSONResponse(
             resume_dispute(
                 body.interrupt_id, body.decision, thread, session
+            ).model_dump(mode="json")
+        )
+    if thread.kind == "flashcard_draft":
+        if not isinstance(body.decision, list):
+            raise ApiError(422, "invalid_flashcard_review", "Check each card.")
+        return JSONResponse(
+            resume_flashcards(
+                body.interrupt_id, body.decision, thread, student.id, session
             ).model_dump(mode="json")
         )
     if thread.kind == "chat":

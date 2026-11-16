@@ -54,6 +54,8 @@ The app is closed to a Student who has not finished onboarding: the frontend sen
 | POST | `/profile/facts/{id}/approve` | Approve a proposed fact or style change |
 | DELETE | `/profile/facts/{id}` | Delete a fact |
 
+When every draft of a batch is decided, the Student's edits are read for a style (for example "keep the front a short question") and saved as a proposed style fact with origin `flashcard_edits`. Only after `POST /profile/facts/{id}/approve` does it shape the next batch of cards.
+
 ### Study Spaces
 | Method | Path | Purpose |
 |---|---|---|
@@ -122,8 +124,9 @@ A pending Dispute is answered with `POST /threads/{session.thread_id}/resume` (`
 ### Flashcards
 | Method | Path | Purpose |
 |---|---|---|
-| POST | `/spaces/{space_id}/flashcards/drafts` | Ask Jimmy to draft cards (`topic_ids`, `count`). Starts a run that pauses for review (section 4) |
-| GET | `/spaces/{space_id}/flashcards` | Saved cards |
+| POST | `/spaces/{space_id}/flashcards/drafts` | Ask Jimmy to draft cards (`topic_ids`, none means every Topic; `count` 1 to 10). Each card is written from one passage of the Notes, Subject Library or approved Learned Material. The drafts are saved with status `draft` and the run pauses for review (section 4). Returns `201 {thread_id, interrupt_id, cards}`. `409 no_topics`, `409 no_sources`. The Tutor's `save_flashcards` tool starts the same run from a chat |
+| GET | `/spaces/{space_id}/flashcards/drafts` | Every batch still waiting: `[{thread_id, interrupt_id, cards}]` |
+| GET | `/spaces/{space_id}/flashcards` | The deck: approved cards, each with its Topic and Source passage |
 | DELETE | `/spaces/{space_id}/flashcards/{id}` | Delete a card |
 
 ### Learned Material
@@ -178,7 +181,7 @@ The response is an event stream that continues the run, except for `topic_review
 |---|---|---|
 | `conflict` | The Topic; the Notes passage and the other passage (Library, Learned Material or Tutor Knowledge), each with its Citation | `keep_notes`, `accept_other` or `unsure` |
 | `dispute` | The question, the Student's answer, the Source passage, the automatic score and confidence | `correct`, `incorrect` or `unsure` (not right, so the Topic is reviewed) |
-| `flashcard_review` | Drafted cards with their Source passages | A list: for each card `approve`, `reject`, or `edit` with new front and back |
+| `flashcard_review` | The ids of the drafts waiting (`card_ids`); the cards and their Source passages come from `GET /spaces/{id}/flashcards/drafts` | A list with an entry for any of the waiting cards: `{id, action}` with `action` `approve`, `reject` or `edit` (with `front` and `back`; an edit approves the card). Cards without an entry stay waiting and the run pauses again. Returns `{approved, rejected, remaining, style}`; `style` is a card style the edits showed, waiting for Approval. `422 invalid_flashcard_review` for a card that is not waiting or an edit without a front and a back |
 | `topic_review` | `document_id`, `proposed` (each with `id`, `name` and `existing_id`, set when the Space already has a Topic of that name) and `existing` (the Space's Topics) | A list with one entry per Topic: `{id, action}` where `action` is `approve`, `rename` (with `name`), `merge` (with `into`: the id of another proposed Topic or of an existing one) or `remove`. A Topic with no entry is approved. A review that makes no sense returns `422 invalid_topic_review` and the run stays paused |
 
 Deleting Notes or a Study Space, approving Learned Material and approving a Profile change are plain requests with a frontend confirmation, not interrupts.

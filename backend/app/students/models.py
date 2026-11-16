@@ -1,7 +1,8 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, String, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, func
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db import Base
@@ -16,6 +17,35 @@ class Student(Base):
     # Stored lower-cased, so one unique constraint is a case-insensitive check.
     email: Mapped[str] = mapped_column(String(254), unique=True)
     password_hash: Mapped[str] = mapped_column(String(255))
+    # Set when the Student finishes onboarding; until then the app sends them there.
+    onboarded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
+    )
+
+    @property
+    def onboarded(self) -> bool:
+        return self.onboarded_at is not None
+
+
+class Profile(Base):
+    """What a Student told Jimmy about themselves; shared across their Study Spaces."""
+
+    __tablename__ = "profiles"
+
+    student_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("students.id", ondelete="CASCADE"), primary_key=True
+    )
+    course: Mapped[str | None] = mapped_column(String(120))
+    university: Mapped[str | None] = mapped_column(String(120))
+    year: Mapped[str | None] = mapped_column(String(10))
+    goals: Mapped[list[str]] = mapped_column(
+        ARRAY(String(20)), default=list, server_default="{}"
+    )
+    # How long answers should be: short, balanced or detailed.
+    explanation_style: Mapped[str] = mapped_column(
+        String(20), default="balanced", server_default="balanced"
+    )
+    web_search_enabled: Mapped[bool] = mapped_column(
+        Boolean, default=True, server_default="true"
     )

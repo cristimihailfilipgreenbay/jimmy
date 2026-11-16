@@ -150,9 +150,21 @@ frontend/src/
 ├── components/     # app shell (Layout) and ui/ (shadcn)
 ├── lib/            # http client, current-profile storage, utils (feature-agnostic)
 └── features/
-    ├── students/   # api.ts, provider, ProfileSwitcher
-    ├── spaces/     # api.ts, queries.ts, SpacesPage, dialogs
-    └── health/
+    ├── students/
+    │   ├── api/         # requests and types
+    │   ├── hooks/       # useStudent
+    │   ├── state/       # profile context and provider
+    │   ├── components/  # ProfileSwitcher
+    │   └── lib/         # pure helpers (remembered profile ids)
+    ├── spaces/
+    │   ├── api/         # requests and types
+    │   ├── hooks/       # React Query hooks (useSpaces, useCreateSpace, ...)
+    │   ├── components/  # dialogs used by the page
+    │   ├── pages/       # SpacesPage
+    │   └── lib/         # accents
+    └── health/          # api/, components/
 ```
+
+Inside a feature, use only the sub-folders it needs: `api/`, `hooks/`, `state/`, `components/`, `pages/`, `lib/`. Server data goes through React Query hooks in `hooks/`; `state/` is for client state such as the current profile.
 
 A new feature gets its own package or folder. A feature may import another feature (Spaces uses the current Student) but `lib/` and `db.py` never import a feature. Alembic's `env.py` imports each feature's models so their tables are registered.

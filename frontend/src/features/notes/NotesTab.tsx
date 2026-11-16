@@ -67,7 +67,7 @@ export function NotesTab({ studentId, space }: { studentId: string; space: Space
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+    <div className="grid items-start gap-6 lg:grid-cols-[1fr_320px]">
       <div className={cardClass}>
         <ul className="divide-y" role="list">
           {uploading.map(({ key, name }) => (

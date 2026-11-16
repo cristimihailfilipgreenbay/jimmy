@@ -5,17 +5,17 @@ import { cn } from "cn"
 // The design's buttons: rounded-md, text-sm medium, colour transitions only.
 // `space` takes the colour of the current Study Space.
 const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors select-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "inline-flex shrink-0 items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors select-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
-        space: "bg-space text-white hover:bg-space-ink",
-        outline: "border border-input bg-card hover:bg-muted",
-        ghost: "hover:bg-muted",
-        secondary: "bg-muted hover:bg-border/60",
-        destructive: "bg-destructive text-white hover:bg-destructive/90",
-        link: "px-0 text-space underline-offset-4 hover:underline",
+        default: "bg-primary text-primary-foreground enabled:hover:bg-primary/90",
+        space: "bg-space text-white enabled:hover:bg-space-ink",
+        outline: "border border-input bg-card enabled:hover:bg-muted",
+        ghost: "enabled:hover:bg-muted",
+        secondary: "bg-muted enabled:hover:bg-border/60",
+        destructive: "bg-destructive text-white enabled:hover:bg-destructive/90",
+        link: "px-0 text-space underline-offset-4 enabled:hover:underline",
       },
       size: {
         sm: "h-8 px-3 text-[13px]",

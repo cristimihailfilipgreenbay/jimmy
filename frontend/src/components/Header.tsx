@@ -50,7 +50,7 @@ function SpaceMenu({ spaces, space }: { spaces: Space[]; space: Space }) {
     <DropdownMenu
       className="w-60"
       trigger={({ open, toggle }) => (
-        <Button variant="ghost" size="sm" className="-ml-1 font-medium" onClick={toggle} aria-haspopup="menu" aria-expanded={open}>
+        <Button variant="ghost" size="sm" className="-ml-1 font-semibold" onClick={toggle} aria-haspopup="menu" aria-expanded={open}>
           <span className="size-2.5 rounded-sm bg-space" aria-hidden />
           {space.name}
           <ChevronDown className="size-3.5 opacity-60" aria-hidden />
@@ -82,7 +82,7 @@ function AccountMenu({ student }: { student: Student }) {
       trigger={({ open, toggle }) => (
         <Button variant="ghost" size="sm" className="gap-2 pl-1.5" onClick={toggle} aria-haspopup="menu" aria-expanded={open} aria-label={`Account menu: ${name}`}>
           <span className={`${avatar} size-7 text-xs`}>{initials(student)}</span>
-          <span className="hidden sm:inline">{name}</span>
+          <span className="hidden font-semibold sm:inline">{name}</span>
           <ChevronDown className="size-3.5 opacity-60" aria-hidden />
         </Button>
       )}

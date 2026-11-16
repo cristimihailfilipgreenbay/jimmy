@@ -1,6 +1,7 @@
 from alembic import context
 
 # Importing the models registers every feature's tables on Base.metadata.
+from app.chat import models as _chat_models  # noqa: F401
 from app.chunks import models as _chunks_models  # noqa: F401
 from app.db import Base, make_engine
 from app.documents import models as _documents_models  # noqa: F401

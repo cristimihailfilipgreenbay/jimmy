@@ -144,15 +144,16 @@ A pending Dispute is answered through the thread resume endpoint.
 
 | Event | Payload (summary) | Used for |
 |---|---|---|
-| `token` | `text` | Streamed answer text |
-| `tool_call` | `tool`, `status` (started, finished, failed), short description | "Searching your notes..." |
+| `token` | `text` | Streamed answer text. A paragraph ends with Citation markers like `[1]`, or starts with `[tutor]` for Tutor Knowledge |
+| `reset` | none | The Citation check rejected the answer being streamed; discard the text, a rewrite follows |
+| `tool_call` | `tool`, `status` (started, finished, failed), short description, `found` (passages returned, on finished) | "Searching your notes..." |
 | `segment` | `source_type`, `citation_ids` | Marks which Source the text just streamed came from, so the UI can style it |
 | `citation` | `id`, `source_type`, `document`, `author`, `page_or_section`, `passage` | Citation chips and the passage viewer |
 | `interrupt` | `interrupt_id`, `kind`, `payload` | A pause the Student must answer (section 4) |
 | `cost` | `tokens_in`, `tokens_out`, `usd` | Cost under the answer |
 | `job` | `job_id`, `kind`, `status`, `message` | Background Promotion toast |
 | `error` | `code`, `message` | A failure mid-stream |
-| `done` | `message_id`, `trace_id` | End of the run; enables the 👍/👎 and the trace link |
+| `done` | `message_id`, `trace_id`, `content` (the stored answer, which can differ from the streamed text if the backend had to label a paragraph) | End of the run; enables the 👍/👎 and the trace link |
 
 The stream ends after `done`, `error`, or an `interrupt`. After an interrupt the client answers with resume and opens a new stream from the resume response.
 

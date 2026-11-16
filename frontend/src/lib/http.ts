@@ -39,3 +39,6 @@ export async function request<S extends z.ZodType>(path: string, schema: S, init
 export async function requestVoid(path: string, init: RequestInit = {}): Promise<void> {
   await send(path, init)
 }
+
+/** For streaming endpoints: the response with its body unread, after the same error handling. */
+export const requestStream = (path: string, init: RequestInit = {}) => send(path, init)

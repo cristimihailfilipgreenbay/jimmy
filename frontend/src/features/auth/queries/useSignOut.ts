@@ -1,14 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { signOut } from './auth'
-import { meKey } from './useMe'
+import { replaceSession } from './session'
 
 export function useSignOut() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: signOut,
-    onSuccess: () => {
-      qc.clear()
-      qc.setQueryData(meKey, null)
-    },
+    onSuccess: () => replaceSession(qc, null),
   })
 }

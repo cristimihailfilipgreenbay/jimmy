@@ -80,7 +80,7 @@ The student can rate each answer 👍/👎. Repeated feedback may propose a Prof
 | Unreadable scanned PDFs | Detected and reported to the student |
 | Runaway agent loops | Iteration cap and doom-loop stop |
 | Cross-Space leakage | Single retrieval function, unit-tested (ADR 0001) |
-| Guardrail model not freely available | An early spike checks it, with Prompt Guard 2 as fallback |
+| Guardrail model not freely available | The spike found it blocked; a prompted classifier on an allowed model replaces it (ADR 0003) |
 
 ## 9. Out of scope for v1
 

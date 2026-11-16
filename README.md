@@ -2,7 +2,7 @@
 
 An AI study tutor for university students. Jimmy works inside one **Study Space** per subject (Biology, Physics, ...) and answers from the student's own notes, an optional open-textbook library, and its own subject knowledge, always showing which. It quizzes you, remembers which topics you struggle with, and when its sources fall short it looks things up on Wikipedia or the web and grows the knowledge base in the background.
 
-> **Status:** design phase. The documentation is complete; the application is not built yet. See [docs/backlog.md](docs/backlog.md) for the build order.
+> **Status:** design phase. The documentation is complete; the application is not built yet. The build is tracked in [GitHub issues](https://github.com/cristimihailfilipgreenbay/jimmy/issues), in order, starting with #1.
 
 ## What makes it different from a chatbot
 
@@ -40,7 +40,6 @@ This starts the database, the backend and the frontend. Demo data (open-licensed
 | [docs/database.md](docs/database.md) | Postgres schema, constraints, indexes, migrations |
 | [docs/GLOSSARY.md](docs/GLOSSARY.md) | Vocabulary used everywhere |
 | [docs/spec.md](docs/spec.md) | Requirements: user stories, implementation and testing decisions |
-| [docs/backlog.md](docs/backlog.md) | The 19 build issues, in order |
 | [docs/adr/](docs/adr/) | Decision records |
 
 ## Licence

@@ -186,5 +186,5 @@ Posting or publishing to any platform, image generation, analytics, real login o
 - **Open domain questions** (Topic merging, deleting a Space with a pending save, the duplicate-Finding threshold, and Conflict decisions after new Notes) are listed with proposed defaults in [domain.md](./domain.md) and need a decision during implementation.
 - **Test seams to confirm.** The ideal is one high seam, but the agreed rule of unit tests for critical logic only leads to the seven listed above. The highest practical seam would be the backend's public interface with a fake model, which would count as integration testing and was ruled out.
 - **Issue tracker.** This spec has not been published to an issue tracker. No tracker or triage vocabulary is configured; run `/setup-matt-pocock-skills`, then publish this spec with the `ready-for-agent` label.
-- **Build order** is in [backlog.md](./backlog.md).
+- **Build order** is in the [GitHub issues](https://github.com/cristimihailfilipgreenbay/jimmy/issues) (#1 to #19). Each is a vertical slice, and each lists the issues it needs.
 - **Visual reference:** [Jimmy: Study Tutor Prototype](https://claude.ai/artifact/TSNW2vrvQXEA6QRmi1WLDt).

@@ -41,7 +41,7 @@ export function ChatPage() {
   const settled = !loadingNotes && !loadingTopics && !loadingLibrary && !loadingWeak
 
   return (
-    <div className="grid gap-6 pt-4 pb-6 lg:grid-cols-[1fr_300px]">
+    <div className="grid gap-6 pt-4 pb-1 lg:grid-cols-[1fr_300px]">
       <div className="flex min-h-[calc(100vh-7.5rem)] flex-col">
         <h1 className="sr-only">Chat · {space.name}</h1>
         <div className="flex-1 space-y-6 pb-4" aria-live="polite" aria-busy={!!chat.pending}>

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Book, MessageSquare, Pencil, Trash2 } from 'lucide-react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { NotesTab } from '@/features/notes/NotesTab'
 import { useDocuments } from '@/features/notes/queries/useDocuments'
 import { PROCESSING } from '@/features/notes/schemas/document'
@@ -20,12 +20,17 @@ import { useSpaces } from './queries/useSpaces'
 // tabs under it. Notes and Topics are built; Weak topics and Learned material come
 // with the features that fill them.
 type Tab = 'notes' | 'topics'
+const TABS: Tab[] = ['notes', 'topics']
 export function SpaceDashboardPage() {
   const { spaceId } = useParams()
   const student = useSignedInStudent()
   const navigate = useNavigate()
   const { data: spaces, isPending } = useSpaces(student.id)
-  const [tab, setTab] = useState<Tab>('notes')
+  // The tab lives in the address (?tab=topics), so it survives a refresh and can be linked to.
+  const [params, setParams] = useSearchParams()
+  const asked = params.get('tab')
+  const tab: Tab = TABS.find((t) => t === asked) ?? 'notes'
+  const setTab = (next: Tab) => setParams(next === 'notes' ? {} : { tab: next }, { replace: true })
   const { container, indicator } = useSlidingIndicator<HTMLDivElement>(tab, true)
   const [deleting, setDeleting] = useState(false)
   const [edit, setEdit] = useState({ open: false, n: 0 })

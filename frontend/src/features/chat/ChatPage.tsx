@@ -18,8 +18,8 @@ export function ChatPage() {
   const { spaceId = '' } = useParams()
   const student = useSignedInStudent()
   const { data: spaces, isPending } = useSpaces(student.id)
-  const { data: documents } = useDocuments(student.id, spaceId)
-  const { data: topics } = useTopics(student.id, spaceId)
+  const { data: documents, isPending: loadingNotes } = useDocuments(student.id, spaceId)
+  const { data: topics, isPending: loadingTopics } = useTopics(student.id, spaceId)
   const chat = useChat(student.id, spaceId)
   const end = useRef<HTMLDivElement>(null)
   const space = spaces?.find((s) => s.id === spaceId)
@@ -32,13 +32,14 @@ export function ChatPage() {
   if (!space) return <Placeholder title="Study Space not found" note="That Study Space does not exist." />
   const ready = documents?.filter((d) => d.status === 'ready') ?? []
   const empty = !chat.loadingMessages && chat.messages.length === 0 && !chat.pending
+  const settled = !loadingNotes && !loadingTopics
 
   return (
     <div className="grid gap-6 pt-4 pb-6 lg:grid-cols-[1fr_300px]">
       <div className="flex min-h-[calc(100vh-7.5rem)] flex-col">
         <h1 className="sr-only">Chat · {space.name}</h1>
         <div className="flex-1 space-y-6 pb-4" aria-live="polite" aria-busy={!!chat.pending}>
-          {empty && (
+          {empty && settled && (
             <ChatEmpty
               spaceId={space.id}
               spaceName={space.name}

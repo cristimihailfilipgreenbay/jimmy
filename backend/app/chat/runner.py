@@ -1,0 +1,147 @@
+"""Runs one Tutor turn and turns it into typed events for the SSE stream."""
+
+import logging
+import uuid
+from collections.abc import Iterator
+from dataclasses import dataclass, field
+
+from langchain.agents.middleware.model_call_limit import ModelCallLimitExceededError
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
+from sqlalchemy.orm import Session
+
+from app.chat.agent import ModelNotConfigured, build_agent
+from app.chat.citations import check_answer, cited_ids, enforce, strip_markers
+from app.chat.guards import StepLimitReached
+from app.chat.models import Message
+from app.chat.tools import RunSources
+from app.db import engine
+
+log = logging.getLogger(__name__)
+
+TOOL_LABELS = {"search_notes": "Searching your notes…"}
+
+
+@dataclass
+class Event:
+    type: str
+    data: dict = field(default_factory=dict)
+
+
+def history_messages(rows: list[Message]) -> list:
+    """Earlier turns as plain text; Citation markers only mean something in their own turn."""
+    out: list = []
+    for row in rows:
+        if row.role == "user":
+            out.append(HumanMessage(row.content))
+        else:
+            out.append(AIMessage(strip_markers(row.content)))
+    return out
+
+
+def run_turn(
+    *,
+    thread_id: uuid.UUID,
+    space_id: uuid.UUID,
+    history: list,
+    question: str,
+    model=None,
+) -> Iterator[Event]:
+    """Stream the answer, then store it. Never raises: failures become `error` events."""
+    sources = RunSources()
+    try:
+        agent = build_agent(space_id, sources, model)
+    except ModelNotConfigured as exc:
+        yield Event("error", {"code": "upstream_unavailable", "message": str(exc)})
+        return
+
+    text, has_tools, current_id = "", False, None
+    tokens_in = tokens_out = 0
+    try:
+        stream = agent.stream(
+            {"messages": [*history, HumanMessage(question)]},
+            config={
+                "run_name": "tutor-chat",
+                "metadata": {"thread_id": str(thread_id), "space_id": str(space_id)},
+            },
+            stream_mode="messages",
+        )
+        for chunk, _meta in stream:
+            if isinstance(chunk, ToolMessage):
+                yield Event("tool_call", {"tool": chunk.name, "status": "finished"})
+                continue
+            if not isinstance(chunk, AIMessage):
+                continue
+            if chunk.id != current_id:
+                if text and not has_tools:
+                    # The Citation check rejected that answer; the next one replaces it.
+                    yield Event("reset")
+                current_id, text, has_tools = chunk.id, "", False
+            if chunk.usage_metadata:
+                tokens_in += chunk.usage_metadata.get("input_tokens", 0)
+                tokens_out += chunk.usage_metadata.get("output_tokens", 0)
+            # A streamed chunk carries `tool_call_chunks`; a whole message `tool_calls`.
+            for call in getattr(chunk, "tool_call_chunks", None) or chunk.tool_calls:
+                if call.get("name"):
+                    has_tools = True
+                    yield Event(
+                        "tool_call",
+                        {
+                            "tool": call["name"],
+                            "status": "started",
+                            "description": TOOL_LABELS.get(call["name"], call["name"]),
+                        },
+                    )
+            if chunk.text:
+                text += chunk.text
+                yield Event("token", {"text": chunk.text})
+    except (StepLimitReached, ModelCallLimitExceededError):
+        yield Event(
+            "error",
+            {
+                "code": "step_limit_reached",
+                "message": "Jimmy stopped: it used too many steps on this question.",
+            },
+        )
+        return
+    except Exception:
+        log.exception("Tutor run failed")
+        yield Event(
+            "error",
+            {
+                "code": "upstream_unavailable",
+                "message": "Jimmy could not reach the model. Try again in a moment.",
+            },
+        )
+        return
+
+    if has_tools or not text.strip():
+        yield Event(
+            "error",
+            {"code": "upstream_unavailable", "message": "Jimmy did not answer."},
+        )
+        return
+
+    valid = sources.ids
+    if check_answer(text, valid):
+        text = enforce(text, valid)
+    citations = [sources.citations[n] for n in cited_ids(text, valid)]
+    with Session(engine) as session:
+        message = Message(
+            thread_id=thread_id,
+            role="assistant",
+            content=text,
+            citations=[c.as_json() for c in citations],
+            tokens_in=tokens_in or None,
+            tokens_out=tokens_out or None,
+        )
+        session.add(message)
+        session.commit()
+        message_id = message.id
+    for c in citations:
+        yield Event(
+            "citation", {k: v for k, v in c.as_json().items() if k != "chunk_id"}
+        )
+    yield Event("cost", {"tokens_in": tokens_in, "tokens_out": tokens_out, "usd": None})
+    yield Event(
+        "done", {"message_id": str(message_id), "trace_id": None, "content": text}
+    )

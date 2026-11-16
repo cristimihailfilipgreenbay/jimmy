@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     # Embeddings go through OpenRouter. The model is locked once chunks exist, and
     # the chunks.embedding column is sized for `embedding_dimensions`.
     openrouter_api_key: str = ""
+    # The Tutor's model (chat) and the cheaper one for background work.
+    tutor_model: str = ""
+    background_model: str = ""
     embedding_model: str = "openai/text-embedding-3-small"
     embedding_dimensions: int = 1536
 

@@ -24,6 +24,7 @@ cp .env.example .env              # OPENROUTER / TAVILY / LANGSMITH keys come fr
 docker compose up -d              # db (pgvector), backend (FastAPI), frontend (Vite dev server)
 docker compose logs -f backend
 docker compose down               # add -v to delete the database volume
+docker compose exec backend python -m app.library.seed   # download the OpenStax demo chapters (safe to repeat)
 ```
 
 Everything configurable lives in `.env` (see `.env.example`): the database (`POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_PORT`; `DATABASE_URL` overrides them when running the backend outside Docker), the published ports (`BACKEND_PORT`, `FRONTEND_PORT`, `POSTGRES_PORT` bound to `127.0.0.1`), `JWT_SECRET` and the session settings. Do not hard-code these in `docker-compose.yml` or the code. The database user and password only apply to a new volume.

@@ -42,6 +42,8 @@ Postgres schema, conventions and migrations. See [architecture.md](./architectur
 
 **Library chunks live in the Space.** Attaching a Subject Library pack ingests its chapters as `documents` of kind `library` with that Space's `space_id`, so the one retrieval function and the isolation rule apply unchanged. The cost is storing a pack's embeddings once per Space, which is small for two or three chapters per subject. Switching the library off sets `enabled` to false on those documents and retrieval skips them. *(proposed)*
 
+**Keyword search.** `chunks.text` has a trigram index (`pg_trgm`, for misspellings through `word_similarity`) and a full-text index (`to_tsvector('english', text)`, ranked with `ts_rank_cd`), added in migration 0012. They are read only by the retrieval module's keyword search, which also requires `space_id`.
+
 **Chunk constraints.** A `CHECK` requires that `source_type` agrees with which foreign key is set: notes and library chunks reference a `document_id`, learned chunks reference a `learned_material_id`, and exactly one of the two is set.
 
 **Embedding column.** The vector column has a fixed dimension that matches the default embedding model (1536 for `openai/text-embedding-3-small`). Each chunk also stores the model name and dimensions it was embedded with. Because the model is locked once chunks exist, a change to a different dimension needs a migration and a full re-embed, which is intended to be rare and deliberate.

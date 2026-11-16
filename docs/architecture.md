@@ -78,7 +78,7 @@ flowchart TD
     REC -->|done| RC[recap]
 ```
 
-A Quiz shows feedback after each answer. A Test withholds results until the recap.
+A Quiz shows feedback after each answer. A Test withholds results until the recap: it never pauses for a Dispute (the grade stands) and keeps one difficulty.
 
 ### 4.3 Ingestion (`StateGraph`)
 

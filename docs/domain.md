@@ -84,5 +84,5 @@ A Citation names the document or book, author, and page or section.
 
 - **Topic merge:** when two Topics are merged, their quiz history and Weak Topic counts are combined. *Proposed default: yes.*
 - **Deleting a Space with a background Promotion pending:** the job is cancelled and its result discarded. *Proposed default: yes.*
-- **Duplicate Findings:** a Finding counts as a duplicate when its similarity to an existing chunk in the Space is above a set threshold. *The threshold is to be chosen during implementation.*
+- **Duplicate Findings:** a Finding counts as a duplicate when its page is already saved, or its nearest chunk in the Space has a cosine similarity of 0.92 or more (`DUPLICATE_DISTANCE = 0.08`). *Chosen by hand in issue 9; revisit with real data.*
 - **Conflict decisions and new Notes:** a stored decision applies until new Notes touching that Topic are uploaded, at which point it is re-checked. *Proposed default: yes.*

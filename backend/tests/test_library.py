@@ -36,3 +36,13 @@ def test_library_tool_is_offered_only_when_the_space_switch_is_on():
 def test_prompt_mentions_the_library_only_when_it_is_on():
     assert "search_library" not in build_prompt(False)
     assert "search_library" in build_prompt(True)
+
+
+def test_pack_search_matches_words_and_near_spellings():
+    from sqlalchemy.dialects import postgresql
+
+    from app.library.search import build_pack_search
+
+    sql = str(build_pack_search("fizics").compile(dialect=postgresql.dialect()))
+    assert "websearch_to_tsquery" in sql  # words, stemmed
+    assert "<%" in sql  # a near spelling still matches

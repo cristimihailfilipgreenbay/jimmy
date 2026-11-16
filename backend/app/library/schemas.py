@@ -33,12 +33,3 @@ class LibraryOut(BaseModel):
     # The book's chapter numbers in this Space, and how many answers cited the Library.
     chapters: list[int]
     cited_in_answers: int
-
-
-class SearchHitOut(BaseModel):
-    chunk_id: uuid.UUID
-    document: str
-    author: str | None
-    page_or_section: str | None
-    passage: str
-    score: float

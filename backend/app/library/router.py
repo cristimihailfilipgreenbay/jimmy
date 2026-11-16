@@ -4,17 +4,16 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Query
-from sqlalchemy import select
+from sqlalchemy import select, text
 
-from app.chat.citations import page_or_section
 from app.chat.models import Message, Thread
-from app.chunks.retrieval import keyword_search_chunks
 from app.db import SessionDep
 from app.documents.models import Document
 from app.errors import ApiError
 from app.library.ingest import ingest_library_document
 from app.library.models import LibraryPack
-from app.library.schemas import LibraryIn, LibraryOut, PackOut, SearchHitOut
+from app.library.schemas import LibraryIn, LibraryOut, PackOut
+from app.library.search import TYPO_THRESHOLD, build_pack_search
 from app.library.seed import seed_root
 from app.spaces.dependencies import get_owned_space
 from app.spaces.models import Space
@@ -85,42 +84,26 @@ def _state(session, space: Space) -> LibraryOut:
 
 
 @router.get("/libraries", response_model=list[PackOut])
-def list_packs(session: SessionDep, student: StudentDep):
-    """The packs the seed command has made available."""
-    return session.scalars(select(LibraryPack).order_by(LibraryPack.title))
+def list_packs(
+    session: SessionDep,
+    student: StudentDep,
+    q: Annotated[str | None, Query(max_length=200)] = None,
+):
+    """The packs the seed command has made available. With `q`, only the packs that
+    match those words (misspellings included), best match first."""
+    words = (q or "").strip()
+    if not words:
+        return session.scalars(select(LibraryPack).order_by(LibraryPack.title))
+    # Applies to this transaction only; the `<%` operator reads it.
+    session.execute(
+        text(f"SET LOCAL pg_trgm.word_similarity_threshold = {TYPO_THRESHOLD}")
+    )
+    return session.scalars(build_pack_search(words))
 
 
 @router.get("/spaces/{space_id}/library", response_model=LibraryOut)
 def get_library(space: SpaceDep, session: SessionDep):
     return _state(session, space)
-
-
-@router.get("/spaces/{space_id}/library/search", response_model=list[SearchHitOut])
-def search_library(
-    space: SpaceDep,
-    session: SessionDep,
-    q: Annotated[str, Query(min_length=2, max_length=200)],
-    limit: Annotated[int, Query(ge=1, le=25)] = 10,
-):
-    """Search the Space's Subject Library by words. Misspellings still match."""
-    hits = keyword_search_chunks(
-        session,
-        space_id=space.id,
-        query=q.strip(),
-        limit=limit,
-        source_types=("library",),
-    )
-    return [
-        SearchHitOut(
-            chunk_id=h.chunk_id,
-            document=h.document_title,
-            author=h.document_author,
-            page_or_section=page_or_section(h.page_start, h.page_end, h.section),
-            passage=h.text,
-            score=h.score,
-        )
-        for h in hits
-    ]
 
 
 @router.put("/spaces/{space_id}/library", response_model=LibraryOut)

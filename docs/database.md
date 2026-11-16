@@ -42,7 +42,7 @@ Postgres schema, conventions and migrations. See [architecture.md](./architectur
 
 **Library chunks live in the Space.** Attaching a Subject Library pack ingests its chapters as `documents` of kind `library` with that Space's `space_id`, so the one retrieval function and the isolation rule apply unchanged. The cost is storing a pack's embeddings once per Space, which is small for two or three chapters per subject. Switching the library off sets `enabled` to false on those documents and retrieval skips them. *(proposed)*
 
-**Keyword search.** `chunks.text` has a trigram index (`pg_trgm`, for misspellings through `word_similarity`) and a full-text index (`to_tsvector('english', text)`, ranked with `ts_rank_cd`), added in migration 0012. They are read only by the retrieval module's keyword search, which also requires `space_id`.
+**Pack search.** Finding a Subject Library pack by words uses Postgres only: full-text search (`to_tsvector`, ranked with `ts_rank_cd`) and the `pg_trgm` extension (`word_similarity`, so misspellings match), enabled in migration 0012. The table is small, so no extra index is needed.
 
 **Chunk constraints.** A `CHECK` requires that `source_type` agrees with which foreign key is set: notes and library chunks reference a `document_id`, learned chunks reference a `learned_material_id`, and exactly one of the two is set.
 

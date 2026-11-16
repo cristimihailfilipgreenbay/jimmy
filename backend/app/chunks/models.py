@@ -1,16 +1,7 @@
 import uuid
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import (
-    CheckConstraint,
-    ForeignKey,
-    Index,
-    Integer,
-    String,
-    Text,
-    func,
-    text,
-)
+from sqlalchemy import CheckConstraint, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db import Base
@@ -33,18 +24,6 @@ class Chunk(Base):
             postgresql_using="hnsw",
             postgresql_with={"m": 16, "ef_construction": 64},
             postgresql_ops={"embedding": "vector_cosine_ops"},
-        ),
-        # Keyword search (migration 0012): trigrams for typos, full text for ranking.
-        Index(
-            "ix_chunks_text_trgm",
-            "text",
-            postgresql_using="gin",
-            postgresql_ops={"text": "gin_trgm_ops"},
-        ),
-        Index(
-            "ix_chunks_text_fts",
-            func.to_tsvector("english", text("text")),
-            postgresql_using="gin",
         ),
     )
 

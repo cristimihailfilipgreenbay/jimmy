@@ -3,7 +3,7 @@ import uuid
 import pytest
 from sqlalchemy.dialects import postgresql
 
-from app.chunks.retrieval import build_keyword_query, build_query
+from app.chunks.retrieval import build_query
 
 VECTOR = [0.1] * 1536
 
@@ -27,19 +27,3 @@ def test_query_only_reads_ready_enabled_documents_of_the_space():
     assert "documents.space_id = " in sql
     assert "documents.enabled IS true" in sql
     assert "documents.status = " in sql
-
-
-def test_keyword_search_refuses_to_run_without_space_id():
-    with pytest.raises(TypeError):
-        build_keyword_query(None, "atp")  # type: ignore[arg-type]
-
-
-def test_keyword_search_is_filtered_by_space_and_matches_typos():
-    space_id = uuid.uuid4()
-    sql = str(
-        build_keyword_query(space_id, "atp").compile(dialect=postgresql.dialect())
-    )
-    assert "chunks.space_id = " in sql
-    assert "documents.enabled IS true" in sql
-    assert "<%" in sql  # trigram match, so a misspelled word still finds passages
-    assert "websearch_to_tsquery" in sql

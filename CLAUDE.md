@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-Jimmy is an AI study tutor for university students (FastAPI + LangGraph backend, React frontend, Postgres/pgvector). **The repo is currently docs-only (design phase): there is no application code, `docker-compose.yml` or `.env.example` yet.** The build is tracked as ordered vertical-slice GitHub issues starting at #1; each issue names its prerequisites. Frontend tooling is chosen in issue #1.
+Jimmy is an AI study tutor for university students (FastAPI + LangGraph backend, React frontend, Postgres/pgvector). **Issue #1 (walking skeleton) is built: `docker-compose.yml`, `.env.example`, a FastAPI backend with `/health` and Alembic, and a React Router shell. Everything else is still to build.** The build is tracked as ordered vertical-slice GitHub issues; each issue names its prerequisites. Frontend: Vite, TypeScript, Tailwind v4, shadcn, oxlint.
 
 The docs in `docs/` are the source of truth. Read the relevant one before implementing:
 `architecture.md` (stack, graphs, test seams), `domain.md` (invariants, lifecycles), `api.md` (HTTP/SSE contract), `database.md` (schema, migration rules), `spec.md` (requirements), `design.md` (product behaviour), `Features.md` (features mapped to issues), `adr/` (decisions).
@@ -13,7 +13,7 @@ The docs in `docs/` are the source of truth. Read the relevant one before implem
 
 A design artifact already exists for the UI: "Jimmy — Study Tutor Prototype" (https://claude.ai/artifact/TSNW2vrvQXEA6QRmi1WLDt). Read it (Artifact tool, `action: "read"`) before building or changing frontend screens, and update that artifact rather than creating a new one.
 
-## Commands (intended, once issue #1 lands)
+## Commands
 
 ```bash
 cp .env.example .env              # fill in OPENROUTER / TAVILY / LANGSMITH keys; never commit .env
@@ -43,6 +43,8 @@ The backend runs `alembic upgrade head` on start; demo data (OpenStax Biology/Ph
 ## Finishing an issue
 
 When an issue is finished, draft a git commit message for it and show it to the user. Do not commit or push unless asked.
+
+The subject line is `#<issue> [Backend|Frontend] <Area> - <Summary>`, for example `#23 [Backend] Spaces - Add endpoint to remove`. If the change is neither backend nor frontend, or touches both, omit the bracketed tag.
 
 ## Testing
 

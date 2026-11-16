@@ -147,7 +147,7 @@ backend/app/
 
 frontend/src/
 ├── main.tsx, App.tsx
-├── components/     # app shell (Providers, AppRoutes, Layout) and ui/ (shadcn)
+├── components/     # app shell (Providers, AppRoutes, Layout, Header, SpaceTabs, DropdownMenu, Logo) and ui/ (shadcn, restyled to the design)
 ├── lib/            # http client, utils, schemas/ (feature-agnostic)
 └── features/
     ├── auth/

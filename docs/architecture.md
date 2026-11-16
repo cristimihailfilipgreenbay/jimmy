@@ -159,12 +159,12 @@ frontend/src/
     ├── spaces/
     │   ├── api/         # requests and types
     │   ├── hooks/       # React Query hooks (useSpaces, useCreateSpace, ...)
+    │   ├── SpacesPage.tsx  # the feature's page
     │   ├── components/  # dialogs used by the page
-    │   ├── pages/       # SpacesPage
     │   └── lib/         # accents
     └── health/          # api/, components/
 ```
 
-Inside a feature, use only the sub-folders it needs: `api/`, `hooks/`, `state/`, `components/`, `pages/`, `lib/`. Server data goes through React Query hooks in `hooks/`; `state/` is for client state such as the current profile.
+Inside a feature, use only the sub-folders it needs: `api/`, `hooks/`, `state/`, `components/`, `lib/`. In this pure React app a feature is a page, so its page component sits at the feature root (no `pages/` folder). Server data goes through React Query hooks in `hooks/`; `state/` is for client state such as the current profile.
 
 A new feature gets its own package or folder. A feature may import another feature (Spaces uses the current Student) but `lib/` and `db.py` never import a feature. Alembic's `env.py` imports each feature's models so their tables are registered.

@@ -165,6 +165,6 @@ frontend/src/
     └── health/          # api/, components/
 ```
 
-Inside a feature, use only the sub-folders it needs: `api/`, `hooks/`, `state/`, `components/`, `lib/`. In this pure React app a feature is a page, so its page component sits at the feature root (no `pages/` folder). Server data goes through React Query hooks in `hooks/`; `state/` is for client state such as the current profile.
+Inside a feature, use only the sub-folders it needs: `api/`, `hooks/`, `state/`, `components/`, `lib/`. In this pure React app a feature is normally a page, so its page component sits at the feature root (no `pages/` folder). A dialog is not a feature of its own unless it is complex enough to need its own api, hooks and state, and a tab is sometimes a feature; otherwise dialogs and tabs live in the `components/` of the page that uses them. Server data goes through React Query hooks in `hooks/`; `state/` is for client state such as the current profile.
 
 A new feature gets its own package or folder. A feature may import another feature (Spaces uses the current Student) but `lib/` and `db.py` never import a feature. Alembic's `env.py` imports each feature's models so their tables are registered.

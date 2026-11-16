@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     # The Tutor's model (chat) and the cheaper one for background work.
     tutor_model: str = ""
     background_model: str = ""
+    # The classifier behind the input guard and the injection scan; empty uses
+    # `background_model`.
+    guard_model: str = ""
     embedding_model: str = "openai/text-embedding-3-small"
     embedding_dimensions: int = 1536
 

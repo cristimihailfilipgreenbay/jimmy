@@ -53,6 +53,7 @@ All settings come from `.env`. Names are proposals until `.env.example` exists.
 | `LANGSMITH_API_KEY`, `LANGSMITH_ENDPOINT`, `LANGSMITH_PROJECT`, `LANGSMITH_TRACING` | Tracing and feedback |
 | `TUTOR_MODEL` | Model for tutoring, grading and essays |
 | `BACKGROUND_MODEL` | Cheaper model for background work |
+| `GUARD_MODEL` | Classifier for the input guard and injection scan (empty: `BACKGROUND_MODEL`) |
 | `EMBEDDING_MODEL` | Embedding model (default `openai/text-embedding-3-small`); locked once documents are indexed |
 | `DATABASE_URL` | Postgres connection (set by Compose by default) |
 

@@ -14,10 +14,12 @@ from app.conflicts.router import router as conflicts_router
 from app.db import engine
 from app.documents.router import router as documents_router
 from app.errors import install_error_handlers
+from app.flashcards.router import router as flashcards_router
 from app.jobs.router import router as jobs_router
 from app.learned.router import router as learned_router
 from app.library.router import router as library_router
 from app.onboarding.router import router as onboarding_router
+from app.profile.router import router as profile_router
 from app.spaces.router import router as spaces_router
 from app.study.router import router as study_router
 from app.topics.router import router as topics_router
@@ -49,6 +51,8 @@ app.include_router(library_router)
 app.include_router(learned_router)
 app.include_router(conflicts_router)
 app.include_router(study_router)
+app.include_router(flashcards_router)
+app.include_router(profile_router)
 app.include_router(jobs_router)
 
 

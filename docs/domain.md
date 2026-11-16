@@ -69,6 +69,8 @@ A Citation names the document or book, author, and page or section.
 
 **Conflict:** detected by `compare_sources` (Notes versus Subject Library or Learned Material; Tutor Knowledge is not compared yet) → paused → the Student keeps Notes, accepts the other Source, or marks it unsure → decision stored for that pair of passages, and used without asking again until the Student forgets it.
 
+**Flashcard:** drafted from one passage of Notes, the Subject Library or approved Learned Material → waiting in the review queue (a pause) → the Student approves, edits (which approves the edited card) or rejects it → once the whole batch is decided, the edits are read for a card style, proposed as a style fact, and used for later batches only after the Student approves it.
+
 **Dispute:** grade uncertain → paused → the Student sees their answer beside the Source passage and decides (right, wrong, or not sure, which counts as not right and marks the Topic for review) → decision recorded, the grade overridden and the Weak Topic record updated.
 
 ## 5. Scenarios used to stress-test the model

@@ -28,6 +28,7 @@ TOOL_LABELS = {
     "search_wikipedia": "Searching Wikipedia…",
     "search_web": "Searching the web…",
     "compare_sources": "Comparing sources…",
+    "save_flashcards": "Drafting Flashcards…",
 }
 
 
@@ -107,7 +108,15 @@ def run_turn(
     sources = RunSources()
     try:
         agent = build_agent(
-            space_id, sources, model, library, web, learned, checkpointer, compare_model
+            space_id,
+            sources,
+            model,
+            library,
+            web,
+            learned,
+            checkpointer,
+            compare_model,
+            flashcards=True,
         )
     except ModelNotConfigured as exc:
         yield Event("error", {"code": "upstream_unavailable", "message": str(exc)})
@@ -142,7 +151,15 @@ def resume_turn(
     sources = RunSources()
     try:
         agent = build_agent(
-            space_id, sources, model, library, web, learned, checkpointer, compare_model
+            space_id,
+            sources,
+            model,
+            library,
+            web,
+            learned,
+            checkpointer,
+            compare_model,
+            flashcards=True,
         )
     except ModelNotConfigured as exc:
         yield Event("error", {"code": "upstream_unavailable", "message": str(exc)})

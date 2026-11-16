@@ -1,0 +1,46 @@
+import uuid
+
+from fastapi import APIRouter, Response
+from sqlalchemy import select
+
+from app.db import SessionDep
+from app.errors import ApiError
+from app.profile.models import ProfileFact
+from app.profile.schemas import FactOut
+from app.students.dependencies import StudentDep
+
+router = APIRouter(tags=["profile"])
+
+
+def _fact(session, student_id: uuid.UUID, fact_id: uuid.UUID) -> ProfileFact:
+    fact = session.get(ProfileFact, fact_id)
+    if fact is None or fact.student_id != student_id:
+        raise ApiError(404, "fact_not_found", "That does not exist.")
+    return fact
+
+
+@router.get("/profile/facts", response_model=list[FactOut])
+def list_facts(student: StudentDep, session: SessionDep):
+    """What Jimmy remembers about the Student: facts and style preferences, with their
+    status."""
+    return session.scalars(
+        select(ProfileFact)
+        .where(ProfileFact.student_id == student.id)
+        .order_by(ProfileFact.created_at.desc())
+    ).all()
+
+
+@router.post("/profile/facts/{fact_id}/approve", response_model=FactOut)
+def approve_fact(fact_id: uuid.UUID, student: StudentDep, session: SessionDep):
+    """Only an approved fact shapes later work."""
+    fact = _fact(session, student.id, fact_id)
+    fact.status = "approved"
+    session.commit()
+    return fact
+
+
+@router.delete("/profile/facts/{fact_id}", status_code=204)
+def delete_fact(fact_id: uuid.UUID, student: StudentDep, session: SessionDep):
+    session.delete(_fact(session, student.id, fact_id))
+    session.commit()
+    return Response(status_code=204)

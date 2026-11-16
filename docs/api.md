@@ -51,7 +51,7 @@ The HTTP contract between the frontend and the backend. Structure is in [archite
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/spaces` | List Study Spaces with counts (documents, Topics, Weak Topics) |
-| POST | `/spaces` | Create (`name`, `accent`) |
+| POST | `/spaces` | Create (`name`, optional `course`, `accent`). `accent` is one of `leaf-green`, `ink-blue`, `copper`, `rosewood`, `plum`, `teal`, `indigo`, `ochre`, `olive`, `slate` (default `slate`). `409 space_exists` for a name the Student already uses (ignoring case) |
 | GET | `/spaces/{space_id}` | One Space |
 | PATCH | `/spaces/{space_id}` | Rename, change accent, toggle Subject Library |
 | DELETE | `/spaces/{space_id}` | Delete and cascade to everything it owns (`204`). The confirmation is a frontend dialog; the endpoint is not callable without it from the UI. |

@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils'
-import { parseSegments } from '../lib/segments'
+import { isWeb, parseSegments } from '../lib/segments'
 import type { Citation } from '../schemas/chat'
 import { CitationChip, TutorChip } from './CitationChip'
 
@@ -13,8 +13,13 @@ export function Segments({ content, citations, streaming }: { content: string; c
         // A statement that rests only on textbook passages gets the Library's double line.
         const cited = segment.kind === 'notes' ? segment.citationIds.map((id) => citations.find((c) => c.id === id)) : []
         const fromLibrary = cited.length > 0 && cited.every((c) => c?.source_type === 'library')
+        // A statement that rests on any web Finding gets the dashed, hatched "unreviewed" style.
+        const fromWeb = cited.some((c) => c && isWeb(c))
         return (
-          <p key={i} className={cn('seg', segment.kind === 'tutor' ? 'seg-tutor' : fromLibrary ? 'seg-lib' : 'seg-notes')}>
+          <p
+            key={i}
+            className={cn('seg', segment.kind === 'tutor' ? 'seg-tutor' : fromWeb ? 'seg-web' : fromLibrary ? 'seg-lib' : 'seg-notes')}
+          >
             <span className={cn(live && 'caret')}>{segment.text}</span>
             {!live && segment.kind === 'tutor' && (
               <>

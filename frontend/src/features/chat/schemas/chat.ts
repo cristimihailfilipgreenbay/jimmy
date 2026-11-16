@@ -17,6 +17,9 @@ export const citationSchema = z.object({
   author: z.string().nullable(),
   page_or_section: z.string().nullable(),
   passage: z.string(),
+  // Only a web Finding has these.
+  url: z.string().nullish(),
+  fetched_at: z.string().nullish(),
 })
 export type Citation = z.infer<typeof citationSchema>
 

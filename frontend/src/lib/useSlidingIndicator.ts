@@ -7,7 +7,7 @@ import { useLayoutEffect, useRef } from 'react'
  * active tab. It moves smoothly on change and jumps into place on first render
  * and on resize.
  */
-export function useSlidingIndicator<T extends HTMLElement>(activeKey: string) {
+export function useSlidingIndicator<T extends HTMLElement>(activeKey: string, line = false) {
   const container = useRef<T>(null)
   const indicator = useRef<HTMLSpanElement>(null)
   const placedOnce = useRef(false)
@@ -32,9 +32,11 @@ export function useSlidingIndicator<T extends HTMLElement>(activeKey: string) {
           : 'none'
       ind.style.opacity = ''
       ind.style.left = `${to.left - from.left - c.clientLeft}px`
-      ind.style.top = `${to.top - from.top - c.clientTop}px`
       ind.style.width = `${to.width}px`
-      ind.style.height = `${to.height}px`
+      if (!line) {
+        ind.style.top = `${to.top - from.top - c.clientTop}px`
+        ind.style.height = `${to.height}px`
+      }
     }
 
     place(placedOnce.current)
@@ -48,7 +50,7 @@ export function useSlidingIndicator<T extends HTMLElement>(activeKey: string) {
     })
     observer.observe(c)
     return () => observer.disconnect()
-  }, [activeKey])
+  }, [activeKey, line])
 
   return { container, indicator }
 }

@@ -33,7 +33,7 @@ The HTTP contract between the frontend and the backend. Structure is in [archite
 ### Students and Profile
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/students` | List profiles for the switcher (no `X-Student-Id` needed) |
+| GET | `/students?ids=...` | List the profiles whose ids the browser remembers, for the switcher (no `X-Student-Id` needed). Without `ids` it returns an empty list, so other Students' ids cannot be discovered |
 | POST | `/students` | Create a profile |
 | GET | `/profile` | The current Student's Profile (language, explanation style) |
 | PATCH | `/profile` | Update language or explanation style |

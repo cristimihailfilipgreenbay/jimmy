@@ -26,7 +26,7 @@ flowchart LR
 | Models | OpenRouter. `TUTOR_MODEL`, `BACKGROUND_MODEL`, `EMBEDDING_MODEL` (default `openai/text-embedding-3-small`) set by env |
 | Database | One Postgres with pgvector (app data, vectors, LangGraph checkpoints) |
 | Frontend | React, React Router, shadcn |
-| Guardrails | NeMo Guardrails with a multilingual Nemotron safety model on Student input; Llama Prompt Guard 2 on retrieved or web text before Promotion |
+| Guardrails | A prompted classifier on a cheap allowed model (`GUARD_MODEL`) for Student input, scope and injection scans of Notes and web text, plus a list of known injection phrases; see ADR 0003 |
 | Evaluation | Ragas plus custom checks |
 
 ## 3. Runtime

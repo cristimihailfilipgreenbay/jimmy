@@ -154,7 +154,7 @@ Jimmy is a study tutor organised around **Study Spaces**, one per subject. The s
 - Tokens and estimated cost are calculated and shown per answer.
 
 **Guardrails**
-- NeMo Guardrails with a multilingual Nemotron safety model checks Student input; Llama Prompt Guard 2 scans retrieved and web text before Promotion. An early spike confirms the Nemotron model is reachable; if not, Prompt Guard 2 covers both.
+- A prompted classifier on a cheap allowed model checks Student input and scope, and scans Notes and web text for injection (a flagged passage is withheld). The spike found the dedicated safety models unavailable; see ADR 0003.
 
 **Observability and feedback**
 - LangSmith traces every run. Thumbs up or down is stored with the trace identity and sent to LangSmith. Repeated feedback may propose a Profile style change that needs Approval.

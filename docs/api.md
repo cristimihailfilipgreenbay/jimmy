@@ -6,7 +6,7 @@ The HTTP contract between the frontend and the backend. Structure is in [archite
 
 ## 1. Conventions
 
-- **Base path:** `/api/v1`. JSON requests and responses, except file upload (multipart) and streaming (server-sent events).
+- **Base path:** `/api` (the dev proxy strips it, so the backend serves from the root; no version segment). JSON requests and responses, except file upload (multipart) and streaming (server-sent events).
 - **Identity:** there is no login. The frontend's profile switcher sends the selected Student in the `X-Student-Id` header on every request. A request without it, or with an unknown id, gets `401`. *(proposed)*
 - **Ownership:** every resource a Student owns is checked against that header. A Study Space that belongs to another Student behaves as if it does not exist (`404`).
 - **Study Space scoping:** everything that belongs to a Study Space is addressed under `/spaces/{space_id}/...`, so the isolation rule (ADR 0001) is visible in every route.

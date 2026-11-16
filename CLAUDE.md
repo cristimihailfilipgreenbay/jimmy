@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-Jimmy is an AI study tutor for university students (FastAPI + LangGraph backend, React frontend, Postgres/pgvector). **Issue #1 (walking skeleton) is built: `docker-compose.yml`, `.env.example`, a FastAPI backend with `/health` and Alembic, and a React Router shell. Everything else is still to build.** The build is tracked as ordered vertical-slice GitHub issues; each issue names its prerequisites. Frontend: Vite, TypeScript, Tailwind v4, shadcn, oxlint.
+Jimmy is an AI study tutor for university students (FastAPI + LangGraph backend, React frontend, Postgres/pgvector). **Issues #1 and #2 are built: `docker-compose.yml`, `.env.example`, a FastAPI backend with `/health`, Alembic and the `students`/`spaces` tables (create, list, delete Study Spaces, scoped by the `X-Student-Id` header), and a React shell with a profile switcher and a Study Spaces page. Everything else is still to build.** The build is tracked as ordered vertical-slice GitHub issues; each issue names its prerequisites. Frontend: Vite, TypeScript, Tailwind v4, shadcn, oxlint.
 
 The docs in `docs/` are the source of truth. Read the relevant one before implementing:
 `architecture.md` (stack, graphs, test seams), `domain.md` (invariants, lifecycles), `api.md` (HTTP/SSE contract), `database.md` (schema, migration rules), `spec.md` (requirements), `design.md` (product behaviour), `Features.md` (features mapped to issues), `adr/` (decisions).
@@ -26,6 +26,7 @@ The backend runs `alembic upgrade head` on start; demo data (OpenStax Biology/Ph
 
 ## Architecture essentials
 
+- **No API versioning:** the browser calls `/api/...`, the dev proxy strips `/api`, and the backend serves from the root (`/spaces`, `/students`, `/health`). Do not add a `/v1` segment.
 - Local-only, single Student at a time (profile switcher sets `student_id`; no login). External services: OpenRouter (chat + embeddings), Tavily, Wikipedia, LangSmith.
 - Three LangGraph pieces: **Tutor chat** (`create_agent` ReAct with tools `search_notes`, `search_library`, `search_wikipedia`, `search_web`, `compare_sources`, `promote_finding`, `record_quiz_result`, `save_flashcards`), **Study Session** (`StateGraph` for Quiz/Test: pick Topics → generate → grade → record → adapt), **Ingestion** (`StateGraph`: extract → page-aware chunk → extract Topics → Topic review pause → embed → store).
 - Human-in-the-loop uses LangGraph `interrupt()` with the Postgres checkpointer. FastAPI streams runs over SSE with typed events (`token`, `tool_call`, `citation`, `cost`, `interrupt`, `done`); the client continues with `POST /threads/{id}/resume`.
@@ -42,7 +43,7 @@ The backend runs `alembic upgrade head` on start; demo data (OpenStax Biology/Ph
 
 ## Finishing an issue
 
-When an issue is finished, draft a git commit message for it and show it to the user. Do not commit or push unless asked.
+Commit and push as you go, in commits as small as possible (one concern each), using the subject format below. When the issue is finished, tell the user so they can give the go-ahead for the PR. Do not open the PR until they do.
 
 The subject line is `#<issue> [Backend|Frontend] <Area> - <Summary>`, for example `#23 [Backend] Spaces - Add endpoint to remove`. If the change is neither backend nor frontend, or touches both, omit the bracketed tag.
 

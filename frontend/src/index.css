@@ -213,3 +213,15 @@
     transition: none !important;
   }
 }
+
+/* Menus that open upwards, how menus leave, and toasts. */
+@keyframes menu-pop-up {
+  from { opacity: 0; transform: translateY(10px); }
+}
+.menu-pop-up { animation: menu-pop-up 0.25s cubic-bezier(0.2, 0.7, 0.2, 1); transform-origin: bottom; }
+@keyframes menu-out { to { opacity: 0; transform: translateY(-6px); } }
+@keyframes menu-out-up { to { opacity: 0; transform: translateY(6px); } }
+.menu-out { animation: menu-out 0.15s ease-in forwards; }
+.menu-out-up { animation: menu-out-up 0.15s ease-in forwards; }
+@keyframes toast-in { from { opacity: 0; transform: translateX(18px); } }
+.toast-in { animation: toast-in 0.3s cubic-bezier(0.2, 0.7, 0.2, 1); }

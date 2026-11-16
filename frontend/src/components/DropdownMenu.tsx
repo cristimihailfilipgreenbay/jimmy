@@ -1,63 +1,34 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
+import { MenuSurface } from '@/components/MenuSurface'
 import { cn } from '@/lib/utils'
 
-/** A button and the menu it opens. Closes on outside click, Escape or choosing an item. */
+/** A button and the menu it opens, placed under the button as in the design. */
 export function DropdownMenu({
   trigger,
   children,
   align = 'left',
   className,
-  open: controlledOpen,
-  onOpenChange,
 }: {
   trigger: (menu: { open: boolean; toggle: () => void }) => ReactNode
   children: ReactNode
   align?: 'left' | 'right'
   className?: string
-  /** Pass both to control the menu from outside (for example, to open it on right-click). */
-  open?: boolean
-  onOpenChange?: (open: boolean) => void
 }) {
-  const [ownOpen, setOwnOpen] = useState(false)
-  const open = controlledOpen ?? ownOpen
-  const setOpen = (value: boolean | ((current: boolean) => boolean)) => {
-    const next = typeof value === 'function' ? value(open) : value
-    setOwnOpen(next)
-    onOpenChange?.(next)
-  }
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-    const onPointer = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false)
-    }
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
-    document.addEventListener('mousedown', onPointer)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', onPointer)
-      document.removeEventListener('keydown', onKey)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open])
-
+  const [open, setOpen] = useState(false)
+  const wrapper = useRef<HTMLDivElement>(null)
   return (
-    <div ref={ref} className="relative">
+    <div ref={wrapper} className="relative">
       {trigger({ open, toggle: () => setOpen((o) => !o) })}
       {open && (
-        <div
-          role="menu"
-          onClick={() => setOpen(false)}
-          className={cn(
-            'menu-pop absolute top-10 z-50 rounded-lg border bg-card p-1 shadow-lg',
-            align === 'right' ? 'right-0' : 'left-0',
-            className,
-          )}
+        <MenuSurface
+          anchorRef={wrapper}
+          returnFocus={() => wrapper.current?.querySelector('button')}
+          onClose={() => setOpen(false)}
+          className={cn('absolute top-10 z-50 rounded-lg border bg-card p-1 shadow-lg', align === 'right' ? 'right-0' : 'left-0', className)}
         >
           {children}
-        </div>
+        </MenuSurface>
       )}
     </div>
   )

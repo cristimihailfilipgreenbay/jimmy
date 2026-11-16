@@ -185,7 +185,7 @@ def resume_thread(
     feedback."""
     if thread.kind == "session":
         if not isinstance(body.decision, str):
-            raise ApiError(422, "invalid_decision", "Choose correct or incorrect.")
+            raise ApiError(422, "invalid_decision", "Choose yes, no or not sure.")
         return JSONResponse(
             resume_dispute(
                 body.interrupt_id, body.decision, thread, session

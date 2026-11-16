@@ -110,7 +110,9 @@ class Dispute(Base):
 
     __tablename__ = "disputes"
     __table_args__ = (
-        CheckConstraint("decision IN ('correct', 'incorrect')", name="decision"),
+        CheckConstraint(
+            "decision IN ('correct', 'incorrect', 'unsure')", name="decision"
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)

@@ -270,6 +270,16 @@ def test_a_decision_changes_the_weak_topic_record(db, written):
         assert s.get(WeakTopic, (SPACE, topic)).is_weak
 
 
+def test_not_sure_counts_as_not_right_and_is_kept(db, written):
+    graph, config, _sid, _topic = _start(db, grader=UnsureGrader(0.9, 0.3))
+    _submit(graph, config)
+    _submit(graph, config, "unsure")
+    with Session(db) as s:
+        attempt = s.scalar(select(QuizAttempt))
+        assert not attempt.is_correct and attempt.graded_by == "student"
+        assert s.scalar(select(Dispute)).decision == "unsure"
+
+
 def test_the_decision_feeds_the_difficulty(db, written):
     graph, config, sid, _topic = _start(db, total=4, grader=UnsureGrader(0.0, 0.3))
     for _ in range(2):

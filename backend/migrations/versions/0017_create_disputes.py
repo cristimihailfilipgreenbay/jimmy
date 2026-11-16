@@ -29,7 +29,7 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.CheckConstraint(
-            "decision IN ('correct', 'incorrect')",
+            "decision IN ('correct', 'incorrect', 'unsure')",
             name=op.f("ck_disputes_decision"),
         ),
         sa.ForeignKeyConstraint(

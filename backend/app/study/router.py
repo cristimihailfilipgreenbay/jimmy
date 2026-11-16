@@ -135,6 +135,7 @@ def _feedback(
 ) -> FeedbackOut:
     space_id = session.get(StudySession, question.session_id).space_id
     weak = session.get(WeakTopic, (space_id, question.topic_id))
+    dispute = session.scalar(select(Dispute).where(Dispute.attempt_id == attempt.id))
     if question.question_type == q.MULTIPLE_CHOICE:
         correct_answer = question.options[int(question.answer_key)]
         shown = _option_text(question, attempt.answer)
@@ -151,6 +152,7 @@ def _feedback(
         answer=shown,
         correct=attempt.is_correct,
         graded_by=attempt.graded_by,
+        decision=dispute.decision if dispute else None,
         score=float(attempt.score),
         correct_answer=correct_answer,
         explanation=question.explanation,
@@ -310,8 +312,8 @@ def resume_dispute(
     pending = _pending_dispute(session, study, question) if study else None
     if pending is None or pending.interrupt_id != interrupt_id:
         raise ApiError(409, "nothing_to_resume", "There is nothing to answer here.")
-    if decision not in ("correct", "incorrect"):
-        raise ApiError(422, "invalid_decision", "Choose correct or incorrect.")
+    if decision not in ("correct", "incorrect", "unsure"):
+        raise ApiError(422, "invalid_decision", "Choose yes, no or not sure.")
     return _resume(study, question, decision, session)
 
 

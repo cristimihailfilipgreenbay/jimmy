@@ -51,6 +51,8 @@ class FeedbackOut(BaseModel):
     explanation: str
     # Whether the Student's own decision set this result.
     graded_by: str = "auto"
+    # The Student's decision on a Dispute: correct, incorrect or unsure.
+    decision: str | None = None
     # The grader's note on a written answer.
     note: str | None
     source: SourceOut

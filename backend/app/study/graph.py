@@ -52,7 +52,7 @@ class StudyState(TypedDict, total=False):
     question_id: str
     answer: str
     grade: dict
-    # "correct" or "incorrect": the Student's decision on a disputed grade.
+    # "correct", "incorrect" or "unsure": the Student's decision on a disputed grade.
     decision: str | None
 
 
@@ -175,6 +175,7 @@ def build_study_graph(
             if decision:
                 # The Student's decision overrides the grade (docs/domain.md, rule 7);
                 # the automatic one stays in the Dispute.
+                # "Not sure" counts as not right, so the Topic is reviewed.
                 right = decision == "correct"
                 session.add(attempt)
                 session.flush()

@@ -4,12 +4,12 @@ import { Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { errorMessage } from '@/lib/http'
 import { cn } from '@/lib/utils'
-import { useStudent } from '@/features/students/StudentProvider'
-import { swatchFor } from './accents'
-import type { Space } from './api'
-import { CreateSpaceDialog } from './CreateSpaceDialog'
-import { DeleteSpaceDialog } from './DeleteSpaceDialog'
-import { useSpaces } from './queries'
+import { useStudent } from '@/features/students/hooks/useStudent'
+import type { Space } from '../api/spaces'
+import { CreateSpaceDialog } from '../components/CreateSpaceDialog'
+import { DeleteSpaceDialog } from '../components/DeleteSpaceDialog'
+import { useSpaces } from '../hooks/useSpaces'
+import { swatchFor } from '../lib/accents'
 
 export function SpacesPage() {
   const { current, loading } = useStudent()

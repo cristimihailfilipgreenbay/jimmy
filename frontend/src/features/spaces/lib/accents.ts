@@ -1,4 +1,4 @@
-import type { Accent } from './api'
+import type { Accent } from '../api/spaces'
 
 // Ten colours a Student can pick for a Study Space. The name is what is stored;
 // class names are written out in full so Tailwind can see them.

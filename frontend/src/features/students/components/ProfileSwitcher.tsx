@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { errorMessage } from '@/lib/http'
-import { useStudent } from './StudentProvider'
+import { useStudent } from '../hooks/useStudent'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 

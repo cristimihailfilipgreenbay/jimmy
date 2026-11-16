@@ -1,18 +1,10 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getStoredStudentId, storeStudentId } from '@/lib/identity'
-import { createStudent, listStudents, type Student } from './api'
-import { forgetStudentIds, getKnownStudentIds, rememberStudentId } from './knownStudents'
+import { createStudent, listStudents, type Student } from '../api/students'
+import { forgetStudentIds, getKnownStudentIds, rememberStudentId } from '../lib/knownStudents'
+import { StudentContext } from './StudentContext'
 
-type StudentState = {
-  students: Student[]
-  current: Student | null
-  loading: boolean
-  select: (id: string) => void
-  create: (name: string) => Promise<void>
-}
-
-const Ctx = createContext<StudentState | null>(null)
 const STUDENTS_KEY = ['students']
 
 async function loadStudents(): Promise<Student[]> {
@@ -49,11 +41,5 @@ export function StudentProvider({ children }: { children: ReactNode }) {
     const students = data ?? []
     return { students, current: students.find((s) => s.id === currentId) ?? null, loading: isPending, select, create }
   }, [data, currentId, isPending, select, create])
-  return <Ctx.Provider value={value}>{children}</Ctx.Provider>
-}
-
-export function useStudent() {
-  const ctx = useContext(Ctx)
-  if (!ctx) throw new Error('useStudent must be used inside StudentProvider')
-  return ctx
+  return <StudentContext.Provider value={value}>{children}</StudentContext.Provider>
 }

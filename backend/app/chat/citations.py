@@ -20,22 +20,27 @@ _PARAGRAPHS = re.compile(r"\n\s*\n")
 @dataclass(frozen=True)
 class Citation:
     id: int
-    chunk_id: uuid.UUID
     source_type: str
     document: str
     author: str | None
     page_or_section: str | None
     passage: str
+    # Notes and Library passages are chunks; a web Finding has a page address instead.
+    chunk_id: uuid.UUID | None = None
+    url: str | None = None
+    fetched_at: str | None = None
 
     def as_json(self) -> dict:
         return {
             "id": self.id,
-            "chunk_id": str(self.chunk_id),
+            "chunk_id": str(self.chunk_id) if self.chunk_id else None,
             "source_type": self.source_type,
             "document": self.document,
             "author": self.author,
             "page_or_section": self.page_or_section,
             "passage": self.passage,
+            "url": self.url,
+            "fetched_at": self.fetched_at,
         }
 
 

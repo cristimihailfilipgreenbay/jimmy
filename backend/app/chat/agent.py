@@ -18,7 +18,13 @@ from app.chat.guards import (
     is_doom_loop,
 )
 from app.chat.prompt import build_prompt
-from app.chat.tools import RunSources, make_search_library, make_search_notes
+from app.chat.tools import (
+    RunSources,
+    make_search_library,
+    make_search_notes,
+    make_search_web,
+    make_search_wikipedia,
+)
 from app.config import get_settings
 
 OPENROUTER_BASE = "https://openrouter.ai/api/v1"
@@ -87,15 +93,27 @@ def citation_check(sources: RunSources) -> AgentMiddleware:
     return check
 
 
-def build_agent(space_id, sources: RunSources, model=None, library: bool = False):
-    """`library`: the Space has a Subject Library attached and switched on."""
+def build_agent(
+    space_id,
+    sources: RunSources,
+    model=None,
+    library: bool = False,
+    web: bool = False,
+):
+    """`library`: the Space has a Subject Library attached and switched on.
+    `web`: the Student allows web search (Wikipedia, and Tavily when it has a key)."""
     tools = [make_search_notes(space_id, sources)]
     if library:
         tools.append(make_search_library(space_id, sources))
+    use_tavily = web and bool(get_settings().tavily_api_key)
+    if web:
+        tools.append(make_search_wikipedia(sources))
+    if use_tavily:
+        tools.append(make_search_web(sources))
     return create_agent(
         model or make_model(),
         tools=tools,
-        system_prompt=build_prompt(library),
+        system_prompt=build_prompt(library, web, use_tavily),
         middleware=[
             ModelCallLimitMiddleware(run_limit=MAX_MODEL_CALLS, exit_behavior="error"),
             doom_loop_stop(),

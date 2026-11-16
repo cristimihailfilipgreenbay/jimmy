@@ -21,6 +21,9 @@ class CitationOut(BaseModel):
     author: str | None
     page_or_section: str | None
     passage: str
+    # Only a web Finding has these.
+    url: str | None = None
+    fetched_at: str | None = None
 
 
 class MessageOut(BaseModel):

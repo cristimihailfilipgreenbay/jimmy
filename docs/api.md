@@ -152,7 +152,7 @@ A pending Dispute is answered through the thread resume endpoint.
 | `reset` | none | The Citation check rejected the answer being streamed; discard the text, a rewrite follows |
 | `tool_call` | `tool`, `status` (started, finished, failed), short description, `found` (passages returned, on finished) | "Searching your notes..." |
 | `segment` | `source_type`, `citation_ids` | Marks which Source the text just streamed came from, so the UI can style it |
-| `citation` | `id`, `source_type`, `document`, `author`, `page_or_section`, `passage` | Citation chips and the passage viewer |
+| `citation` | `id`, `source_type` (`notes`, `library`, `wikipedia`, `web`), `document`, `author`, `page_or_section`, `passage`, and for a web Finding `url` and `fetched_at` | Citation chips and the passage viewer |
 | `interrupt` | `interrupt_id`, `kind`, `payload` | A pause the Student must answer (section 4) |
 | `cost` | `tokens_in`, `tokens_out`, `usd` | Cost under the answer |
 | `job` | `job_id`, `kind`, `status`, `message` | Background Promotion toast |

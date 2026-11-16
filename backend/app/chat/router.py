@@ -13,6 +13,8 @@ from app.chat.schemas import MessageIn, MessageOut, ThreadOut
 from app.db import SessionDep
 from app.spaces.dependencies import get_owned_space
 from app.spaces.models import Space
+from app.students.dependencies import StudentDep
+from app.students.models import Profile
 
 router = APIRouter(tags=["chat"])
 
@@ -52,7 +54,9 @@ def _sse(events: Iterator) -> Iterator[str]:
 
 
 @router.post("/threads/{thread_id}/messages")
-def send_message(body: MessageIn, thread: ThreadDep, session: SessionDep):
+def send_message(
+    body: MessageIn, thread: ThreadDep, student: StudentDep, session: SessionDep
+):
     """Store the question and stream the answer as server-sent events."""
     earlier = list(
         session.scalars(
@@ -64,6 +68,7 @@ def send_message(body: MessageIn, thread: ThreadDep, session: SessionDep):
     if not earlier:
         thread.title = body.content.strip().replace("\n", " ")[:60]
     space = session.get(Space, thread.space_id)
+    profile = session.get(Profile, student.id)
     session.add(Message(thread_id=thread.id, role="user", content=body.content))
     session.commit()
     events = run_turn(
@@ -72,6 +77,7 @@ def send_message(body: MessageIn, thread: ThreadDep, session: SessionDep):
         history=history_messages(earlier),
         question=body.content,
         library=bool(space and space.library_enabled),
+        web=bool(profile and profile.web_search_enabled),
     )
     return StreamingResponse(
         _sse(events),

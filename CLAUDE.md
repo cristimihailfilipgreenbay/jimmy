@@ -15,6 +15,8 @@ A design artifact already exists for the UI: "Jimmy — Study Tutor Prototype" (
 
 **Build UI from the prototype's source, not from memory or shadcn defaults.** The artifact saves its full HTML; read the markup, classes and motion for the screen you are building and reproduce them. The theme (colour tokens, Inter and Source Serif 4, radii, focus ring, motion) lives in `frontend/src/index.css`, copied from the prototype. Do not add elements, copy or behaviour the prototype does not have, and do not drop any it has. Where the data does not exist yet (for example a Space's Notes count), keep the element and show the true value. To tint a screen with a Study Space's colour, wrap it in `style={accentStyle(accent)}` (`features/spaces/lib/accents.ts`), then use `bg-space`, `bg-space-soft` and `text-space-ink`.
 
+Deliberate differences from the prototype, asked for by the user (do not "fix" them): Space tabs slide the screen in the direction of the tab (`lib/spaceTabs.ts`, `.tab-next` / `.tab-prev` in `index.css`) instead of only fading; and menu items show their highlight on keyboard focus only (`focus-visible`), so a menu opened with the mouse does not look as if its first item were selected.
+
 ## Commands
 
 ```bash

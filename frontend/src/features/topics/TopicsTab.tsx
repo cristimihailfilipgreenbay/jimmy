@@ -19,7 +19,7 @@ export function TopicsTab({ studentId, spaceId }: { studentId: string; spaceId: 
   const merge = useMergeTopics(studentId, spaceId)
   const [selected, setSelected] = useState<string[]>([])
   const [renaming, setRenaming] = useState<{ id: string; name: string } | null>(null)
-  const [deleting, setDeleting] = useState<Topic | null>(null)
+  const [deleting, setDeleting] = useState<Topic[]>([])
   const [problem, setProblem] = useState<string | null>(null)
   const error =
     problem ??
@@ -88,6 +88,16 @@ export function TopicsTab({ studentId, spaceId }: { studentId: string; spaceId: 
           )}
         </p>
         <div className="ml-auto flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="enabled:hover:bg-destructive-soft enabled:hover:text-destructive"
+            disabled={selected.length === 0}
+            disabledReason="Select at least one topic to delete"
+            onClick={() => setDeleting(topics.filter((t) => selected.includes(t.id)))}
+          >
+            <Trash2 /> Delete
+          </Button>
           <Button variant="outline" size="sm" disabled={selected.length < 2 || merge.isPending}
             disabledReason={merge.isPending ? 'Merging…' : 'Select at least two topics to merge'}
             onClick={mergeSelected}>
@@ -169,7 +179,7 @@ export function TopicsTab({ studentId, spaceId }: { studentId: string; spaceId: 
                   size="icon-sm"
                   className="text-muted-foreground hover:text-destructive enabled:hover:bg-destructive-soft"
                   aria-label={`Delete ${t.name}`}
-                  onClick={() => setDeleting(t)}
+                  onClick={() => setDeleting([t])}
                 >
                   <Trash2 />
                 </Button>
@@ -181,10 +191,10 @@ export function TopicsTab({ studentId, spaceId }: { studentId: string; spaceId: 
       <DeleteTopicDialog
         studentId={studentId}
         spaceId={spaceId}
-        topic={deleting}
+        topics={deleting}
         onClose={() => {
-          setDeleting(null)
-          setSelected((s) => s.filter((id) => id !== deleting?.id))
+          setDeleting([])
+          setSelected((s) => s.filter((id) => !deleting.some((t) => t.id === id)))
         }}
       />
     </div>

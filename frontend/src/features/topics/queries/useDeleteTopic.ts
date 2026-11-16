@@ -5,7 +5,7 @@ import { topicsKey } from './useTopics'
 export function useDeleteTopic(studentId: string, spaceId: string) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (topicId: string) => deleteTopic(spaceId, topicId),
+    mutationFn: (topicIds: string[]) => Promise.all(topicIds.map((id) => deleteTopic(spaceId, id))),
     onSuccess: () => qc.invalidateQueries({ queryKey: topicsKey(studentId, spaceId) }),
   })
 }

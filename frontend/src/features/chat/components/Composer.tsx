@@ -1,6 +1,7 @@
 import { WhenDisabled } from '@/components/WhenDisabled'
 import { useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { Send, Square } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { messageInSchema } from '../schemas/chat'
 
@@ -8,7 +9,7 @@ const SUGGESTIONS = ['What can you help with before I add notes?']
 
 const BUSY_REASON = 'Jimmy is answering. Stop the answer to ask something else.'
 
-export function Composer({ spaceName, busy, onSend, onStop }: { spaceName: string; busy: boolean; onSend: (q: string) => void; onStop: () => void }) {
+export function Composer({ spaceName, busy, empty, onSend, onStop }: { spaceName: string; empty: boolean; busy: boolean; onSend: (q: string) => void; onStop: () => void }) {
   const [value, setValue] = useState('')
   const field = useRef<HTMLTextAreaElement>(null)
 
@@ -29,7 +30,7 @@ export function Composer({ spaceName, busy, onSend, onStop }: { spaceName: strin
 
   return (
     <div className="sticky bottom-16 z-10 bg-background pt-2 pb-2 md:bottom-0">
-      <div className="scroll-thin -mx-4 mb-2 flex gap-2 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:px-0">
+      <div className={cn('scroll-thin -mx-4 mb-2 flex gap-2 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:px-0', empty && 'hidden')}>
         {SUGGESTIONS.map((s) => (
           <WhenDisabled key={s} disabled={busy} reason={BUSY_REASON}>
             <button

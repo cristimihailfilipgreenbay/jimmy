@@ -24,8 +24,8 @@ Postgres schema, conventions and migrations. See [architecture.md](./architectur
 ### Students and settings
 | Table | Purpose | Key columns *(proposed)* |
 |---|---|---|
-| `students` | One row per account | `id`, `email` (unique, stored lower-cased), `password_hash` (argon2), `display_name` (optional until onboarding), `created_at` |
-| `profiles` | Preferences shared across Spaces | `student_id` (PK, FK), `language`, `explanation_style` |
+| `students` | One row per account | `id`, `email` (unique, stored lower-cased), `password_hash` (argon2), `display_name` (optional until onboarding), `onboarded_at` (null until onboarding is finished), `created_at` |
+| `profiles` | What the Student told Jimmy; shared across Spaces | `student_id` (PK, FK, cascades), `course`, `university`, `year`, `goals` (array), `explanation_style` (short, balanced, detailed), `web_search_enabled`; `language` is added with the Profile screen |
 | `profile_facts` | Remembered facts and style preferences | `id`, `student_id`, `kind` (fact, style), `text`, `status` (proposed, approved), `origin` (student, feedback, flashcard_edits) |
 | `settings` | Per-Student model and tool settings | `student_id` (PK, FK), `tutor_model`, `background_model`, `temperature`, `max_tokens`, `tools` (JSON of toggles), `dispute_confidence_threshold`, `dispute_margin` |
 | `app_config` | Installation-wide values | `key` (PK), `value`. Holds `embedding_model`, `embedding_dimensions`, `embedding_locked_at` |

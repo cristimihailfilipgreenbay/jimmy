@@ -17,7 +17,7 @@ export function AuthPage() {
   const { data, isPending } = useMe()
   const [forgot, setForgot] = useState(false)
   if (isPending) return null
-  if (data) return <Navigate to="/" replace />
+  if (data) return <Navigate to={data.onboarded ? '/' : '/welcome'} replace />
 
   const up = mode === 'sign-up'
   return (

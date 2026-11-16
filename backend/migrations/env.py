@@ -1,9 +1,8 @@
 from alembic import context
 
-from app.db import Base, make_engine
-
 # Importing the models registers every feature's tables on Base.metadata.
 from app.chunks import models as _chunks_models  # noqa: F401
+from app.db import Base, make_engine
 from app.documents import models as _documents_models  # noqa: F401
 from app.spaces import models as _spaces_models  # noqa: F401
 from app.students import models as _students_models  # noqa: F401

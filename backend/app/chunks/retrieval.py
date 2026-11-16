@@ -37,7 +37,7 @@ def build_query(
     source_types: tuple[str, ...] = DEFAULT_SOURCES,
 ) -> Select:
     if not isinstance(space_id, uuid.UUID):
-        raise ValueError("space_id is required to search chunks")
+        raise TypeError("space_id is required to search chunks")
     if limit < 1:
         raise ValueError("limit must be at least 1")
     distance = Chunk.embedding.cosine_distance(query_embedding).label("distance")

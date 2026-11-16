@@ -42,7 +42,7 @@ def test_unknown_extension_is_rejected():
 
 
 def test_markdown_becomes_one_page_titled_by_filename():
-    result = extract("cell-biology.md", "# Cells\n\nHello".encode())
+    result = extract("cell-biology.md", b"# Cells\n\nHello")
     assert result.title == "cell-biology"
     assert result.page_count is None
     assert result.pages[0].number is None

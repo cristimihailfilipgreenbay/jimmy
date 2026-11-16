@@ -9,9 +9,9 @@ VECTOR = [0.1] * 1536
 
 
 def test_refuses_to_run_without_space_id():
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         build_query(None, VECTOR)  # type: ignore[arg-type]
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         build_query("not-a-uuid", VECTOR)  # type: ignore[arg-type]
 
 

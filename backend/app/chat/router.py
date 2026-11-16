@@ -17,7 +17,7 @@ from app.chat.runner import (
     resume_turn,
     run_turn,
 )
-from app.chat.schemas import MessageIn, MessageOut, ResumeIn, ThreadOut
+from app.chat.schemas import MessageIn, MessageOut, ThreadOut
 from app.chat.tools import RunSources
 from app.checkpointer import get_checkpointer
 from app.conflicts.service import DECISIONS
@@ -127,9 +127,17 @@ def _has_learned(session, space_id) -> bool:
     )
 
 
-@router.post("/threads/{thread_id}/resume")
-def resume(body: ResumeIn, thread: ThreadDep, student: StudentDep, session: SessionDep):
-    """Answer a pause. The turn that paused is always the thread's latest question."""
+def resume_chat(
+    interrupt_id: str,
+    decision: str,
+    thread: Thread,
+    student,
+    session,
+) -> StreamingResponse:
+    """Answer a pause in a chat. The turn that paused is always the latest question.
+
+    Called by `POST /threads/{thread_id}/resume` (app/topics/router.py), which answers
+    every kind of pause."""
     nothing = ApiError(409, "nothing_to_resume", "That question was already answered.")
     question = session.scalar(
         select(Message)
@@ -156,9 +164,9 @@ def resume(body: ResumeIn, thread: ThreadDep, student: StudentDep, session: Sess
     pending = pending_interrupt(
         agent, config_for(thread.id, question.id, thread.space_id)
     )
-    if pending is None or pending[0] != body.interrupt_id:
+    if pending is None or pending[0] != interrupt_id:
         raise nothing
-    if pending[1].get("kind") == "conflict" and body.decision not in DECISIONS:
+    if pending[1].get("kind") == "conflict" and decision not in DECISIONS:
         raise ApiError(
             422, "invalid_decision", "Choose keep_notes, accept_other or unsure."
         )
@@ -166,7 +174,7 @@ def resume(body: ResumeIn, thread: ThreadDep, student: StudentDep, session: Sess
         thread_id=thread.id,
         turn_id=question.id,
         space_id=thread.space_id,
-        decision=body.decision,
+        decision=decision,
         space_name=space.name if space else "",
         checkpointer=checkpointer,
         **flags,

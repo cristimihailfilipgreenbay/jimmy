@@ -42,9 +42,3 @@ class MessageOut(BaseModel):
 
 class MessageIn(BaseModel):
     content: str = Field(min_length=1, max_length=8000)
-
-
-class ResumeIn(BaseModel):
-    interrupt_id: str = Field(min_length=1, max_length=200)
-    # What the Student chose; its allowed values depend on the kind of pause.
-    decision: str = Field(min_length=1, max_length=50)

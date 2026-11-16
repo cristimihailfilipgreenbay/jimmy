@@ -1,11 +1,13 @@
 import { useState } from 'react'
-import { ArrowRight, Book, Layers, Plus } from 'lucide-react'
+import { ArrowRight, Book, Layers, MoreHorizontal, Plus, Trash2 } from 'lucide-react'
 import { Link } from 'react-router'
 import { useSignedInStudent } from '@/features/auth/hooks/useSignedInStudent'
+import { DropdownMenu, MenuButton, MenuLink } from '@/components/DropdownMenu'
 import { Button } from '@/components/ui/button'
 import { errorMessage } from '@/lib/http'
 import { cardClass } from '@/lib/styles'
 import { CreateSpaceDialog } from './components/CreateSpaceDialog'
+import { DeleteSpaceDialog } from './components/DeleteSpaceDialog'
 import { accentStyle } from './lib/accents'
 import { createdLabel } from './lib/relativeTime'
 import { useSpaces } from './queries/useSpaces'
@@ -41,7 +43,7 @@ export function SpacesPage() {
       {spaces && spaces.length > 0 && (
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {spaces.map((space) => (
-            <SpaceCard key={space.id} space={space} />
+            <SpaceCard key={space.id} space={space} studentId={student.id} />
           ))}
           <li>
             <button
@@ -60,9 +62,21 @@ export function SpacesPage() {
   )
 }
 
-function SpaceCard({ space }: { space: Space }) {
+function SpaceCard({ space, studentId }: { space: Space; studentId: string }) {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   return (
-    <li style={accentStyle(space.accent)}>
+    // Right-clicking anywhere on the card opens the same menu as the "⋯" button.
+    <li
+      style={accentStyle(space.accent)}
+      className="group relative"
+      onContextMenu={(e) => {
+        // The dialog is portalled out of the card but its events still bubble here.
+        if (!e.currentTarget.contains(e.target as Node)) return
+        e.preventDefault()
+        setMenuOpen(true)
+      }}
+    >
       <Link
         to={`/spaces/${space.id}`}
         className={`group block h-full overflow-hidden transition hover:-translate-y-px hover:shadow-md ${cardClass}`}
@@ -70,7 +84,7 @@ function SpaceCard({ space }: { space: Space }) {
         <div className="h-1.5 bg-space" />
         <div className="p-5">
           <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
+            <div className="min-w-0 pr-8">
               <h2 className="truncate text-lg font-semibold tracking-tight">{space.name}</h2>
               <p className="mt-0.5 truncate text-sm text-muted-foreground">{space.course ?? 'No course set'}</p>
             </div>
@@ -100,6 +114,27 @@ function SpaceCard({ space }: { space: Space }) {
           </p>
         </div>
       </Link>
+      <div className="absolute top-3.5 right-14 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:has-[[aria-expanded=true]]:opacity-100 sm:focus-within:opacity-100">
+        <DropdownMenu
+          align="right"
+          className="w-48"
+          open={menuOpen}
+          onOpenChange={setMenuOpen}
+          trigger={({ open, toggle }) => (
+            <Button variant="ghost" size="icon-sm" onClick={toggle} aria-label={`Options for ${space.name}`} aria-haspopup="menu" aria-expanded={open}>
+              <MoreHorizontal />
+            </Button>
+          )}
+        >
+          <MenuLink to={`/spaces/${space.id}`}>
+            <ArrowRight className="size-4" aria-hidden /> Open
+          </MenuLink>
+          <MenuButton destructive onClick={() => setDeleting(true)}>
+            <Trash2 className="size-4" aria-hidden /> Delete Space…
+          </MenuButton>
+        </DropdownMenu>
+      </div>
+      <DeleteSpaceDialog studentId={studentId} space={space} open={deleting} onClose={() => setDeleting(false)} onDeleted={() => setDeleting(false)} />
     </li>
   )
 }

@@ -9,36 +9,42 @@ function useActiveTab(spaceId: string) {
 }
 
 // Dashboard, Chat, Study and Flashcards of the current Study Space, in the header.
+// A segmented control: equal-width tabs and a pill that slides behind the active
+// one (a CSS transform), like the sign-in / sign-up tabs.
 export function SpaceTabs({ spaceId }: { spaceId: string }) {
   const active = useActiveTab(spaceId)
-  const { container, indicator } = useSlidingIndicator<HTMLDivElement>(active ?? '')
+  const index = Math.max(0, SPACE_TABS.findIndex((t) => t.path === active))
   return (
     <nav className="ml-3 hidden md:block" aria-label="Space">
-      <div ref={container} className="relative rounded-xl border bg-muted p-1">
-        <span ref={indicator} aria-hidden className="pointer-events-none absolute top-0 left-0 rounded-lg bg-space/13" />
-        <ul className="relative flex items-center gap-0.5">
-          {SPACE_TABS.map(({ path, label, Icon }) => {
-            const on = active === path
-            return (
-              <li key={label}>
-                <Link
-                  to={`/spaces/${spaceId}${path}`}
-                  aria-current={on ? 'page' : undefined}
-                  data-ind-target
-                  data-active={on}
-                  className={cn(
-                    'relative flex h-8 items-center gap-1.5 rounded-lg px-3 text-[13px] font-medium transition-colors',
-                    on ? 'font-semibold text-space-ink/80' : 'text-muted-foreground hover:bg-card/70 hover:text-foreground',
-                  )}
-                >
-                  <Icon className="size-4" aria-hidden />
-                  {label}
-                </Link>
-              </li>
-            )
-          })}
-        </ul>
-      </div>
+      <ul className="relative grid grid-cols-4 rounded-lg bg-muted p-1">
+        <span
+          aria-hidden
+          className={cn(
+            'pointer-events-none absolute top-1 bottom-1 left-1 w-[calc((100%-0.5rem)/4)] rounded-md bg-card shadow-sm',
+            'transition-transform duration-[280ms] ease-[cubic-bezier(.3,.7,.2,1)] motion-reduce:transition-none',
+            active === undefined && 'opacity-0',
+          )}
+          style={{ transform: `translateX(${index * 100}%)` }}
+        />
+        {SPACE_TABS.map(({ path, label, Icon }) => {
+          const on = active === path
+          return (
+            <li key={label} className="contents">
+              <Link
+                to={`/spaces/${spaceId}${path}`}
+                aria-current={on ? 'page' : undefined}
+                className={cn(
+                  'relative z-10 flex h-8 items-center justify-center gap-1.5 rounded-md px-3 text-[13px] font-medium transition-colors duration-200',
+                  on ? 'font-semibold text-space-ink' : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                <Icon className="size-4" aria-hidden />
+                {label}
+              </Link>
+            </li>
+          )
+        })}
+      </ul>
     </nav>
   )
 }

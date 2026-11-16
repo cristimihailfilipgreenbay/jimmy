@@ -22,7 +22,7 @@ Postgres schema, conventions and migrations. See [architecture.md](./architectur
 ## 3. Tables
 
 ### Students and settings
-| Table | Purpose | Key columns *(proposed)* |
+| Table | Purpose | Key columns |
 |---|---|---|
 | `students` | One row per account | `id`, `email` (unique, stored lower-cased), `password_hash` (argon2), `display_name` (optional until onboarding), `onboarded_at` (null until onboarding is finished), `created_at` |
 | `profiles` | What the Student told Jimmy; shared across Spaces | `student_id` (PK, FK, cascades), `course`, `university`, `year`, `goals` (array), `explanation_style` (short, balanced, detailed), `web_search_enabled`; `language` is added with the Profile screen |
@@ -35,7 +35,7 @@ Postgres schema, conventions and migrations. See [architecture.md](./architectur
 |---|---|---|
 | `spaces` | A Study Space | `id`, `student_id` (FK), `name`, `course` (optional, one line "code · lecturer", for example "BIO 202 · Prof. Weber"; the screens edit the two parts separately), `accent` (a colour name, not a subject), `library_enabled`. Unique on (`student_id`, lower(`name`)) |
 | `library_packs` | Available Subject Library packs | `id`, `slug`, `title`, `author`, `license`, `source_url`, `subject` |
-| `documents` | Notes and library documents in a Space | `id`, `space_id`, `kind` (notes, library), `pack_id` (null for Notes), `title`, `author`, `filename`, `mime_type`, `size_bytes`, `page_count`, `status`, `rejection_reason`, `thread_id` (the ingestion run, a `threads` row), `enabled` |
+| `documents` | Notes and library documents in a Space | `id`, `space_id`, `kind` (notes, library), `pack_id` (FK to `library_packs`; null for Notes), `title`, `author`, `filename`, `mime_type`, `size_bytes`, `page_count`, `status`, `rejection_reason`, `thread_id` (the ingestion run, a `threads` row), `enabled` |
 | `learned_material` | Web-sourced items promoted into a Space | `id`, `space_id`, `title`, `publisher`, `url`, `status` (unreviewed, approved), `job_id`, `approved_at` |
 | `chunks` | Searchable passages with vectors | `id`, `space_id`, `source_type` (notes, library, learned), `document_id`, `learned_material_id`, `chunk_index`, `text`, `page_start`, `page_end`, `section`, `topic_id`, `embedding`, `embedding_model`, `embedding_dimensions`, `token_count` |
 | `topics` | Topics in a Space | `id`, `space_id`, `name`, `status` (proposed, approved), `merged_into_id`. Unique on (`space_id`, lower(`name`)) among Topics that are not merged |

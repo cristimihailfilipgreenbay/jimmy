@@ -60,18 +60,19 @@ The app is closed to a Student who has not finished onboarding: the frontend sen
 | GET | `/spaces` | List Study Spaces with counts (documents, Topics, Weak Topics), newest first |
 | POST | `/spaces` | Create (`name`, optional `course`, `accent`). `accent` is one of `leaf-green`, `ink-blue`, `copper`, `rosewood`, `plum`, `teal`, `indigo`, `ochre`, `olive`, `slate` (default `slate`). `409 space_exists` for a name the Student already uses (ignoring case) |
 | GET | `/spaces/{space_id}` | One Space |
-| PATCH | `/spaces/{space_id}` | Change a Study Space. Only the fields that are sent change: `name` (rename, `409 space_exists` if another of the Student's Spaces has it, ignoring case), `course` (`null` or blank clears it) and `accent`. The Subject Library toggle is added with that feature. Returns the Space |
+| PATCH | `/spaces/{space_id}` | Change a Study Space. Only the fields that are sent change: `name` (rename, `409 space_exists` if another of the Student's Spaces has it, ignoring case), `course` (`null` or blank clears it) and `accent`. Returns the Space |
 | DELETE | `/spaces/{space_id}` | Delete and cascade to everything it owns (`204`). The confirmation is a frontend dialog; the endpoint is not callable without it from the UI. |
 
 ### Documents (Notes and library)
 | Method | Path | Purpose |
 |---|---|---|
 | POST | `/spaces/{space_id}/documents` | Upload Notes (multipart). Returns `202` with the document, which carries the ingestion `thread_id`. The run extracts Topics and then pauses for Topic review (section 4); the document is `awaiting_topic_review` until the Student answers. Rejects with `413`, `422 unsupported_type`, `422 too_many_pages` or `422 scanned_document` |
-| GET | `/spaces/{space_id}/documents` | List with processing status |
+| GET | `/spaces/{space_id}/documents` | List with processing status. Notes by default; `?kind=library` lists the attached Subject Library chapters |
 | GET | `/spaces/{space_id}/documents/{id}` | One document |
 | DELETE | `/spaces/{space_id}/documents/{id}` | Delete the document and its chunks |
-| GET | `/libraries` | Available Subject Library packs (title, author, licence) |
-| PUT | `/spaces/{space_id}/library` | Attach or detach a pack, or switch it on or off |
+| GET | `/libraries` | Available Subject Library packs (title, author, licence), as registered by the seed command |
+| GET | `/spaces/{space_id}/library` | The Space's Subject Library: `pack` (or null), `enabled`, `status` (`none`, `indexing`, `ready`, `failed`), `chapters_ready`, `chapters_total` |
+| PUT | `/spaces/{space_id}/library` | `{pack_id, enabled}`. A `pack_id` attaches that pack (replacing another) and indexes its chapters in the background; the same pack again with `enabled` switches it on or off; `pack_id: null` detaches the Library and deletes its chapters. `409 library_not_seeded` if the seed command has not downloaded the pack. Returns the same shape as GET |
 
 Document status values: `uploaded`, `extracting`, `rejected`, `awaiting_topic_review`, `embedding`, `ready`, `failed`.
 

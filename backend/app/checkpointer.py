@@ -21,7 +21,12 @@ def _libpq_url() -> str:
 
 @lru_cache
 def get_checkpointer() -> PostgresSaver:
-    """One saver for the process. It creates its own tables on first use."""
+    """One saver for the process.
+
+    Its tables are created by `setup()`, which runs `CREATE INDEX CONCURRENTLY` and so
+    waits for every open transaction to end. Call it at startup (see `main.py`), never
+    inside a request: the request's own database session would block it forever.
+    """
     global _pool
     _pool = ConnectionPool(
         _libpq_url(),

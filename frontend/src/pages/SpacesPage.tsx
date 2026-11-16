@@ -1,9 +1,10 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
 import { Trash2 } from 'lucide-react'
 import { useStudent } from '@/hooks/student'
 import { ACCENTS, swatchFor } from '@/lib/accents'
-import { ApiError, createSpace, deleteSpace, listSpaces, type Accent, type Space } from '@/lib/api'
+import { ApiError, type Accent, type Space } from '@/lib/api'
+import { useCreateSpace, useDeleteSpace, useSpaces } from '@/lib/queries'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -29,21 +30,14 @@ export function SpacesPage() {
       </section>
     )
   }
-  // Remount per Student so switching profiles never shows another Student's list.
-  return <SpacesList key={current.id} />
+  return <SpacesList studentId={current.id} />
 }
 
-function SpacesList() {
-  const [spaces, setSpaces] = useState<Space[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
+function SpacesList({ studentId }: { studentId: string }) {
+  const { data: spaces, error: loadError } = useSpaces(studentId)
+  const error = loadError ? message(loadError, 'Could not load your Study Spaces.') : null
   const [creating, setCreating] = useState(false)
   const [toDelete, setToDelete] = useState<Space | null>(null)
-
-  useEffect(() => {
-    listSpaces()
-      .then(setSpaces)
-      .catch((err) => setError(message(err, 'Could not load your Study Spaces.')))
-  }, [])
 
   return (
     <section>
@@ -70,52 +64,39 @@ function SpacesList() {
         ))}
       </ul>
 
-      <CreateDialog
-        open={creating}
-        onClose={() => setCreating(false)}
-        onCreated={(space) => setSpaces((prev) => [...(prev ?? []), space])}
-      />
-      <DeleteDialog
-        space={toDelete}
-        onClose={() => setToDelete(null)}
-        onDeleted={(id) => setSpaces((prev) => prev?.filter((s) => s.id !== id) ?? null)}
-      />
+      <CreateDialog studentId={studentId} open={creating} onClose={() => setCreating(false)} />
+      <DeleteDialog studentId={studentId} space={toDelete} onClose={() => setToDelete(null)} />
     </section>
   )
 }
 
-function CreateDialog({
-  open,
-  onClose,
-  onCreated,
-}: {
-  open: boolean
-  onClose: () => void
-  onCreated: (space: Space) => void
-}) {
+function CreateDialog({ studentId, open, onClose }: { studentId: string; open: boolean; onClose: () => void }) {
   const [name, setName] = useState('')
   const [accent, setAccent] = useState<Accent>('slate')
-  const [error, setError] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
+  const create = useCreateSpace(studentId)
+  const error = create.error ? message(create.error, 'Could not create the Study Space.') : null
 
-  async function submit(e: FormEvent) {
+  function close() {
+    create.reset()
+    onClose()
+  }
+
+  function submit(e: FormEvent) {
     e.preventDefault()
-    setBusy(true)
-    setError(null)
-    try {
-      onCreated(await createSpace(name, accent))
-      setName('')
-      setAccent('slate')
-      onClose()
-    } catch (err) {
-      setError(message(err, 'Could not create the Study Space.'))
-    } finally {
-      setBusy(false)
-    }
+    create.mutate(
+      { name, accent },
+      {
+        onSuccess: () => {
+          setName('')
+          setAccent('slate')
+          close()
+        },
+      },
+    )
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+    <Dialog open={open} onOpenChange={(o) => !o && close()}>
       <DialogContent>
         <form onSubmit={submit} className="flex flex-col gap-4">
           <DialogHeader>
@@ -154,10 +135,10 @@ function CreateDialog({
           </fieldset>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <DialogFooter>
-            <Button type="button" variant="ghost" onClick={onClose}>
+            <Button type="button" variant="ghost" onClick={close}>
               Cancel
             </Button>
-            <Button type="submit" disabled={busy || !name.trim()}>
+            <Button type="submit" disabled={create.isPending || !name.trim()}>
               Create
             </Button>
           </DialogFooter>
@@ -167,35 +148,21 @@ function CreateDialog({
   )
 }
 
-function DeleteDialog({
-  space,
-  onClose,
-  onDeleted,
-}: {
-  space: Space | null
-  onClose: () => void
-  onDeleted: (id: string) => void
-}) {
-  const [error, setError] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
+function DeleteDialog({ studentId, space, onClose }: { studentId: string; space: Space | null; onClose: () => void }) {
+  const remove = useDeleteSpace(studentId)
+  const error = remove.error ? message(remove.error, 'Could not delete the Study Space.') : null
 
-  async function confirm() {
-    if (!space) return
-    setBusy(true)
-    setError(null)
-    try {
-      await deleteSpace(space.id)
-      onDeleted(space.id)
-      onClose()
-    } catch (err) {
-      setError(message(err, 'Could not delete the Study Space.'))
-    } finally {
-      setBusy(false)
-    }
+  function close() {
+    remove.reset()
+    onClose()
+  }
+
+  function confirm() {
+    if (space) remove.mutate(space.id, { onSuccess: close })
   }
 
   return (
-    <Dialog open={space !== null} onOpenChange={(o) => !o && onClose()}>
+    <Dialog open={space !== null} onOpenChange={(o) => !o && close()}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Delete “{space?.name}”?</DialogTitle>
@@ -206,10 +173,10 @@ function DeleteDialog({
         </DialogHeader>
         {error && <p className="text-sm text-destructive">{error}</p>}
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="ghost" onClick={close}>
             Cancel
           </Button>
-          <Button variant="destructive" disabled={busy} onClick={confirm}>
+          <Button variant="destructive" disabled={remove.isPending} onClick={confirm}>
             Delete Study Space
           </Button>
         </DialogFooter>

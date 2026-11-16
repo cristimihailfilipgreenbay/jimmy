@@ -21,7 +21,7 @@ const avatar = 'grid place-items-center rounded-full bg-muted font-semibold'
 export function Header({ student, spaces, space }: { student: Student; spaces: Space[]; space?: Space }) {
   return (
     <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur">
-      <div className="flex h-14 items-center gap-3 px-4">
+      <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4">
         <Link to="/" aria-label="Jimmy, all Spaces">
           <Logo />
         </Link>

@@ -8,9 +8,11 @@ from sqlalchemy import select
 
 from app.chat.dependencies import ThreadDep
 from app.chat.models import Message, Thread
-from app.chat.runner import history_messages, run_turn
+from app.chat.runner import history_messages, redirect_turn, run_turn
 from app.chat.schemas import MessageIn, MessageOut, ThreadOut
 from app.db import SessionDep
+from app.errors import ApiError
+from app.guardrails.classify import OFF_TOPIC, check_input
 from app.spaces.dependencies import get_owned_space
 from app.spaces.models import Space
 from app.students.dependencies import StudentDep
@@ -65,12 +67,27 @@ def send_message(
             .order_by(Message.created_at, Message.role.desc())
         )
     )
-    if not earlier:
-        thread.title = body.content.strip().replace("\n", " ")[:60]
     space = session.get(Space, thread.space_id)
     profile = session.get(Profile, student.id)
+    verdict = check_input(
+        body.content, space.name if space else "", profile and profile.course
+    )
+    if verdict.blocked:
+        raise ApiError(
+            429,
+            "guardrail_blocked",
+            "Jimmy can't help with that message. Ask a study question instead.",
+        )
+    if not earlier:
+        thread.title = body.content.strip().replace("\n", " ")[:60]
     session.add(Message(thread_id=thread.id, role="user", content=body.content))
     session.commit()
+    if verdict.category == OFF_TOPIC:
+        return StreamingResponse(
+            _sse(redirect_turn(thread_id=thread.id, reply=verdict.reply)),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
     events = run_turn(
         thread_id=thread.id,
         space_id=thread.space_id,

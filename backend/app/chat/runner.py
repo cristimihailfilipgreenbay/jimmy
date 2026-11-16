@@ -44,6 +44,24 @@ def history_messages(rows: list[Message]) -> list:
     return out
 
 
+REDIRECT = "I'm here to help with studying. What would you like to work on?"
+
+
+def redirect_turn(*, thread_id: uuid.UUID, reply: str) -> Iterator[Event]:
+    """An off-topic message gets a friendly reply that steers back to studying."""
+    text = reply or REDIRECT
+    yield Event("token", {"text": text})
+    with Session(engine) as session:
+        message = Message(thread_id=thread_id, role="assistant", content=text)
+        session.add(message)
+        session.commit()
+        message_id = message.id
+    yield Event("cost", {"tokens_in": 0, "tokens_out": 0, "usd": None})
+    yield Event(
+        "done", {"message_id": str(message_id), "trace_id": None, "content": text}
+    )
+
+
 def run_turn(
     *,
     thread_id: uuid.UUID,

@@ -1,5 +1,6 @@
 """The Tutor's tools: `search_notes`, `search_library`, `search_wikipedia`, `search_web`."""
 
+import logging
 import threading
 from dataclasses import dataclass, field
 from datetime import date
@@ -12,8 +13,12 @@ from app.chat.web import LookupFailed, Page, search_tavily, search_wikipedia
 from app.chunks.retrieval import search_chunks
 from app.db import engine
 from app.documents.embeddings import EmbeddingError, embed_texts
+from app.guardrails.classify import scan_passages
+
+log = logging.getLogger(__name__)
 
 TOP_K = 5
+WITHHELD = "[a passage was withheld: it tried to give instructions to the assistant]"
 
 
 @dataclass
@@ -59,8 +64,16 @@ def _make_search(
             )
         if not hits:
             return none
+        # Notes are the Student's own uploads, so they are scanned; the Library is trusted.
+        flagged = (
+            scan_passages([h.text for h in hits]) if source_type == "notes" else set()
+        )
         lines = []
-        for hit in hits:
+        for i, hit in enumerate(hits):
+            if i in flagged:
+                log.warning("Withheld a Note passage that looks like an injection")
+                lines.append(WITHHELD)
+                continue
             citation = sources.add(
                 {
                     "chunk_id": hit.chunk_id,
@@ -118,9 +131,14 @@ def _make_web_search(
             return f"The search failed ({exc}). Answer without it and say so."
         if not pages:
             return none
+        flagged = scan_passages([p.text for p in pages])
         today = date.today().isoformat()
         lines = []
-        for page in pages:
+        for i, page in enumerate(pages):
+            if i in flagged:
+                log.warning("Withheld a web result that looks like an injection")
+                lines.append(WITHHELD)
+                continue
             citation = sources.add(
                 {
                     "source_type": source_type,

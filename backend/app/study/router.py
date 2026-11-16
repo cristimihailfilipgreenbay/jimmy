@@ -118,6 +118,7 @@ def _session_out(session: Session, study: StudySession) -> SessionOut:
         )
     return SessionOut(
         id=study.id,
+        thread_id=study.thread_id,
         space_id=study.space_id,
         kind=study.kind,
         status=study.status,

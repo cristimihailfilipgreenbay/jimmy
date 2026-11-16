@@ -90,6 +90,8 @@ class DisputeRecordOut(BaseModel):
 
 class SessionOut(BaseModel):
     id: uuid.UUID
+    # A Dispute is answered at POST /threads/{thread_id}/resume.
+    thread_id: uuid.UUID
     space_id: uuid.UUID
     kind: str
     status: str

@@ -25,7 +25,7 @@ export function NoteRow({
     <Button
       variant="ghost"
       size="icon-sm"
-      className="text-muted-foreground hover:text-destructive"
+      className="text-muted-foreground hover:text-destructive enabled:hover:bg-destructive-soft"
       onClick={onDelete}
       aria-label={`Delete ${note.title}`}
     >

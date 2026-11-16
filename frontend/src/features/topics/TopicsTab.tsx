@@ -167,7 +167,7 @@ export function TopicsTab({ studentId, spaceId }: { studentId: string; spaceId: 
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  className="text-muted-foreground hover:text-destructive"
+                  className="text-muted-foreground hover:text-destructive enabled:hover:bg-destructive-soft"
                   aria-label={`Delete ${t.name}`}
                   onClick={() => setDeleting(t)}
                 >

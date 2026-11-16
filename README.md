@@ -2,7 +2,7 @@
 
 An AI study tutor for university students, built with FastAPI, LangGraph and React. This README is for developers: how to get the project running and where things live. For what Jimmy is and does, start with [docs/overview.md](docs/overview.md).
 
-> **Status:** design phase. The documentation is complete; the application is not built yet. The build is tracked in [GitHub issues](https://github.com/cristimihailfilipgreenbay/jimmy/issues), in order, starting with #1. The commands below describe the intended setup and will work once issue #1 is done.
+> **Status:** issue #1 (walking skeleton) is done: the stack starts with one command, the backend exposes `/health` and the frontend shows the route shell. Everything else is still to build. The build is tracked in [GitHub issues](https://github.com/cristimihailfilipgreenbay/jimmy/issues), in order.
 
 ## Stack
 
@@ -73,7 +73,7 @@ jimmy/
 - **Respect the ADRs** in [docs/adr/](docs/adr/). In particular, all chunk queries go through the one retrieval function that requires a Study Space id.
 - **Migrations:** Alembic, reviewed by hand, never edit one that has been applied. See [docs/database.md](docs/database.md).
 - **Tests:** unit tests for critical backend logic only, with a fake model; no integration or frontend tests. See [docs/architecture.md](docs/architecture.md), section 9.
-- **Lint and format:** Ruff for Python. Frontend tooling is chosen in issue #1.
+- **Lint and format:** Ruff for Python. Frontend: Vite, TypeScript, Tailwind v4, shadcn, oxlint.
 
 ## Documentation
 

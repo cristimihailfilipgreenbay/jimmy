@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-Jimmy is an AI study tutor for university students (FastAPI + LangGraph backend, React frontend, Postgres/pgvector). **Issues #1, #2, #22, #23 and #28 are built: `docker-compose.yml`, `.env.example`, a FastAPI backend with `/health`, Alembic and the `students`/`spaces` tables, sign-up and sign-in (email and password, JWT cookie), Study Spaces (create, list, delete) owned by the signed-in Student, a five-step onboarding page that every new Student must finish (the app is closed until `onboarded` is true), and a React shell with a sign-in/sign-up page and a Study Spaces page. Everything else is still to build.** The build is tracked as ordered vertical-slice GitHub issues; each issue names its prerequisites. Frontend: Vite, TypeScript, Tailwind v4, shadcn, oxlint, TanStack Query (React Query) for all server state: fetch through query/mutation hooks in each feature's `queries/` folder, not `useEffect`.
+Jimmy is an AI study tutor for university students (FastAPI + LangGraph backend, React frontend, Postgres/pgvector). **Issues #1, #2, #3, #22, #23 and #28 are built: `docker-compose.yml`, `.env.example`, a FastAPI backend with `/health`, Alembic and the `students`/`spaces` tables, sign-up and sign-in (email and password, JWT cookie), Study Spaces (create, list, delete) owned by the signed-in Student, a five-step onboarding page that every new Student must finish (the app is closed until `onboarded` is true), a backend-only Notes upload (PDF, Markdown, text; scanned, oversized and unsupported files rejected) that chunks, embeds through OpenRouter and stores chunks with `space_id`, the single retrieval function `app/chunks/retrieval.py`, and a React shell with a sign-in/sign-up page and a Study Spaces page. Everything else is still to build.** The build is tracked as ordered vertical-slice GitHub issues; each issue names its prerequisites. Frontend: Vite, TypeScript, Tailwind v4, shadcn, oxlint, TanStack Query (React Query) for all server state: fetch through query/mutation hooks in each feature's `queries/` folder, not `useEffect`.
 
 The docs in `docs/` are the source of truth. Read the relevant one before implementing:
 `architecture.md` (stack, graphs, test seams), `domain.md` (invariants, lifecycles), `api.md` (HTTP/SSE contract), `database.md` (schema, migration rules), `spec.md` (requirements), `design.md` (product behaviour), `Features.md` (features mapped to issues), `adr/` (decisions).
@@ -20,7 +20,7 @@ Deliberate differences from the prototype, asked for by the user (do not "fix" t
 ## Commands
 
 ```bash
-cp .env.example .env              # fill in OPENROUTER / TAVILY / LANGSMITH keys; never commit .env
+cp .env.example .env              # OPENROUTER / TAVILY / LANGSMITH keys come from your shell environment, not .env; never commit .env
 docker compose up -d              # db (pgvector), backend (FastAPI), frontend (Vite dev server)
 docker compose logs -f backend
 docker compose down               # add -v to delete the database volume
@@ -52,7 +52,7 @@ The backend runs `alembic upgrade head` on start; demo data (OpenStax Biology/Ph
 
 ## Finishing an issue
 
-Commit and push as you go, in commits as small as possible (one concern each), using the subject format below. When the issue is finished, tell the user so they can give the go-ahead for the PR. Do not open the PR until they do.
+Commit and push as you go, in commits as small as possible (one concern each), using the subject format below. When the issue is finished, commit, push and open the PR (write the body with the `mattpocock-skills:pr` skill), then tell the user. Never merge the PR: the user reviews and merges it.
 
 The subject line is `#<issue> [Backend|Frontend] <Area> - <Summary>`, for example `#23 [Backend] Spaces - Add endpoint to remove`. If the change is neither backend nor frontend, or touches both, omit the bracketed tag.
 

@@ -29,6 +29,12 @@ class Settings(BaseSettings):
     # Turn on when served over HTTPS.
     cookie_secure: bool = False
 
+    # Embeddings go through OpenRouter. The model is locked once chunks exist, and
+    # the chunks.embedding column is sized for `embedding_dimensions`.
+    openrouter_api_key: str = ""
+    embedding_model: str = "openai/text-embedding-3-small"
+    embedding_dimensions: int = 1536
+
     # LangSmith reads LANGSMITH_* straight from the environment; these are only
     # needed to decide whether to run the startup trace.
     langsmith_tracing: bool = False

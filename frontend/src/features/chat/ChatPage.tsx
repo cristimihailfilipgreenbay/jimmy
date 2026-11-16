@@ -5,6 +5,7 @@ import { Placeholder } from '@/components/Placeholder'
 import { useSignedInStudent } from '@/features/auth/hooks/useSignedInStudent'
 import { useLibrary } from '@/features/library/queries/useLibrary'
 import { useDocuments } from '@/features/notes/queries/useDocuments'
+import { useWeakTopics } from '@/features/study/queries/useWeakTopics'
 import { useTopics } from '@/features/topics/queries/useTopics'
 import { useSpaces } from '@/features/spaces/queries/useSpaces'
 import { cn } from '@/lib/utils'
@@ -22,6 +23,7 @@ export function ChatPage() {
   const { data: spaces, isPending } = useSpaces(student.id)
   const { data: documents, isPending: loadingNotes } = useDocuments(student.id, spaceId)
   const { data: topics, isPending: loadingTopics } = useTopics(student.id, spaceId)
+  const { data: weak, isPending: loadingWeak } = useWeakTopics(student.id, spaceId)
   const { data: library, isPending: loadingLibrary } = useLibrary(student.id, spaceId)
   const chat = useChat(student.id, spaceId)
   useSpaceEvents(student.id, spaceId)
@@ -36,7 +38,7 @@ export function ChatPage() {
   if (!space) return <Placeholder title="Study Space not found" note="That Study Space does not exist." />
   const ready = documents?.filter((d) => d.status === 'ready') ?? []
   const empty = !chat.loadingMessages && chat.messages.length === 0 && !chat.pending
-  const settled = !loadingNotes && !loadingTopics && !loadingLibrary
+  const settled = !loadingNotes && !loadingTopics && !loadingLibrary && !loadingWeak
 
   return (
     <div className="grid gap-6 pt-4 pb-6 lg:grid-cols-[1fr_300px]">
@@ -49,6 +51,7 @@ export function ChatPage() {
               spaceName={space.name}
               notes={ready}
               topics={topics ?? []}
+              weak={weak ?? []}
               libraryOn={!!library?.enabled && library.status !== 'none'}
               onAsk={chat.ask}
             />

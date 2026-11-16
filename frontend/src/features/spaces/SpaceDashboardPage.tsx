@@ -8,6 +8,8 @@ import { LibraryCard } from '@/features/library/components/LibraryCard'
 import { NotesTab } from '@/features/notes/NotesTab'
 import { useDocuments } from '@/features/notes/queries/useDocuments'
 import { PROCESSING } from '@/features/notes/schemas/document'
+import { WeakTab } from '@/features/study/components/WeakTab'
+import { useWeakTopics } from '@/features/study/queries/useWeakTopics'
 import { TopicsTab } from '@/features/topics/TopicsTab'
 import { useTopics } from '@/features/topics/queries/useTopics'
 import { useSlidingIndicator } from '@/lib/useSlidingIndicator'
@@ -21,10 +23,9 @@ import { SpaceFormDialog } from './components/SpaceFormDialog'
 import { useSpaces } from './queries/useSpaces'
 
 // A Study Space's dashboard: its header, with the "⋯" menu that deletes it, and the
-// tabs under it. Notes, Topics and Learned material are built; Weak topics comes
-// with the feature that fills it.
-type Tab = 'notes' | 'topics' | 'learned'
-const TABS: Tab[] = ['notes', 'topics', 'learned']
+// tabs under it: Notes, Topics, Weak topics and Learned material.
+type Tab = 'notes' | 'topics' | 'weak' | 'learned'
+const TABS: Tab[] = ['notes', 'topics', 'weak', 'learned']
 export function SpaceDashboardPage() {
   const { spaceId } = useParams()
   const student = useSignedInStudent()
@@ -45,6 +46,7 @@ export function SpaceDashboardPage() {
   const processing = notes.data?.some((d) => PROCESSING.includes(d.status)) ?? false
   const topics = useTopics(student.id, spaceId ?? '', processing)
   const learned = useLearnedMaterial(student.id, spaceId ?? '')
+  const weak = useWeakTopics(student.id, spaceId ?? '')
   useSpaceEvents(student.id, spaceId)
 
   if (isPending) return null
@@ -109,6 +111,7 @@ export function SpaceDashboardPage() {
             [
               ['notes', 'Notes', notes.data?.length ?? 0],
               ['topics', 'Topics', topics.data?.length ?? 0],
+              ['weak', 'Weak topics', weak.data?.length ?? 0],
               ['learned', 'Learned material', learned.data?.filter((m) => m.status === 'unreviewed').length ?? 0],
             ] as const
           ).map(([key, label, count]) => (
@@ -139,6 +142,8 @@ export function SpaceDashboardPage() {
           <NotesTab studentId={student.id} space={space} />
         ) : tab === 'topics' ? (
           <TopicsTab studentId={student.id} spaceId={space.id} />
+        ) : tab === 'weak' ? (
+          <WeakTab studentId={student.id} spaceId={space.id} />
         ) : (
           <LearnedTab studentId={student.id} spaceId={space.id} spaceName={space.name} />
         )}

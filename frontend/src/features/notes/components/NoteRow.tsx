@@ -53,7 +53,7 @@ export function NoteRow({
   const working = STATUS_TEXT[note.status]
   const pages = note.page_count === null ? null : `${note.page_count} ${note.page_count === 1 ? 'page' : 'pages'}`
   return (
-    <li className="flex items-center gap-3 p-3">
+    <li className="flex items-center gap-3 p-3 transition-colors duration-200 hover:bg-muted/40">
       <span className="grid size-9 flex-none place-items-center rounded-md bg-notes-soft text-notes" aria-hidden>
         {working ? <Loader2 className="size-4 animate-spin" /> : <FileText className="size-4" />}
       </span>

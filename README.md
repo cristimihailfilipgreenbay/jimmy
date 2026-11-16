@@ -40,7 +40,7 @@ Demo data (open-licensed OpenStax chapters for Biology and Physics) is loaded se
 docker compose exec backend python -m app.library.seed
 ```
 
-It downloads the two books (about 660 MB, once), keeps three chapters of each in `data/seed/` with an `ATTRIBUTION.md`, and registers the packs. A Study Space then attaches a pack from its Subject Library switch.
+It downloads the two books (about 660 MB, once), keeps three chapters of each in `data/seed/` with an `ATTRIBUTION.md`, and registers the packs. A Study Space can then add one or more of them from its Subject Library card.
 
 ### Configuration
 

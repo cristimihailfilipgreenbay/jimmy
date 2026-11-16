@@ -8,9 +8,10 @@ import type { Space } from '@/features/spaces/schemas/space'
 import { errorMessage } from '@/lib/http'
 import { toast } from '@/lib/toast'
 import { useDebouncedValue } from '@/lib/useDebouncedValue'
+import { useAddPack } from '../queries/useAddPack'
 import { usePacks } from '../queries/usePacks'
-import { useSetLibrary } from '../queries/useSetLibrary'
-import type { LibraryState } from '../schemas/library'
+import { useRemovePack } from '../queries/useRemovePack'
+import type { LibraryState, Pack } from '../schemas/library'
 
 // Pick the textbook for a Study Space. A Space has one, so adding another replaces it.
 export function PackDialog({
@@ -29,19 +30,26 @@ export function PackDialog({
   const [typed, setTyped] = useState('')
   const q = useDebouncedValue(typed.trim())
   const { data: packs, isPending } = usePacks(studentId, q, open)
-  const set = useSetLibrary(studentId, space.id)
-  const current = state?.pack?.id
-  const error = set.error ? errorMessage(set.error, 'Could not change the textbook.') : null
+  const add = useAddPack(studentId, space.id)
+  const remove = useRemovePack(studentId, space.id)
+  const attached = new Set(state?.books.map((b) => b.pack.id))
+  const busy = add.isPending || remove.isPending
+  const failure = add.error ?? remove.error
+  const error = failure ? errorMessage(failure, 'Could not change the textbooks.') : null
 
-  function choose(packId: string | null, message: string) {
-    set.mutate({ packId }, { onSuccess: () => (toast(message, Book), onClose()) })
+  // The dialog stays open, so several textbooks can be added in a row.
+  function change(pack: Pack, adding: boolean) {
+    const mutation = adding ? add : remove
+    mutation.mutate(pack.id, {
+      onSuccess: () => toast(adding ? `${pack.title} added to ${space.name}` : `${pack.title} removed from ${space.name}`, Book),
+    })
   }
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
         <div className="p-5">
-          <DialogTitle>Textbook for {space.name}</DialogTitle>
+          <DialogTitle>Textbooks for {space.name}</DialogTitle>
           <DialogDescription className="mt-1">
             Open textbooks Jimmy can quote, with their authors and licence. Chapters are indexed in this Space only.
           </DialogDescription>
@@ -79,18 +87,13 @@ export function PackDialog({
                       OpenStax · {pack.license}
                     </a>
                   </span>
-                  {pack.id === current ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={set.isPending}
-                      onClick={() => choose(null, `Removed the textbook from ${space.name}`)}
-                    >
+                  {attached.has(pack.id) ? (
+                    <Button variant="outline" size="sm" disabled={busy} onClick={() => change(pack, false)}>
                       Remove
                     </Button>
                   ) : (
-                    <Button size="sm" disabled={set.isPending} onClick={() => choose(pack.id, `${pack.title} added to ${space.name}`)}>
-                      {current ? 'Use instead' : 'Add'}
+                    <Button size="sm" disabled={busy} onClick={() => change(pack, true)}>
+                      Add
                     </Button>
                   )}
                 </li>

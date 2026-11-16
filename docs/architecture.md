@@ -148,22 +148,24 @@ backend/app/
 frontend/src/
 ├── main.tsx, App.tsx
 ├── components/     # app shell (Providers, AppRoutes, Layout) and ui/ (shadcn)
-├── lib/            # http client, current-profile storage, utils (feature-agnostic)
+├── lib/            # http client, current-profile storage, utils, schemas/ (feature-agnostic)
 └── features/
     ├── students/
-    │   ├── queries/     # requests and types, useStudents, useCreateStudent
+    │   ├── schemas/     # Zod schemas and inferred types
+    │   ├── queries/     # requests, useStudents, useCreateStudent
     │   ├── hooks/       # useStudent
     │   ├── state/       # profile context and provider
     │   ├── components/  # ProfileSwitcher
     │   └── lib/         # pure helpers (remembered profile ids)
     ├── spaces/
-    │   ├── queries/     # requests and types, keys, useSpaces, useCreateSpace, ...
+    │   ├── schemas/     # Zod schemas and inferred types (Space, Accent)
+    │   ├── queries/     # requests, keys, useSpaces, useCreateSpace, ...
     │   ├── SpacesPage.tsx  # the feature's page
     │   ├── components/  # dialogs used by the page
     │   └── lib/         # accents
-    └── health/          # queries/ (useHealth), components/
+    └── health/          # schemas/, queries/ (useHealth), components/
 ```
 
-Inside a feature, use only the sub-folders it needs: `queries/`, `hooks/`, `state/`, `components/`, `lib/`. In this pure React app a feature is normally a page, so its page component sits at the feature root (no `pages/` folder). A dialog is not a feature of its own unless it is complex enough to need its own api, hooks and state, and a tab is sometimes a feature; otherwise dialogs and tabs live in the `components/` of the page that uses them. `queries/` holds everything that talks to the server (request functions and types, query keys and the React Query hooks); `hooks/` is for other hooks; `state/` is for client state such as the current profile.
+Inside a feature, use only the sub-folders it needs: `schemas/`, `queries/`, `hooks/`, `state/`, `components/`, `lib/`. In this pure React app a feature is normally a page, so its page component sits at the feature root (no `pages/` folder). A dialog is not a feature of its own unless it is complex enough to need its own api, hooks and state, and a tab is sometimes a feature; otherwise dialogs and tabs live in the `components/` of the page that uses them. `schemas/` holds the Zod schemas and the types inferred from them (no other file declares an API type by hand); `queries/` holds everything that talks to the server (request functions, query keys and the React Query hooks); `hooks/` is for other hooks; `state/` is for client state such as the current profile.
 
 A new feature gets its own package or folder. A feature may import another feature (Spaces uses the current Student) but `lib/` and `db.py` never import a feature. Alembic's `env.py` imports each feature's models so their tables are registered.

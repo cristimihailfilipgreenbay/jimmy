@@ -151,20 +151,19 @@ frontend/src/
 ├── lib/            # http client, current-profile storage, utils (feature-agnostic)
 └── features/
     ├── students/
-    │   ├── api/         # requests and types
+    │   ├── queries/     # requests and types, useStudents, useCreateStudent
     │   ├── hooks/       # useStudent
     │   ├── state/       # profile context and provider
     │   ├── components/  # ProfileSwitcher
     │   └── lib/         # pure helpers (remembered profile ids)
     ├── spaces/
-    │   ├── api/         # requests and types
-    │   ├── hooks/       # React Query hooks (useSpaces, useCreateSpace, ...)
+    │   ├── queries/     # requests and types, keys, useSpaces, useCreateSpace, ...
     │   ├── SpacesPage.tsx  # the feature's page
     │   ├── components/  # dialogs used by the page
     │   └── lib/         # accents
-    └── health/          # api/, components/
+    └── health/          # queries/ (useHealth), components/
 ```
 
-Inside a feature, use only the sub-folders it needs: `api/`, `hooks/`, `state/`, `components/`, `lib/`. In this pure React app a feature is normally a page, so its page component sits at the feature root (no `pages/` folder). A dialog is not a feature of its own unless it is complex enough to need its own api, hooks and state, and a tab is sometimes a feature; otherwise dialogs and tabs live in the `components/` of the page that uses them. Server data goes through React Query hooks in `hooks/`; `state/` is for client state such as the current profile.
+Inside a feature, use only the sub-folders it needs: `queries/`, `hooks/`, `state/`, `components/`, `lib/`. In this pure React app a feature is normally a page, so its page component sits at the feature root (no `pages/` folder). A dialog is not a feature of its own unless it is complex enough to need its own api, hooks and state, and a tab is sometimes a feature; otherwise dialogs and tabs live in the `components/` of the page that uses them. `queries/` holds everything that talks to the server (request functions and types, query keys and the React Query hooks); `hooks/` is for other hooks; `state/` is for client state such as the current profile.
 
 A new feature gets its own package or folder. A feature may import another feature (Spaces uses the current Student) but `lib/` and `db.py` never import a feature. Alembic's `env.py` imports each feature's models so their tables are registered.

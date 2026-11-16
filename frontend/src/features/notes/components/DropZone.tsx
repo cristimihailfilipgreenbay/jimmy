@@ -18,7 +18,7 @@ export function DropZone({ big, onFiles }: { big: boolean; onFiles: (files: File
         onFiles([...e.dataTransfer.files])
       }}
       className={cn(
-        'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-input bg-card text-center hover:border-space hover:bg-space-soft/40',
+        'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-input bg-card text-center transition-colors duration-200 hover:border-space hover:bg-space-soft/40',
         big ? 'py-16' : 'py-8',
       )}
     >

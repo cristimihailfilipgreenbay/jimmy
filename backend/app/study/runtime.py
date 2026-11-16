@@ -43,4 +43,6 @@ def get_study_graph():
         make_study_model(settings.tutor_model),
         make_study_model(settings.background_model or settings.tutor_model),
         get_checkpointer(),
+        dispute_confidence=settings.dispute_confidence_threshold,
+        dispute_margin=settings.dispute_margin,
     )

@@ -1,15 +1,17 @@
 """The Study Session graph (docs/architecture.md, section 4.2), for a Quiz.
 
     pick Topic (Weak Topics weighted) -> write a question from a passage
-      -> wait for the Student's answer (interrupt) -> grade -> record
-      -> more? adapt difficulty -> pick ... / done -> finish
+      -> wait for the Student's answer (interrupt) -> grade
+      -> unsure? wait for the Student's Dispute decision (interrupt)
+      -> record -> more? adapt difficulty -> pick ... / done -> finish
 
 The graph runs on the Postgres checkpointer, one LangGraph thread per session. It stops at
-`await_answer`; `POST /sessions/{id}/answers` resumes it with the answer. A node that fails
+`await_answer`; `POST /sessions/{id}/answers` resumes it with the answer. An uncertain
+grade stops it again at `await_dispute` until the Student decides. A node that fails
 (a model error while writing the next question) can be run again from its checkpoint.
 
 State holds plain data only. Everything before `interrupt()` runs again on resume, so
-`await_answer` does nothing else.
+`await_answer` and `await_dispute` do nothing else.
 """
 
 import random
@@ -24,7 +26,8 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.study import questions as q
-from app.study.models import QuizAttempt, SessionQuestion, StudySession
+from app.study.models import Dispute, QuizAttempt, SessionQuestion, StudySession
+from app.study.routing import DISPUTE_CONFIDENCE, DISPUTE_MARGIN, needs_dispute
 from app.study.selection import next_difficulty, pick_topic
 from app.study.service import refresh_weak_topic, weak_topic_ids
 from app.study.sources import PassageFinder
@@ -49,6 +52,8 @@ class StudyState(TypedDict, total=False):
     question_id: str
     answer: str
     grade: dict
+    # "correct" or "incorrect": the Student's decision on a disputed grade.
+    decision: str | None
 
 
 def build_study_graph(
@@ -58,6 +63,8 @@ def build_study_graph(
     grader_model,
     checkpointer,
     rng: random.Random | None = None,
+    dispute_confidence: float = DISPUTE_CONFIDENCE,
+    dispute_margin: float = DISPUTE_MARGIN,
 ):
     rng = rng or random.Random()
 
@@ -137,21 +144,54 @@ def build_study_graph(
             }
         }
 
+    def route(state: StudyState) -> str:
+        grade_ = state["grade"]
+        unsure = needs_dispute(
+            grade_["score"],
+            grade_["confidence"],
+            threshold=dispute_confidence,
+            margin=dispute_margin,
+        )
+        return "await_dispute" if unsure else "record"
+
+    def await_dispute(state: StudyState) -> StudyState:
+        decision = interrupt({"kind": "dispute", "question_id": state["question_id"]})
+        return {"decision": str(decision)}
+
     def record(state: StudyState) -> StudyState:
-        result = state["grade"]
+        result = dict(state["grade"])
+        decision = state.get("decision")
         with factory() as session:
             row = session.get(SessionQuestion, uuid.UUID(state["question_id"]))
-            session.add(
-                QuizAttempt(
-                    question_id=row.id,
-                    answer=state["answer"][: q.MAX_ANSWER_CHARS],
-                    score=result["score"],
-                    confidence=result["confidence"],
-                    is_correct=result["correct"],
-                    graded_by="auto",
-                    explanation=result["feedback"] or None,
-                )
+            attempt = QuizAttempt(
+                question_id=row.id,
+                answer=state["answer"][: q.MAX_ANSWER_CHARS],
+                score=result["score"],
+                confidence=result["confidence"],
+                is_correct=result["correct"],
+                graded_by="auto",
+                explanation=result["feedback"] or None,
             )
+            if decision:
+                # The Student's decision overrides the grade (docs/domain.md, rule 7);
+                # the automatic one stays in the Dispute.
+                right = decision == "correct"
+                session.add(attempt)
+                session.flush()
+                session.add(
+                    Dispute(
+                        attempt_id=attempt.id,
+                        auto_score=result["score"],
+                        auto_confidence=result["confidence"],
+                        decision=decision,
+                    )
+                )
+                attempt.score = 1.0 if right else 0.0
+                attempt.is_correct = right
+                attempt.graded_by = "student"
+                result["correct"] = right
+            else:
+                session.add(attempt)
             session.flush()
             refresh_weak_topic(session, uuid.UUID(state["space_id"]), row.topic_id)
             session.commit()
@@ -159,6 +199,7 @@ def build_study_graph(
             "answered": state["answered"] + 1,
             "recent": [*state["recent"], result["correct"]][-5:],
             "previous_topic": state["topic_id"],
+            "decision": None,
         }
 
     def more(state: StudyState) -> str:
@@ -194,6 +235,7 @@ def build_study_graph(
         ("generate", generate),
         ("await_answer", await_answer),
         ("grade", grade),
+        ("await_dispute", await_dispute),
         ("record", record),
         ("adapt", adapt),
         ("finish", finish),
@@ -203,7 +245,8 @@ def build_study_graph(
     graph.add_edge("pick", "generate")
     graph.add_edge("generate", "await_answer")
     graph.add_edge("await_answer", "grade")
-    graph.add_edge("grade", "record")
+    graph.add_conditional_edges("grade", route, ["await_dispute", "record"])
+    graph.add_edge("await_dispute", "record")
     graph.add_conditional_edges("record", more, ["adapt", "finish"])
     graph.add_edge("adapt", "pick")
     graph.add_edge("finish", END)

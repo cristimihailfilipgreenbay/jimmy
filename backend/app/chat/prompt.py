@@ -26,6 +26,11 @@ say different things about the same point, call `compare_sources` with the Topic
 two passage numbers before you answer. Never decide a disagreement yourself: if they \
 contradict, the Student is asked and you are told what they chose. Follow that choice."""
 
+_FLASHCARDS = """If the Student asks for Flashcards, call `save_flashcards` with the Topic's name \
+(and how many, if they said). It drafts cards from their Notes and Subject Library, and \
+they wait on the Flashcards screen for the Student to approve. Tell the Student how many \
+were drafted and where to review them. Never write Flashcards yourself in the answer."""
+
 _RULES = """{n}. Write the answer in short paragraphs. Every paragraph must be attributed, in \
 one of two ways:
    - From a search: end the paragraph with the numbers of the passages it relies on, like \
@@ -55,6 +60,7 @@ def build_prompt(
     web: bool = False,
     learned: bool = False,
     compare: bool = False,
+    flashcards: bool = False,
 ) -> str:
     steps = [_NOTES]
     tools = ["`search_notes`"]
@@ -77,6 +83,8 @@ def build_prompt(
         sources.append("web")
     if compare:
         steps.append(_COMPARE)
+    if flashcards:
+        steps.append(_FLASHCARDS)
     numbered = "\n".join(f"{i}. {s}" for i, s in enumerate(steps, start=1))
     n = len(steps) + 1
     rules = _RULES.format(

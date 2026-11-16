@@ -28,6 +28,7 @@ from app.chat.tools import (
 )
 from app.config import get_settings
 from app.conflicts.tool import make_compare_sources
+from app.flashcards.tool import make_save_flashcards
 
 OPENROUTER_BASE = "https://openrouter.ai/api/v1"
 CITATION_RETRIES = 1
@@ -104,11 +105,13 @@ def build_agent(
     learned: bool = False,
     checkpointer=None,
     compare_model=None,
+    flashcards: bool = False,
 ):
     """`library`: the Space has a Subject Library attached and switched on.
     `learned`: the Space has Learned Material.
     `web`: the Student allows web search (Wikipedia, and Tavily when it has a key).
-    `checkpointer`: where a run waits when it pauses for the Student (a Conflict)."""
+    `checkpointer`: where a run waits when it pauses for the Student (a Conflict).
+    `flashcards`: the Tutor may draft Flashcards for the Student to review."""
     tools = [make_search_notes(space_id, sources)]
     if library:
         tools.append(make_search_library(space_id, sources))
@@ -123,10 +126,14 @@ def build_agent(
         tools.append(make_search_wikipedia(sources))
     if use_tavily:
         tools.append(make_search_web(sources))
+    if flashcards:
+        tools.append(make_save_flashcards(space_id))
     return create_agent(
         model or make_model(),
         tools=tools,
-        system_prompt=build_prompt(library, web, use_tavily, learned, compare),
+        system_prompt=build_prompt(
+            library, web, use_tavily, learned, compare, flashcards
+        ),
         middleware=[
             ModelCallLimitMiddleware(run_limit=MAX_MODEL_CALLS, exit_behavior="error"),
             doom_loop_stop(),

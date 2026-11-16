@@ -1,14 +1,13 @@
 import { z } from 'zod'
 import { ApiError, request, requestStream } from '@/lib/http'
-import { messageSchema, streamEventSchema, threadSchema, type StreamEvent } from '../schemas/chat'
+import { messageSchema, streamEventSchema, threadSchema, type ConflictDecision, type StreamEvent } from '../schemas/chat'
 
 export const listThreads = (spaceId: string) => request(`/spaces/${spaceId}/threads`, z.array(threadSchema))
 export const createThread = (spaceId: string) => request(`/spaces/${spaceId}/threads`, threadSchema, { method: 'POST' })
 export const listMessages = (threadId: string) => request(`/threads/${threadId}/messages`, z.array(messageSchema))
 
-/** Sends a question and calls `onEvent` for each server-sent event until the stream ends. */
-export async function sendMessage(threadId: string, content: string, onEvent: (e: StreamEvent) => void, signal: AbortSignal) {
-  const res = await requestStream(`/threads/${threadId}/messages`, { method: 'POST', body: JSON.stringify({ content }), signal })
+/** Calls `onEvent` for each server-sent event of a response until the stream ends. */
+async function readEvents(res: Response, onEvent: (e: StreamEvent) => void) {
   if (!res.body) throw new ApiError(res.status, 'unknown', 'The answer did not stream.')
   const reader = res.body.pipeThrough(new TextDecoderStream()).getReader()
   let buffer = ''
@@ -26,4 +25,26 @@ export async function sendMessage(threadId: string, content: string, onEvent: (e
       if (parsed.success) onEvent(parsed.data)
     }
   }
+}
+
+/** Sends a question and streams the answer. */
+export async function sendMessage(threadId: string, content: string, onEvent: (e: StreamEvent) => void, signal: AbortSignal) {
+  const res = await requestStream(`/threads/${threadId}/messages`, { method: 'POST', body: JSON.stringify({ content }), signal })
+  await readEvents(res, onEvent)
+}
+
+/** Answers a pause and streams the rest of the answer. */
+export async function resumeThread(
+  threadId: string,
+  interruptId: string,
+  decision: ConflictDecision,
+  onEvent: (e: StreamEvent) => void,
+  signal: AbortSignal,
+) {
+  const res = await requestStream(`/threads/${threadId}/resume`, {
+    method: 'POST',
+    body: JSON.stringify({ interrupt_id: interruptId, decision }),
+    signal,
+  })
+  await readEvents(res, onEvent)
 }

@@ -3,6 +3,7 @@ import { Book, MessageSquare, Pencil, Trash2 } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { NotesTab } from '@/features/notes/NotesTab'
 import { useDocuments } from '@/features/notes/queries/useDocuments'
+import { PROCESSING } from '@/features/notes/schemas/document'
 import { TopicsTab } from '@/features/topics/TopicsTab'
 import { useTopics } from '@/features/topics/queries/useTopics'
 import { useSlidingIndicator } from '@/lib/useSlidingIndicator'
@@ -31,7 +32,8 @@ export function SpaceDashboardPage() {
   const openEdit = () => setEdit((e) => ({ open: true, n: e.n + 1 }))
   const space = spaces?.find((s) => s.id === spaceId)
   const notes = useDocuments(student.id, spaceId ?? '')
-  const topics = useTopics(student.id, spaceId ?? '')
+  const processing = notes.data?.some((d) => PROCESSING.includes(d.status)) ?? false
+  const topics = useTopics(student.id, spaceId ?? '', processing)
 
   if (isPending) return null
   if (!space) return <Placeholder title="Study Space not found" note="That Study Space does not exist." />

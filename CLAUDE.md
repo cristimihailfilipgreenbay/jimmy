@@ -28,6 +28,7 @@ The backend runs `alembic upgrade head` on start; demo data (OpenStax Biology/Ph
 
 ## Architecture essentials
 
+- **Schemas and validation:** Pydantic on the backend (request and response models in each feature's `schemas.py`, `response_model` on routes), Zod on the frontend (a schema per API shape in the feature's `queries/`, types come from `z.infer`, every response is parsed in `request()`, form input is checked with `safeParse` before it is sent). Keep a Zod schema in step with its Pydantic model.
 - **No API versioning:** the browser calls `/api/...`, the dev proxy strips `/api`, and the backend serves from the root (`/spaces`, `/students`, `/health`). Do not add a `/v1` segment.
 - Local-only, single Student at a time (profile switcher sets `student_id`; no login). External services: OpenRouter (chat + embeddings), Tavily, Wikipedia, LangSmith.
 - Three LangGraph pieces: **Tutor chat** (`create_agent` ReAct with tools `search_notes`, `search_library`, `search_wikipedia`, `search_web`, `compare_sources`, `promote_finding`, `record_quiz_result`, `save_flashcards`), **Study Session** (`StateGraph` for Quiz/Test: pick Topics → generate → grade → record → adapt), **Ingestion** (`StateGraph`: extract → page-aware chunk → extract Topics → Topic review pause → embed → store).

@@ -1,5 +1,14 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { createStudent, getStoredStudentId, listStudents, storeStudentId, type Student } from '@/lib/api'
+import {
+  createStudent,
+  forgetStudentIds,
+  getKnownStudentIds,
+  getStoredStudentId,
+  listStudents,
+  rememberStudentId,
+  storeStudentId,
+  type Student,
+} from '@/lib/api'
 
 type StudentState = {
   students: Student[]
@@ -17,9 +26,11 @@ export function StudentProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    listStudents()
+    const known = getKnownStudentIds()
+    listStudents(known)
       .then((list) => {
         setStudents(list)
+        forgetStudentIds(known.filter((id) => !list.some((s) => s.id === id)))
         // A remembered profile that no longer exists is dropped.
         if (currentId && !list.some((s) => s.id === currentId)) {
           storeStudentId(null)
@@ -39,6 +50,7 @@ export function StudentProvider({ children }: { children: ReactNode }) {
   const create = useCallback(
     async (name: string) => {
       const student = await createStudent(name)
+      rememberStudentId(student.id)
       setStudents((prev) => [...prev, student])
       select(student.id)
     },

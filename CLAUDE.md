@@ -52,7 +52,7 @@ The backend runs `alembic upgrade head` on start; demo data (OpenStax Biology/Ph
 
 ## Finishing an issue
 
-Commit and push as you go, in commits as small as possible (one concern each), using the subject format below. When the issue is finished, tell the user so they can give the go-ahead for the PR. Do not open the PR until they do.
+Commit and push as you go, in commits as small as possible (one concern each), using the subject format below. When the issue is finished, commit, push and open the PR (write the body with the `mattpocock-skills:pr` skill), then tell the user. Never merge the PR: the user reviews and merges it.
 
 The subject line is `#<issue> [Backend|Frontend] <Area> - <Summary>`, for example `#23 [Backend] Spaces - Add endpoint to remove`. If the change is neither backend nor frontend, or touches both, omit the bracketed tag.
 

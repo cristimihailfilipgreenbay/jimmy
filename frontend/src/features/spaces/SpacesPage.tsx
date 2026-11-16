@@ -4,7 +4,7 @@ import { Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { errorMessage } from '@/lib/http'
 import { cn } from '@/lib/utils'
-import { useStudent } from '@/features/students/hooks/useStudent'
+import { useSignedInStudent } from '@/features/auth/hooks/useSignedInStudent'
 import type { Space } from './schemas/space'
 import { CreateSpaceDialog } from './components/CreateSpaceDialog'
 import { DeleteSpaceDialog } from './components/DeleteSpaceDialog'
@@ -12,17 +12,8 @@ import { useSpaces } from './queries/useSpaces'
 import { swatchFor } from './lib/accents'
 
 export function SpacesPage() {
-  const { current, loading } = useStudent()
-  if (loading) return null
-  if (!current) {
-    return (
-      <section>
-        <h2 className="text-2xl font-semibold">Study Spaces</h2>
-        <p className="mt-4 text-muted-foreground">Choose or create a profile in the sidebar to see your Study Spaces.</p>
-      </section>
-    )
-  }
-  return <SpacesList studentId={current.id} />
+  const student = useSignedInStudent()
+  return <SpacesList studentId={student.id} />
 }
 
 function SpacesList({ studentId }: { studentId: string }) {

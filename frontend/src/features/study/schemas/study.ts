@@ -96,5 +96,8 @@ export const weakTopicSchema = z.object({
 })
 export type WeakTopic = z.infer<typeof weakTopicSchema>
 
-/** How many questions a Quiz asks. */
+/** How many questions a Quiz asks, and a Test. */
 export const QUIZ_LENGTH = 5
+export const TEST_LENGTH = 10
+
+export type StudyKind = 'quiz' | 'test'

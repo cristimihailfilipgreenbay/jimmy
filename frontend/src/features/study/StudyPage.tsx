@@ -11,12 +11,12 @@ import { cardClass } from '@/lib/styles'
 import { cn } from '@/lib/utils'
 import { QuestionCard } from './components/QuestionCard'
 import { Recap } from './components/Recap'
-import { useAnswerQuestion, useDecideDispute, useRecap, useReloadQuiz, useStartQuiz } from './queries/useQuiz'
+import { useAnswerQuestion, useDecideDispute, useRecap, useReloadQuiz, useStartSession } from './queries/useQuiz'
 import { useWeakTopics } from './queries/useWeakTopics'
-import { QUIZ_LENGTH, type AnswerOut, type Feedback, type StudySession } from './schemas/study'
+import { QUIZ_LENGTH, TEST_LENGTH, type AnswerOut, type Feedback, type Question, type StudyKind, type StudySession } from './schemas/study'
 
 // A Study Space's Study screen: choose Quiz, answer questions with feedback after each
-// one, then read the recap. A Test comes later.
+// one, then read the recap. A Test answers everything first and shows nothing until its results.
 export function StudyPage() {
   const { spaceId = '' } = useParams()
   const student = useSignedInStudent()
@@ -27,12 +27,14 @@ export function StudyPage() {
   const [params] = useSearchParams()
   const only = topics?.find((t) => t.id === params.get('topic'))
 
-  const start = useStartQuiz(spaceId)
+  const start = useStartSession(spaceId)
   const answer = useAnswerQuestion(student.id, spaceId)
   const decide = useDecideDispute(student.id, spaceId)
   const reload = useReloadQuiz()
   const [session, setSession] = useState<StudySession | null>(null)
   const [history, setHistory] = useState<Feedback[]>([])
+  // A Test shows no feedback, so it keeps what the Student answered to show it read-only.
+  const [taken, setTaken] = useState<{ question: Question; answer: string }[]>([])
   // Which question is on screen: an index into the answered ones, or one past them
   // for the question waiting for an answer.
   const [viewing, setViewing] = useState(0)
@@ -48,22 +50,27 @@ export function StudyPage() {
   const reset = () => {
     setSession(null)
     setHistory([])
+    setTaken([])
     setViewing(0)
     setRecapOpen(false)
     setError(null)
   }
-  const begin = () => {
+  const begin = (kind: StudyKind) => {
     setError(null)
-    start.mutate(only ? [only.id] : [], {
+    start.mutate(
+      { kind, topicIds: only ? [only.id] : [] },
+      {
       onSuccess: (s) => {
         setSession(s)
         setHistory([])
+        setTaken([])
         setViewing(0)
         setRecapOpen(false)
         setSlide('')
       },
-      onError: (err) => setError(errorMessage(err, 'Jimmy could not start the Quiz. Try again.')),
-    })
+      onError: (err) => setError(errorMessage(err, `Jimmy could not start the ${kind === 'test' ? 'Test' : 'Quiz'}. Try again.`)),
+      },
+    )
   }
 
   const frame = (children: React.ReactNode, narrow = true) => (
@@ -93,7 +100,7 @@ export function StudyPage() {
       <>
         <h1 className="text-2xl font-semibold tracking-tight">Study {space.name}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {QUIZ_LENGTH} questions from your notes, weighted towards your weak topics: {weak.map((w) => w.name).join(', ') || 'none'}.
+          A quiz has {QUIZ_LENGTH} questions and a test {TEST_LENGTH}, from your notes, weighted towards your weak topics: {weak.map((w) => w.name).join(', ') || 'none'}.
         </p>
         {error && (
           <p role="alert" className="mt-4 flex items-start gap-2 text-sm text-destructive">
@@ -104,16 +111,16 @@ export function StudyPage() {
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           <button
             type="button"
-            onClick={begin}
+            onClick={() => begin('quiz')}
             disabled={start.isPending}
             className={cn(cardClass, 'p-5 text-left transition hover:border-space/40 hover:shadow-md disabled:opacity-60')}
           >
             <span className="grid size-10 place-items-center rounded-lg bg-space-soft text-space-ink">
-              {start.isPending ? <Loader2 className="size-5 animate-spin" aria-hidden /> : <Check className="size-5" aria-hidden />}
+              {start.isPending && start.variables?.kind === 'quiz' ? <Loader2 className="size-5 animate-spin" aria-hidden /> : <Check className="size-5" aria-hidden />}
             </span>
             <p className="mt-3 text-lg font-semibold">Quiz</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              {start.isPending ? 'Jimmy is writing your first question…' : 'Feedback after every question, with the source passage. Good for learning.'}
+              {start.isPending && start.variables?.kind === 'quiz' ? 'Jimmy is writing your first question…' : 'Feedback after every question, with the source passage. Good for learning.'}
             </p>
             <p className="mt-4 flex gap-2 text-xs text-muted-foreground">
               <span className="rounded-full bg-muted px-2 py-0.5">Multiple choice</span>
@@ -121,12 +128,24 @@ export function StudyPage() {
               <span className="rounded-full bg-muted px-2 py-0.5">~{QUIZ_LENGTH * 2} min</span>
             </p>
           </button>
-          <button type="button" disabled className={cn(cardClass, 'p-5 text-left opacity-60')}>
+          <button
+            type="button"
+            onClick={() => begin('test')}
+            disabled={start.isPending}
+            className={cn(cardClass, 'p-5 text-left transition hover:border-space/40 hover:shadow-md disabled:opacity-60')}
+          >
             <span className="grid size-10 place-items-center rounded-lg bg-space-soft text-space-ink">
-              <GraduationCap className="size-5" aria-hidden />
+              {start.isPending && start.variables?.kind === 'test' ? <Loader2 className="size-5 animate-spin" aria-hidden /> : <GraduationCap className="size-5" aria-hidden />}
             </span>
             <p className="mt-3 text-lg font-semibold">Test</p>
-            <p className="mt-1 text-sm text-muted-foreground">Answer everything first. Results and sources only at the end. Good for checking yourself. Not built yet.</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {start.isPending && start.variables?.kind === 'test' ? 'Jimmy is writing your first question…' : 'Answer everything first. Results and sources only at the end. Good for checking yourself.'}
+            </p>
+            <p className="mt-4 flex gap-2 text-xs text-muted-foreground">
+              <span className="rounded-full bg-muted px-2 py-0.5">Multiple choice</span>
+              <span className="rounded-full bg-muted px-2 py-0.5">Short written</span>
+              <span className="rounded-full bg-muted px-2 py-0.5">~{TEST_LENGTH * 2} min</span>
+            </p>
           </button>
         </div>
       </>,
@@ -137,7 +156,7 @@ export function StudyPage() {
   if (recapOpen) {
     return frame(
       recap.data ? (
-        <Recap recap={recap.data} spaceName={space.name} onAgain={begin} onDone={reset} />
+        <Recap recap={recap.data} kind={session.kind === 'test' ? 'test' : 'quiz'} spaceName={space.name} onAgain={() => begin(session.kind === 'test' ? 'test' : 'quiz')} onDone={reset} />
       ) : (
         <p className="text-sm text-muted-foreground">{recap.isError ? 'Could not load the summary.' : 'Loading the summary…'}</p>
       ),
@@ -145,8 +164,11 @@ export function StudyPage() {
   }
 
   const total = session.question_count
+  const test = session.kind === 'test'
   const feedback = history[viewing] ?? null
-  const question = feedback ? null : session.current
+  // In a Test, a question already answered is shown again with the Student's answer.
+  const review = test ? (taken[viewing] ?? null) : null
+  const question = feedback ? null : review ? review.question : session.current
   const finished = session.status === 'finished'
   // The answer's result: its feedback, or a Dispute that waits for the Student first.
   const show = (out: AnswerOut) => {
@@ -157,7 +179,7 @@ export function StudyPage() {
   }
   const goNext = () => {
     setSlide('q-next')
-    if (viewing + 1 >= history.length && finished) setRecapOpen(true)
+    if (viewing + 1 >= (test ? taken.length : history.length) && finished) setRecapOpen(true)
     else setViewing(viewing + 1)
   }
 
@@ -167,7 +189,7 @@ export function StudyPage() {
         <Button variant="ghost" size="sm" className="-ml-2" onClick={reset}>
           <ArrowLeft /> Exit
         </Button>
-        <span className="rounded-full bg-space-soft px-2.5 py-0.5 text-xs font-semibold text-space-ink">Quiz</span>
+        <span className="rounded-full bg-space-soft px-2.5 py-0.5 text-xs font-semibold text-space-ink">{test ? 'Test · results at the end' : 'Quiz'}</span>
         <span className="ml-auto text-sm text-muted-foreground">
           Question {Math.min(viewing + 1, total)} of {total}
         </span>
@@ -200,6 +222,8 @@ export function StudyPage() {
           className={slide}
           question={question}
           feedback={feedback}
+          test={test}
+          submitted={review?.answer ?? null}
           dispute={feedback ? null : (session.dispute ?? null)}
           checking={answer.isPending}
           deciding={decide.isPending}
@@ -212,9 +236,20 @@ export function StudyPage() {
           onNext={goNext}
           onCheck={(text) => {
             setError(null)
+            const asked = question!
             answer.mutate(
-              { sessionId: session.id, questionId: question!.id, answer: text },
-              { onSuccess: show, onError: (err) => setError(errorMessage(err, 'Jimmy could not check that answer. Try again.')) },
+              { sessionId: session.id, questionId: asked.id, answer: text },
+              {
+                onSuccess: (out) => {
+                  if (!test) return show(out)
+                  setSession(out.session)
+                  setTaken([...taken, { question: asked, answer: text }])
+                  setSlide('q-next')
+                  if (out.session.status === 'finished') setRecapOpen(true)
+                  else setViewing(taken.length + 1)
+                },
+                onError: (err) => setError(errorMessage(err, 'Jimmy could not check that answer. Try again.')),
+              },
             )
           }}
           onDecide={(decision) => {

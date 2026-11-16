@@ -5,13 +5,26 @@ import { cn } from '@/lib/utils'
 import type { Recap as RecapData } from '../schemas/study'
 import { SourceBlock } from './SourceBlock'
 
-// The end of a Quiz: the score, then every question with its answer and source.
-export function Recap({ recap, spaceName, onAgain, onDone }: { recap: RecapData; spaceName: string; onAgain: () => void; onDone: () => void }) {
+// The end of a Quiz or a Test: the score (and for a Test, the score per Topic), then every
+// question with its answer and source. A Test shows all of it only here.
+export function Recap({
+  recap,
+  kind,
+  spaceName,
+  onAgain,
+  onDone,
+}: {
+  recap: RecapData
+  kind: 'quiz' | 'test'
+  spaceName: string
+  onAgain: () => void
+  onDone: () => void
+}) {
   const weak = recap.by_topic.filter((t) => t.weak)
   return (
     <>
       <div className={cn(cardClass, 'p-6')}>
-        <p className="text-sm text-muted-foreground">Quiz summary · {spaceName}</p>
+        <p className="text-sm text-muted-foreground">{kind === 'test' ? 'Test results' : 'Quiz summary'} · {spaceName}</p>
         <div className="mt-2 flex flex-wrap items-end gap-4">
           <p className="text-4xl font-semibold tabular-nums">
             {recap.score}
@@ -30,6 +43,31 @@ export function Recap({ recap, spaceName, onAgain, onDone }: { recap: RecapData;
           </Button>
         </div>
       </div>
+      {kind === 'test' && (
+        <section className={cn(cardClass, 'mt-6 p-5')} aria-labelledby="by-topic">
+          <h2 id="by-topic" className="text-sm font-semibold">
+            By topic
+          </h2>
+          <ul className="mt-3 space-y-3">
+            {recap.by_topic.map((t) => (
+              <li key={t.topic_id}>
+                <div className="flex items-baseline justify-between gap-3 text-sm">
+                  <span className="font-medium">
+                    {t.topic}
+                    {t.weak && <span className="ml-2 rounded-full bg-destructive-soft px-2 py-0.5 text-xs font-normal text-destructive">Weak</span>}
+                  </span>
+                  <span className="tabular-nums text-muted-foreground">
+                    {t.correct} / {t.total}
+                  </span>
+                </div>
+                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuenow={Math.round((t.correct / t.total) * 100)} aria-valuemin={0} aria-valuemax={100} aria-label={`${t.topic} score`}>
+                  <div className="h-full bg-space" style={{ width: `${Math.round((t.correct / t.total) * 100)}%` }} />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <ol className="mt-6 space-y-4">
         {recap.questions.map((q) => (
           <li key={q.question_id} className={cn(cardClass, 'p-5')}>

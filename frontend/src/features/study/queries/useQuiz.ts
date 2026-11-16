@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { DisputeDecision } from '../schemas/study'
+import type { DisputeDecision, StudyKind } from '../schemas/study'
 import { answerQuestion, decideDispute, fetchRecap, fetchSession, startSession } from './study'
 import { weakKey } from './useWeakTopics'
 
-export const useStartQuiz = (spaceId: string) => useMutation({ mutationFn: (topicIds: string[]) => startSession(spaceId, topicIds) })
+export const useStartSession = (spaceId: string) =>
+  useMutation({ mutationFn: ({ kind, topicIds }: { kind: StudyKind; topicIds: string[] }) => startSession(spaceId, kind, topicIds) })
 
-/** An answer can change which Topics are weak, so the Weak topics list is refetched. */
+/** An answer (in a Test too, though it shows nothing yet) can change which Topics are weak, so the Weak topics list is refetched. */
 export function useAnswerQuestion(studentId: string, spaceId: string) {
   const qc = useQueryClient()
   return useMutation({

@@ -11,6 +11,7 @@ from app.learned import models as _learned_models  # noqa: F401
 from app.library import models as _library_models  # noqa: F401
 from app.spaces import models as _spaces_models  # noqa: F401
 from app.students import models as _students_models  # noqa: F401
+from app.study import models as _study_models  # noqa: F401
 from app.topics import models as _topics_models  # noqa: F401
 
 target_metadata = Base.metadata

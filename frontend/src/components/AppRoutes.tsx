@@ -7,6 +7,7 @@ import { ChatPage } from '@/features/chat/ChatPage'
 import { OnboardingPage } from '@/features/onboarding/OnboardingPage'
 import { RequireOnboarded } from '@/features/onboarding/components/RequireOnboarded'
 import { ApiStatus } from '@/features/health/components/ApiStatus'
+import { StudyPage } from '@/features/study/StudyPage'
 import { SpaceDashboardPage } from '@/features/spaces/SpaceDashboardPage'
 import { SpacesPage } from '@/features/spaces/SpacesPage'
 
@@ -24,7 +25,7 @@ export function AppRoutes() {
             <Route index element={<SpacesPage />} />
             <Route path="spaces/:spaceId" element={<SpaceDashboardPage />} />
             <Route path="spaces/:spaceId/chat" element={<ChatPage />} />
-            <Route path="spaces/:spaceId/study" element={<Placeholder title="Study" note="Quizzes and Tests." />} />
+            <Route path="spaces/:spaceId/study" element={<StudyPage />} />
             <Route path="spaces/:spaceId/flashcards" element={<Placeholder title="Flashcards" note="Review your Flashcards." />} />
             <Route path="settings" element={<Placeholder title="Settings" note="Profile and preferences." />} />
             <Route

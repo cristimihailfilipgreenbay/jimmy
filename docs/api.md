@@ -103,9 +103,9 @@ Topic review after an upload is not a plain edit; it is a pause in the ingestion
 ### Study sessions
 | Method | Path | Purpose |
 |---|---|---|
-| POST | `/spaces/{space_id}/sessions` | Start a Quiz or Test (`kind`, `topic_ids`, `question_count`). Returns the session and its `thread_id` |
+| POST | `/spaces/{space_id}/sessions` | Start a Quiz (`kind`, `topic_ids` (none means every Topic), `question_count` 1 to 20). The first question is written before it returns. `409 no_topics` without approved Topics, `409 no_sources` when nothing can be asked about. Only `quiz` for now |
 | GET | `/sessions/{session_id}` | State: current question, progress, results so far |
-| POST | `/sessions/{session_id}/answers` | Submit an answer. Returns feedback (Quiz), an acknowledgement (Test), or a pending Dispute |
+| POST | `/sessions/{session_id}/answers` | Submit an answer (`question_id`, `answer`: an option number for multiple choice, text for a short answer). A Quiz returns `{feedback, session}`: right or not, the correct answer, the explanation, the source passage, whether the Topic is now weak, and the next question inside `session.current`. A Test acknowledges, a Dispute pauses (both later). `409 question_not_current` for any question but the one waiting; `422 invalid_answer` for a bad option |
 | GET | `/sessions/{session_id}/recap` | Final recap, with per-Topic breakdown for a Test |
 
 A pending Dispute is answered through the thread resume endpoint.

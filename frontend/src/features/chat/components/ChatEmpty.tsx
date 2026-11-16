@@ -1,4 +1,4 @@
-import { BookOpen, File, Lightbulb, Tag, Upload, type LucideIcon } from 'lucide-react'
+import { BookOpen, File, Lightbulb, Tag, Target, Upload, type LucideIcon } from 'lucide-react'
 import { Link } from 'react-router'
 import { JimmyHead } from '@/components/JimmyHead'
 import { WhenDisabled } from '@/components/WhenDisabled'
@@ -23,12 +23,12 @@ const tile = (s: Starter) =>
   )
 
 // The design's empty Chat: Jimmy peeks over a card that says what he can use, with ways to start.
-// Weak Topics do not exist yet, so only Notes, Topics and the Subject Library are counted.
 export function ChatEmpty({
   spaceId,
   spaceName,
   notes,
   topics,
+  weak,
   libraryOn,
   onAsk,
 }: {
@@ -36,6 +36,8 @@ export function ChatEmpty({
   spaceName: string
   notes: { title: string }[]
   topics: { name: string }[]
+  /** Topics the Student keeps getting wrong in Quizzes. */
+  weak: { name: string }[]
   /** The Space has a textbook attached and switched on. */
   libraryOn: boolean
   onAsk: (q: string) => void
@@ -56,10 +58,11 @@ export function ChatEmpty({
         { text: `Explain one key idea in ${spaceName} simply`, icon: Lightbulb, tag: 'Tutor knowledge', tutor: true, ask: true },
       ]
     : [
-        { text: `Quiz me on ${(topics[2] ?? topics[0])?.name ?? spaceName}`, icon: Tag, tag: 'Quick quiz', ask: true },
+        ...(weak[0] ? [{ text: `Explain ${weak[0].name} step by step`, icon: Target, tag: 'Weak topic', ask: true }] : []),
+        { text: `Quiz me on ${(weak[1] ?? topics[2] ?? topics[0])?.name ?? spaceName}`, icon: Tag, tag: 'Quick quiz', ask: true },
         { text: `Summarise “${first}”`, icon: File, tag: 'From your notes', ask: true },
         { text: `What should I revise first for my ${spaceName} exam?`, icon: Lightbulb, tag: 'Study plan', ask: true },
-      ]
+      ].slice(0, 4)
 
   return (
     <section className="fade-in mx-auto w-full max-w-2xl pt-20" aria-labelledby="chat-empty-h">
@@ -99,6 +102,15 @@ export function ChatEmpty({
                 <Tag className="size-3.5" aria-hidden />
                 {topics.length} topics
               </span>
+            )}
+            {weak.length > 0 && (
+              <>
+                <span aria-hidden>·</span>
+                <span className="inline-flex items-center gap-1 text-space-ink/80">
+                  <Target className="size-3.5" aria-hidden />
+                  {weak.length} weak topic{weak.length === 1 ? '' : 's'}
+                </span>
+              </>
             )}
           </p>
           <ul className="mt-6 grid gap-2.5 text-left sm:grid-cols-2" aria-label="Ways to start">

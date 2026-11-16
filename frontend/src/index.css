@@ -159,6 +159,16 @@
 }
 .page-in { animation: page-in 0.28s cubic-bezier(0.2, 0.7, 0.2, 1); }
 
+/* The next (or previous) Quiz question slides in from its side. */
+@keyframes card-in {
+  from { opacity: 0.4; transform: translateX(52%) scale(0.88) rotate(0.8deg); }
+}
+@keyframes card-in-prev {
+  from { opacity: 0.4; transform: translateX(-52%) scale(0.88) rotate(-0.8deg); }
+}
+.q-next { animation: card-in 0.3s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.q-prev { animation: card-in-prev 0.3s cubic-bezier(0.2, 0.7, 0.2, 1); }
+
 /* Menus drop in from their button. */
 @keyframes menu-pop {
   from { opacity: 0; transform: translateY(-10px); }

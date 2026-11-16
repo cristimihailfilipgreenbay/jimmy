@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter } from 'react-router'
 import { Toaster } from '@/components/Toaster'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { meKey } from '@/features/auth/queries/useMe'
 import { ApiError } from '@/lib/http'
 
@@ -19,8 +20,10 @@ const queryClient = new QueryClient({
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>{children}</BrowserRouter>
-      <Toaster />
+      <TooltipProvider>
+        <BrowserRouter>{children}</BrowserRouter>
+        <Toaster />
+      </TooltipProvider>
     </QueryClientProvider>
   )
 }

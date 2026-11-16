@@ -2,6 +2,8 @@ import { Button as ButtonPrimitive } from "@base-ui/react/button"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "cn"
 
+import { WhenDisabled } from "@/components/WhenDisabled"
+
 // The design's buttons: rounded-md, text-sm medium, colour transitions only.
 // `space` takes the colour of the current Study Space.
 const buttonVariants = cva(
@@ -42,12 +44,13 @@ function Button({
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants> & { disabledReason?: string }) {
   return (
-    <ButtonPrimitive
-      data-slot="button"
-      title={props.disabled ? disabledReason : props.title}
-      className={cn(buttonVariants({ variant, size, className }))}
-      {...props}
-    />
+    <WhenDisabled disabled={props.disabled} reason={disabledReason} fill={typeof className === "string" && className.includes("w-full")}>
+      <ButtonPrimitive
+        data-slot="button"
+        className={cn(buttonVariants({ variant, size, className }))}
+        {...props}
+      />
+    </WhenDisabled>
   )
 }
 

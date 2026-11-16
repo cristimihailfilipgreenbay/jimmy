@@ -1,3 +1,4 @@
+import { WhenDisabled } from '@/components/WhenDisabled'
 import { useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { MenuSurface } from '@/components/MenuSurface'
@@ -58,16 +59,17 @@ export function MenuButton({
   children: ReactNode
 }) {
   return (
-    <button
-      type="button"
-      role="menuitem"
-      disabled={disabled}
-      title={disabled ? disabledReason : undefined}
-      onClick={onClick}
-      className={cn(item, destructive && 'text-destructive hover:bg-destructive-soft')}
-    >
-      {children}
-    </button>
+    <WhenDisabled disabled={disabled} reason={disabledReason} fill>
+      <button
+        type="button"
+        role="menuitem"
+        disabled={disabled}
+        onClick={onClick}
+        className={cn(item, destructive && 'text-destructive hover:bg-destructive-soft')}
+      >
+        {children}
+      </button>
+    </WhenDisabled>
   )
 }
 

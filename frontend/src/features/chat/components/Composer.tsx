@@ -1,3 +1,4 @@
+import { WhenDisabled } from '@/components/WhenDisabled'
 import { useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { Send, Square } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -30,16 +31,16 @@ export function Composer({ spaceName, busy, onSend, onStop }: { spaceName: strin
     <div className="sticky bottom-16 z-10 bg-background pt-2 pb-2 md:bottom-0">
       <div className="scroll-thin -mx-4 mb-2 flex gap-2 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:px-0">
         {SUGGESTIONS.map((s) => (
-          <button
-            key={s}
-            type="button"
-            disabled={busy}
-            title={busy ? BUSY_REASON : undefined}
-            onClick={() => onSend(s)}
-            className="flex-none rounded-full border border-border bg-card px-3 py-1 text-xs enabled:hover:bg-muted disabled:opacity-50"
-          >
-            {s}
-          </button>
+          <WhenDisabled key={s} disabled={busy} reason={BUSY_REASON}>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => onSend(s)}
+              className="flex-none rounded-full border border-border bg-card px-3 py-1 text-xs enabled:hover:bg-muted disabled:opacity-50"
+            >
+              {s}
+            </button>
+          </WhenDisabled>
         ))}
       </div>
       <form onSubmit={submit} className="flex items-end gap-2 rounded-lg border border-border bg-card p-2 shadow-[0_1px_2px_rgba(20,20,30,.04)] focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring">
@@ -52,7 +53,6 @@ export function Composer({ spaceName, busy, onSend, onStop }: { spaceName: strin
           rows={1}
           value={value}
           disabled={busy}
-          title={busy ? BUSY_REASON : undefined}
           placeholder={`Ask about ${spaceName}…`}
           onChange={(e) => {
             setValue(e.target.value)

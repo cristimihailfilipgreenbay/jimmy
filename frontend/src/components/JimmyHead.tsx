@@ -1,7 +1,7 @@
 // Jimmy's head, from the design prototype. Colour follows the text colour.
-export function JimmyHead({ className }: { className?: string }) {
+export function JimmyHeadShapes() {
   return (
-    <svg className={className} viewBox="5.2 5.6 21.6 22.4" aria-hidden="true">
+    <>
       <circle cx="7.4" cy="19.6" r="1.7" fill="currentColor" />
       <circle cx="24.6" cy="19.6" r="1.7" fill="currentColor" />
       <circle cx="16" cy="19" r="8.6" fill="currentColor" />
@@ -16,6 +16,14 @@ export function JimmyHead({ className }: { className?: string }) {
         <path d="M15.2 20h1.6" />
       </g>
       <path d="M13.6 24.2c1.4 1.3 3.4 1.3 4.8 0" fill="none" stroke="#fff" strokeWidth="1.4" strokeLinecap="round" />
+    </>
+  )
+}
+
+export function JimmyHead({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="5.2 5.6 21.6 22.4" aria-hidden="true">
+      <JimmyHeadShapes />
     </svg>
   )
 }

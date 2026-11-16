@@ -52,6 +52,7 @@ export function SignInForm({ onForgot }: { onForgot: () => void }) {
       <form onSubmit={submit} noValidate className="flex flex-col gap-4">
         <Field id="email" label="Email" error={errors.email}>
           <Input
+            className="h-10 text-[15px]"
             id="email"
             type="email"
             autoComplete="email"
@@ -78,7 +79,7 @@ export function SignInForm({ onForgot }: { onForgot: () => void }) {
           <input type="checkbox" className="size-4 accent-primary" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
           Keep me signed in on this device
         </label>
-        <Button type="submit" size="lg" className="w-full" disabled={signIn.isPending} aria-busy={signIn.isPending}>
+        <Button type="submit" variant="space" size="lg" className="w-full" disabled={signIn.isPending} aria-busy={signIn.isPending}>
           {signIn.isPending ? (
             <>
               <LoaderCircle className="animate-spin" /> Signing in…

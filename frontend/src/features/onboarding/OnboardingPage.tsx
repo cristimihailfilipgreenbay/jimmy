@@ -5,7 +5,7 @@ import { Navigate, useNavigate } from 'react-router'
 import { AnimatedHeight } from '@/components/AnimatedHeight'
 import { Button } from '@/components/ui/button'
 import { ErrorBanner } from '@/features/auth/components/ErrorBanner'
-import { JimmyHead } from '@/features/auth/components/JimmyHead'
+import { JimmyHead } from '@/components/JimmyHead'
 import { meKey, useMe } from '@/features/auth/queries/useMe'
 import { ApiError, errorMessage } from '@/lib/http'
 import { DoneStep } from './components/DoneStep'
@@ -29,7 +29,7 @@ import {
 import { useCompleteOnboarding } from './queries/useCompleteOnboarding'
 import type { OnboardingResponse } from './schemas/onboarding'
 
-const PAPER = { backgroundImage: 'linear-gradient(var(--border) 1px, transparent 1px)', backgroundSize: '100% 28px' }
+const PAPER = { backgroundImage: 'linear-gradient(color-mix(in oklab, var(--border) 35%, transparent) 1px, transparent 1px)', backgroundSize: '100% 28px' }
 const STEP_COMPONENTS = [NameStep, StudiesStep, SubjectsStep, SpacesStep, PreferencesStep]
 
 // Shown after sign-up, and again at every visit until the Student finishes it.
@@ -101,7 +101,7 @@ export function OnboardingPage() {
         <StepProgress step={form.step} done={done} />
         <div className="relative">
           <div className="peek-jimmy absolute top-0 left-1/2 z-0 -translate-x-1/2 -translate-y-[80%]" aria-hidden>
-            <JimmyHead className="size-24 text-foreground" />
+            <JimmyHead className="size-24 text-space" />
           </div>
           <div
             className="absolute bottom-full left-[calc(50%+50px)] z-20 mb-[50px] hidden w-max max-w-[250px] rounded-2xl rounded-bl-sm border bg-card px-3.5 py-2 text-sm shadow-sm sm:block"
@@ -112,8 +112,8 @@ export function OnboardingPage() {
               {bubble}
             </span>
           </div>
-          <span className="absolute top-0 left-1/2 z-20 -mt-[5px] -ml-[46px] h-3 w-5 rounded-full bg-foreground" aria-hidden />
-          <span className="absolute top-0 left-1/2 z-20 -mt-[5px] ml-[26px] h-3 w-5 rounded-full bg-foreground" aria-hidden />
+          <span className="absolute top-0 left-1/2 z-20 -mt-[5px] -ml-[46px] h-3 w-5 rounded-full bg-space" aria-hidden />
+          <span className="absolute top-0 left-1/2 z-20 -mt-[5px] ml-[26px] h-3 w-5 rounded-full bg-space" aria-hidden />
           <div className="relative z-10 rounded-2xl border bg-card p-6 shadow-[0_10px_40px_-12px_rgba(20,20,30,.18)] sm:p-8">
             <AnimatedHeight>
               <h1 className="sr-only">Set up Jimmy</h1>

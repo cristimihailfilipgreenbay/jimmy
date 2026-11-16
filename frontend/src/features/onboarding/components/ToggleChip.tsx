@@ -20,7 +20,7 @@ export function ToggleChip({
       onClick={onClick}
       className={cn(
         'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors duration-200',
-        pressed ? 'border-primary bg-primary/10 text-foreground' : 'bg-card hover:bg-muted',
+        pressed ? 'border-space bg-space/10 text-space-ink' : 'bg-card hover:bg-muted',
       )}
     >
       {withCheck && (

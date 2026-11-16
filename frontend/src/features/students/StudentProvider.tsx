@@ -1,15 +1,8 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import {
-  createStudent,
-  forgetStudentIds,
-  getKnownStudentIds,
-  getStoredStudentId,
-  listStudents,
-  rememberStudentId,
-  storeStudentId,
-  type Student,
-} from '@/lib/api'
+import { getStoredStudentId, storeStudentId } from '@/lib/identity'
+import { createStudent, listStudents, type Student } from './api'
+import { forgetStudentIds, getKnownStudentIds, rememberStudentId } from './knownStudents'
 
 type StudentState = {
   students: Student[]

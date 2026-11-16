@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
-import { useStudent } from '@/hooks/student'
-import { ApiError } from '@/lib/api'
+import { errorMessage } from '@/lib/http'
+import { useStudent } from './StudentProvider'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -18,7 +18,7 @@ export function ProfileSwitcher() {
       setName('')
       setAdding(false)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not create the profile.')
+      setError(errorMessage(err, 'Could not create the profile.'))
     }
   }
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getHealth } from '@/lib/api'
+import { getHealth } from './api'
 
 type State = 'checking' | 'ok' | 'down'
 

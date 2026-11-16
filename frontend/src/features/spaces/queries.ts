@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { createSpace, deleteSpace, listSpaces, type Accent } from '@/lib/api'
+import { createSpace, deleteSpace, listSpaces, type Accent } from './api'
 
 // Keyed by Student so switching profiles never serves another Student's cache.
 const spacesKey = (studentId: string) => ['spaces', studentId] as const

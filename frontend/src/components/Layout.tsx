@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useParams } from 'react-router'
-import { ApiStatus } from '@/components/ApiStatus'
-import { ProfileSwitcher } from '@/components/ProfileSwitcher'
+import { ApiStatus } from '@/features/health/ApiStatus'
+import { ProfileSwitcher } from '@/features/students/ProfileSwitcher'
 import { cn } from '@/lib/utils'
 
 const link = ({ isActive }: { isActive: boolean }) =>

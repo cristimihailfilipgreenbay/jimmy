@@ -1,8 +1,8 @@
 import { BrowserRouter, Route, Routes } from 'react-router'
 import { Layout } from '@/components/Layout'
-import { StudentProvider } from '@/hooks/student'
+import { SpacesPage } from '@/features/spaces/SpacesPage'
+import { StudentProvider } from '@/features/students/StudentProvider'
 import { Placeholder } from '@/pages/Placeholder'
-import { SpacesPage } from '@/pages/SpacesPage'
 
 export default function App() {
   return (

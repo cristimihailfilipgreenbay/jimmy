@@ -11,7 +11,7 @@ const MARGIN = 8
 const ESTIMATED_HEIGHT = 340
 
 const itemClass =
-  'flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left hover:bg-muted focus:bg-muted focus:outline-none'
+  'flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left hover:bg-muted focus:outline-none focus-visible:bg-muted'
 
 function Item({ icon, children, onClick, destructive }: { icon: ReactNode; children: ReactNode; onClick: () => void; destructive?: boolean }) {
   return (
@@ -20,7 +20,7 @@ function Item({ icon, children, onClick, destructive }: { icon: ReactNode; child
       role="menuitem"
       tabIndex={-1}
       onClick={onClick}
-      className={cn(itemClass, destructive && 'text-destructive hover:bg-destructive-soft focus:bg-destructive-soft')}
+      className={cn(itemClass, destructive && 'text-destructive hover:bg-destructive-soft focus-visible:bg-destructive-soft')}
     >
       <span className="opacity-70" aria-hidden>
         {icon}

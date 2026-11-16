@@ -147,7 +147,7 @@ backend/app/
 
 frontend/src/
 ├── main.tsx, App.tsx
-├── components/     # app shell (Layout) and ui/ (shadcn)
+├── components/     # app shell (Providers, AppRoutes, Layout) and ui/ (shadcn)
 ├── lib/            # http client, current-profile storage, utils (feature-agnostic)
 └── features/
     ├── students/

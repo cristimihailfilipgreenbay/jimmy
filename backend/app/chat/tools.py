@@ -1,4 +1,4 @@
-"""The Tutor's tools. Only `search_notes` exists so far."""
+"""The Tutor's tools: `search_notes` and `search_library` so far."""
 
 import threading
 from dataclasses import dataclass, field
@@ -38,11 +38,10 @@ class RunSources:
         return set(self.citations)
 
 
-def make_search_notes(space_id, sources: RunSources) -> StructuredTool:
-    """`search_notes` bound to one Study Space: the model cannot name another."""
-
-    def search_notes(query: str) -> str:
-        """Search the Student's Notes in this Study Space. Returns numbered passages."""
+def _make_search(
+    space_id, sources: RunSources, *, name: str, source_type: str, doc: str, none: str
+) -> StructuredTool:
+    def search(query: str) -> str:
         try:
             [vector] = embed_texts([query])
         except EmbeddingError as exc:
@@ -53,10 +52,10 @@ def make_search_notes(space_id, sources: RunSources) -> StructuredTool:
                 space_id=space_id,
                 query_embedding=vector,
                 limit=TOP_K,
-                source_types=("notes",),
+                source_types=(source_type,),
             )
         if not hits:
-            return "No passages found in the Notes."
+            return none
         lines = []
         for hit in hits:
             citation = sources.add(
@@ -75,4 +74,32 @@ def make_search_notes(space_id, sources: RunSources) -> StructuredTool:
             lines.append(f"[{citation.id}] ({citation.document}{where})\n{hit.text}")
         return "\n\n".join(lines)
 
-    return StructuredTool.from_function(search_notes, name="search_notes")
+    search.__doc__ = doc
+    return StructuredTool.from_function(search, name=name)
+
+
+def make_search_notes(space_id, sources: RunSources) -> StructuredTool:
+    """`search_notes` bound to one Study Space: the model cannot name another."""
+    return _make_search(
+        space_id,
+        sources,
+        name="search_notes",
+        source_type="notes",
+        doc="Search the Student's Notes in this Study Space. Returns numbered passages.",
+        none="No passages found in the Notes.",
+    )
+
+
+def make_search_library(space_id, sources: RunSources) -> StructuredTool:
+    """`search_library`: the textbook chapters attached to this Study Space."""
+    return _make_search(
+        space_id,
+        sources,
+        name="search_library",
+        source_type="library",
+        doc=(
+            "Search the Subject Library (open-textbook chapters) attached to this "
+            "Study Space. Returns numbered passages with book, author and page."
+        ),
+        none="No passages found in the Subject Library.",
+    )

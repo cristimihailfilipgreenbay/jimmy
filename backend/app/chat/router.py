@@ -63,6 +63,7 @@ def send_message(body: MessageIn, thread: ThreadDep, session: SessionDep):
     )
     if not earlier:
         thread.title = body.content.strip().replace("\n", " ")[:60]
+    space = session.get(Space, thread.space_id)
     session.add(Message(thread_id=thread.id, role="user", content=body.content))
     session.commit()
     events = run_turn(
@@ -70,6 +71,7 @@ def send_message(body: MessageIn, thread: ThreadDep, session: SessionDep):
         space_id=thread.space_id,
         history=history_messages(earlier),
         question=body.content,
+        library=bool(space and space.library_enabled),
     )
     return StreamingResponse(
         _sse(events),

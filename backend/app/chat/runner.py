@@ -19,7 +19,10 @@ from app.db import engine
 
 log = logging.getLogger(__name__)
 
-TOOL_LABELS = {"search_notes": "Searching your notes…"}
+TOOL_LABELS = {
+    "search_notes": "Searching your notes…",
+    "search_library": "Searching the Subject Library…",
+}
 
 
 @dataclass
@@ -46,11 +49,12 @@ def run_turn(
     history: list,
     question: str,
     model=None,
+    library: bool = False,
 ) -> Iterator[Event]:
     """Stream the answer, then store it. Never raises: failures become `error` events."""
     sources = RunSources()
     try:
-        agent = build_agent(space_id, sources, model)
+        agent = build_agent(space_id, sources, model, library)
     except ModelNotConfigured as exc:
         yield Event("error", {"code": "upstream_unavailable", "message": str(exc)})
         return

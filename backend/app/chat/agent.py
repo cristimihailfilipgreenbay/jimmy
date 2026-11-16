@@ -17,8 +17,8 @@ from app.chat.guards import (
     call_key,
     is_doom_loop,
 )
-from app.chat.prompt import SYSTEM_PROMPT
-from app.chat.tools import RunSources, make_search_notes
+from app.chat.prompt import build_prompt
+from app.chat.tools import RunSources, make_search_library, make_search_notes
 from app.config import get_settings
 
 OPENROUTER_BASE = "https://openrouter.ai/api/v1"
@@ -80,18 +80,22 @@ def citation_check(sources: RunSources) -> AgentMiddleware:
         note = (
             f"{_FIX_MARKER} Rewrite your answer. "
             + " ".join(problems)
-            + " Cite each paragraph with [n] from search_notes, or start it with [tutor]."
+            + " Cite each paragraph with [n] from a search tool, or start it with [tutor]."
         )
         return {"messages": [HumanMessage(note)], "jump_to": "model"}
 
     return check
 
 
-def build_agent(space_id, sources: RunSources, model=None):
+def build_agent(space_id, sources: RunSources, model=None, library: bool = False):
+    """`library`: the Space has a Subject Library attached and switched on."""
+    tools = [make_search_notes(space_id, sources)]
+    if library:
+        tools.append(make_search_library(space_id, sources))
     return create_agent(
         model or make_model(),
-        tools=[make_search_notes(space_id, sources)],
-        system_prompt=SYSTEM_PROMPT,
+        tools=tools,
+        system_prompt=build_prompt(library),
         middleware=[
             ModelCallLimitMiddleware(run_limit=MAX_MODEL_CALLS, exit_behavior="error"),
             doom_loop_stop(),

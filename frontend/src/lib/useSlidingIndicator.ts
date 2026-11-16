@@ -39,7 +39,13 @@ export function useSlidingIndicator<T extends HTMLElement>(activeKey: string) {
 
     place(placedOnce.current)
     placedOnce.current = true
-    const observer = new ResizeObserver(() => place(false))
+    // An observer reports once as soon as it starts watching; that is not a resize, and
+    // placing the pill without a transition then would cancel the slide just begun.
+    let first = true
+    const observer = new ResizeObserver(() => {
+      if (first) first = false
+      else place(false)
+    })
     observer.observe(c)
     return () => observer.disconnect()
   }, [activeKey])

@@ -31,11 +31,12 @@ export function SpaceDashboardPage() {
   const asked = params.get('tab')
   const tab: Tab = TABS.find((t) => t === asked) ?? 'notes'
   const setTab = (next: Tab) => setParams(next === 'notes' ? {} : { tab: next }, { replace: true })
-  const { container, indicator } = useSlidingIndicator<HTMLDivElement>(tab, true)
   const [deleting, setDeleting] = useState(false)
   const [edit, setEdit] = useState({ open: false, n: 0 })
   const openEdit = () => setEdit((e) => ({ open: true, n: e.n + 1 }))
   const space = spaces?.find((s) => s.id === spaceId)
+  // Not placed until the Space has loaded: before that the tabs are not on the page.
+  const { container, indicator } = useSlidingIndicator<HTMLDivElement>(space ? tab : '', true)
   const notes = useDocuments(student.id, spaceId ?? '')
   const processing = notes.data?.some((d) => PROCESSING.includes(d.status)) ?? false
   const topics = useTopics(student.id, spaceId ?? '', processing)

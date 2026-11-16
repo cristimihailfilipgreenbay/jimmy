@@ -41,14 +41,17 @@ export function useSlidingIndicator<T extends HTMLElement>(activeKey: string, li
 
     place(placedOnce.current)
     placedOnce.current = true
-    // An observer reports once as soon as it starts watching; that is not a resize, and
-    // placing the pill without a transition then would cancel the slide just begun.
-    let first = true
+    // An observer reports once for each element as soon as it starts watching; that is
+    // not a resize, and placing the pill without a transition then would cancel the
+    // slide just begun.
+    const watched = [c, ...c.querySelectorAll('[data-ind-target]')]
+    let initial = watched.length
     const observer = new ResizeObserver(() => {
-      if (first) first = false
+      if (initial > 0) initial -= 1
       else place(false)
     })
-    observer.observe(c)
+    // A tab can change width on its own, e.g. when its count loads.
+    watched.forEach((el) => observer.observe(el))
     return () => observer.disconnect()
   }, [activeKey, line])
 

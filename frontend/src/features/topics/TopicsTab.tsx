@@ -79,7 +79,20 @@ export function TopicsTab({ studentId, spaceId }: { studentId: string; spaceId: 
 
   return (
     <div className={cardClass}>
-      <div className="flex flex-wrap items-center gap-2 border-b p-3">
+      <div className="flex flex-wrap items-center gap-3 border-b p-3">
+        <input
+          type="checkbox"
+          aria-label="Select all topics"
+          className="size-4 rounded border-input accent-space"
+          checked={selected.length === topics.length}
+          ref={(el) => {
+            if (el) el.indeterminate = selected.length > 0 && selected.length < topics.length
+          }}
+          onChange={() => {
+            reset()
+            setSelected(selected.length === topics.length ? [] : topics.map((t) => t.id))
+          }}
+        />
         <p className="text-sm text-muted-foreground">
           {selected.length ? (
             <strong className="text-foreground">{selected.length} selected</strong>

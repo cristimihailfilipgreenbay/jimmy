@@ -25,6 +25,8 @@ class Space(Base):
         ForeignKey("students.id", ondelete="CASCADE"), index=True
     )
     name: Mapped[str] = mapped_column(String(80))
+    # Course code or lecturer, shown under the name. Optional.
+    course: Mapped[str | None] = mapped_column(String(120))
     accent: Mapped[str] = mapped_column(String(20), default="slate")
     library_enabled: Mapped[bool] = mapped_column(
         Boolean, default=False, server_default="false"

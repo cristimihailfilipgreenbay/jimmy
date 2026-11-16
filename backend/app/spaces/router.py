@@ -43,7 +43,9 @@ def create_space(body: SpaceIn, session: SessionDep, student: StudentDep):
     )
     if taken:
         raise _duplicate()
-    space = Space(student_id=student.id, name=body.name, accent=body.accent)
+    space = Space(
+        student_id=student.id, name=body.name, course=body.course, accent=body.accent
+    )
     session.add(space)
     try:
         session.commit()

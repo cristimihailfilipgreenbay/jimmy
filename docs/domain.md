@@ -53,7 +53,7 @@ A Citation names the document or book, author, and page or section.
 ## 3a. Rules with numbers
 
 - **Weak Topic:** weak after 2 wrong answers in the last 5; no longer weak after 3 correct in a row.
-- **Dispute:** raised when grader confidence is below 0.7 or the score is within 0.15 of the pass line. Both are settings.
+- **Dispute:** raised when grader confidence is below 0.7 or the score is within 0.15 of the pass line (0.6). Both are settings (`DISPUTE_CONFIDENCE_THRESHOLD` and `DISPUTE_MARGIN` until the settings screen exists). Only written answers can be disputed; a multiple-choice answer is always graded with full confidence.
 - **Upload:** PDF, Markdown or plain text; 20 MB and 200 pages; scanned documents are rejected.
 - **Agent loop:** at most 8 steps, and stop after 3 identical tool calls.
 
@@ -69,7 +69,7 @@ A Citation names the document or book, author, and page or section.
 
 **Conflict:** detected by `compare_sources` (Notes versus Subject Library or Learned Material; Tutor Knowledge is not compared yet) → paused → the Student keeps Notes, accepts the other Source, or marks it unsure → decision stored for that pair of passages, and used without asking again until the Student forgets it.
 
-**Dispute:** grade uncertain → paused → the Student sees their answer beside the Source passage and decides → decision recorded and the result updated.
+**Dispute:** grade uncertain → paused → the Student sees their answer beside the Source passage and decides (right, wrong, or not sure, which counts as not right and marks the Topic for review) → decision recorded, the grade overridden and the Weak Topic record updated.
 
 ## 5. Scenarios used to stress-test the model
 

@@ -4,7 +4,9 @@ import { JimmyBadge } from '@/components/JimmyBadge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { Citation } from '../schemas/chat'
+import { ConflictCard, type ConflictCardState } from './ConflictCard'
 import { Segments } from './Segments'
+import type { ConflictDecision } from '../schemas/chat'
 
 export type ToolPill = { label: string; meta?: string }
 
@@ -20,11 +22,17 @@ export function AnswerMessage({
   content,
   citations,
   tools = [],
+  spaceId = '',
+  conflicts = [],
+  onDecide,
   streaming = false,
 }: {
   content: string
   citations: Citation[]
   tools?: ToolPill[]
+  spaceId?: string
+  conflicts?: ConflictCardState[]
+  onDecide?: (interruptId: string, decision: ConflictDecision) => void
   streaming?: boolean
 }) {
   // Rating is not stored yet (the feedback endpoint comes later); it only toggles here.
@@ -46,6 +54,9 @@ export function AnswerMessage({
           </span>
         )}
       </div>
+      {conflicts.map((c) => (
+        <ConflictCard key={c.interruptId} spaceId={spaceId} card={c} onDecide={onDecide ?? (() => {})} />
+      ))}
       <Segments content={content} citations={citations} streaming={streaming} />
       {!streaming && (
         <div className="mt-3 flex flex-wrap items-center gap-1 text-muted-foreground">

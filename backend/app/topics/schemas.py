@@ -39,7 +39,8 @@ class TopicDecision(BaseModel):
 
 class ResumeIn(BaseModel):
     interrupt_id: str
-    decision: list[TopicDecision]
+    # A Topic review answers with a list; a Conflict in a chat with one word.
+    decision: list[TopicDecision] | str
 
 
 class InterruptOut(BaseModel):

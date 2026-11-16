@@ -115,7 +115,7 @@ A pending Dispute is answered through the thread resume endpoint.
 |---|---|---|
 | GET | `/spaces/{space_id}/weak-topics` | Current Weak Topics |
 | DELETE | `/spaces/{space_id}/weak-topics/{topic_id}` | Clear one |
-| GET | `/spaces/{space_id}/conflicts` | Stored Conflict decisions |
+| GET | `/spaces/{space_id}/conflicts` | Stored Conflict decisions, each with the two passages' documents and excerpts |
 | DELETE | `/spaces/{space_id}/conflicts/{id}` | Forget a decision so it is asked again |
 | GET | `/spaces/{space_id}/disputes` | Past Disputes |
 
@@ -169,6 +169,8 @@ A pause is a LangGraph interrupt saved to the checkpointer. The client learns ab
 POST /threads/{thread_id}/resume
 { "interrupt_id": "...", "decision": { ... } }
 ```
+
+The route answers every kind of pause and looks at the thread's kind: a chat thread continues the paused question; an ingestion thread takes the Topic review. A `conflict` decision is one word (`keep_notes`, `accept_other`, `unsure`); anything else returns `422 invalid_decision`. The pause belongs to the thread's latest question, so asking something new abandons it.
 
 The response is an event stream that continues the run, except for `topic_review`: indexing is a background job, so that answer returns `202` with the document and the Student follows its `status`. Resuming an interrupt that was already answered or no longer exists returns `409 nothing_to_resume`.
 

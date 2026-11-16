@@ -36,6 +36,17 @@ export const messageSchema = z.object({
 })
 export type Message = z.infer<typeof messageSchema>
 
+// A pause the Student must answer (docs/api.md section 4). Only the Conflict exists so far.
+export const conflictDecisionSchema = z.enum(['keep_notes', 'accept_other', 'unsure'])
+export type ConflictDecision = z.infer<typeof conflictDecisionSchema>
+
+export const conflictPayloadSchema = z.object({
+  topic: z.string(),
+  notes: citationSchema,
+  other: citationSchema,
+})
+export type ConflictPayload = z.infer<typeof conflictPayloadSchema>
+
 // The server-sent events of POST /threads/{id}/messages (docs/api.md section 3).
 export const streamEventSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('token'), text: z.string() }),
@@ -48,6 +59,7 @@ export const streamEventSchema = z.discriminatedUnion('type', [
     found: z.number().optional(),
   }),
   z.object({ type: z.literal('citation') }).extend(citationSchema.shape),
+  z.object({ type: z.literal('interrupt'), interrupt_id: z.string(), kind: z.literal('conflict'), payload: conflictPayloadSchema }),
   z.object({ type: z.literal('cost'), tokens_in: z.number(), tokens_out: z.number(), usd: z.number().nullable() }),
   z.object({ type: z.literal('error'), code: z.string(), message: z.string() }),
   z.object({ type: z.literal('done'), message_id: z.string(), trace_id: z.string().nullable(), content: z.string() }),
@@ -55,3 +67,11 @@ export const streamEventSchema = z.discriminatedUnion('type', [
 export type StreamEvent = z.infer<typeof streamEventSchema>
 
 export const messageInSchema = z.string().trim().min(1).max(8000)
+
+// Mirrors the backend's ConflictOut (only what the chat needs).
+export const storedConflictSchema = z.object({
+  id: z.uuid(),
+  topic: z.string(),
+  other_source_type: z.enum(['library', 'learned']),
+  decision: conflictDecisionSchema,
+})

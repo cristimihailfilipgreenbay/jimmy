@@ -27,6 +27,7 @@ from app.chat.tools import (
     make_search_wikipedia,
 )
 from app.config import get_settings
+from app.conflicts.tool import make_compare_sources
 
 OPENROUTER_BASE = "https://openrouter.ai/api/v1"
 CITATION_RETRIES = 1
@@ -101,15 +102,22 @@ def build_agent(
     library: bool = False,
     web: bool = False,
     learned: bool = False,
+    checkpointer=None,
+    compare_model=None,
 ):
     """`library`: the Space has a Subject Library attached and switched on.
     `learned`: the Space has Learned Material.
-    `web`: the Student allows web search (Wikipedia, and Tavily when it has a key)."""
+    `web`: the Student allows web search (Wikipedia, and Tavily when it has a key).
+    `checkpointer`: where a run waits when it pauses for the Student (a Conflict)."""
     tools = [make_search_notes(space_id, sources)]
     if library:
         tools.append(make_search_library(space_id, sources))
     if learned:
         tools.append(make_search_learned(space_id, sources))
+    # A Conflict needs Notes and a second Source from the Space to compare.
+    compare = library or learned
+    if compare:
+        tools.append(make_compare_sources(space_id, sources, compare_model))
     use_tavily = web and bool(get_settings().tavily_api_key)
     if web:
         tools.append(make_search_wikipedia(sources))
@@ -118,10 +126,11 @@ def build_agent(
     return create_agent(
         model or make_model(),
         tools=tools,
-        system_prompt=build_prompt(library, web, use_tavily, learned),
+        system_prompt=build_prompt(library, web, use_tavily, learned, compare),
         middleware=[
             ModelCallLimitMiddleware(run_limit=MAX_MODEL_CALLS, exit_behavior="error"),
             doom_loop_stop(),
             citation_check(sources),
         ],
+        checkpointer=checkpointer,
     )

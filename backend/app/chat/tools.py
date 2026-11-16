@@ -2,6 +2,7 @@
 
 import logging
 import threading
+import uuid
 from dataclasses import dataclass, field
 from datetime import date
 
@@ -41,6 +42,16 @@ class RunSources:
             self._by_chunk[key] = number
             return citation
 
+    def restore(self, saved: list[dict]) -> None:
+        """Put back Citations saved by an earlier part of a paused run, with their numbers."""
+        with self._lock:
+            for d in saved:
+                if d["id"] in self.citations:
+                    continue
+                chunk_id = uuid.UUID(d["chunk_id"]) if d.get("chunk_id") else None
+                self.citations[d["id"]] = Citation(**{**d, "chunk_id": chunk_id})
+                self._by_chunk[chunk_id or d["url"]] = d["id"]
+
     @property
     def ids(self) -> set[int]:
         return set(self.citations)
@@ -49,11 +60,11 @@ class RunSources:
 def _make_search(
     space_id, sources: RunSources, *, name: str, source_type: str, doc: str, none: str
 ) -> StructuredTool:
-    def search(query: str) -> str:
+    def search(query: str) -> tuple[str, list[dict]]:
         try:
             [vector] = embed_texts([query])
         except EmbeddingError as exc:
-            return f"The search failed ({exc}). Answer without it and say so."
+            return f"The search failed ({exc}). Answer without it and say so.", []
         with Session(engine) as session:
             hits = search_chunks(
                 session,
@@ -63,12 +74,12 @@ def _make_search(
                 source_types=(source_type,),
             )
         if not hits:
-            return none
+            return none, []
         # Notes are the Student's own uploads, so they are scanned; the Library is trusted.
         flagged = (
             scan_passages([h.text for h in hits]) if source_type == "notes" else set()
         )
-        lines = []
+        lines, found = [], []
         for i, hit in enumerate(hits):
             if i in flagged:
                 log.warning("Withheld a Note passage that looks like an injection")
@@ -87,12 +98,15 @@ def _make_search(
                     "url": hit.url,
                 }
             )
+            found.append(citation.as_json())
             where = f", {citation.page_or_section}" if citation.page_or_section else ""
             lines.append(f"[{citation.id}] ({citation.document}{where})\n{hit.text}")
-        return "\n\n".join(lines)
+        return "\n\n".join(lines), found
 
     search.__doc__ = doc
-    return StructuredTool.from_function(search, name=name)
+    return StructuredTool.from_function(
+        search, name=name, response_format="content_and_artifact"
+    )
 
 
 def make_search_notes(space_id, sources: RunSources) -> StructuredTool:
@@ -125,16 +139,16 @@ def make_search_library(space_id, sources: RunSources) -> StructuredTool:
 def _make_web_search(
     sources: RunSources, *, name: str, source_type: str, lookup, doc: str, none: str
 ) -> StructuredTool:
-    def search(query: str) -> str:
+    def search(query: str) -> tuple[str, list[dict]]:
         try:
             pages: list[Page] = lookup(query)
         except LookupFailed as exc:
-            return f"The search failed ({exc}). Answer without it and say so."
+            return f"The search failed ({exc}). Answer without it and say so.", []
         if not pages:
-            return none
+            return none, []
         flagged = scan_passages([p.text for p in pages])
         today = date.today().isoformat()
-        lines = []
+        lines, found = [], []
         for i, page in enumerate(pages):
             if i in flagged:
                 log.warning("Withheld a web result that looks like an injection")
@@ -151,11 +165,14 @@ def _make_web_search(
                     "fetched_at": today,
                 }
             )
+            found.append(citation.as_json())
             lines.append(f"[{citation.id}] ({page.title}, {page.domain})\n{page.text}")
-        return "\n\n".join(lines)
+        return "\n\n".join(lines), found
 
     search.__doc__ = doc
-    return StructuredTool.from_function(search, name=name)
+    return StructuredTool.from_function(
+        search, name=name, response_format="content_and_artifact"
+    )
 
 
 def make_search_wikipedia(sources: RunSources) -> StructuredTool:

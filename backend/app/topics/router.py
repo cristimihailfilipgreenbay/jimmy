@@ -6,6 +6,7 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 
 from app.chat.dependencies import ThreadDep
+from app.chat.router import resume_chat
 from app.db import SessionDep
 from app.documents.ingestion import resume_ingestion
 from app.documents.models import Document
@@ -13,6 +14,7 @@ from app.documents.schemas import DocumentOut
 from app.errors import ApiError
 from app.spaces.dependencies import get_owned_space
 from app.spaces.models import Space
+from app.students.dependencies import StudentDep
 from app.topics.models import Topic
 from app.topics.review import (
     Decision,
@@ -126,8 +128,8 @@ def merge_topics(body: TopicMerge, space: SpaceDep, session: SessionDep):
 
 
 # --- Pauses -----------------------------------------------------------------
-# Every pause is answered at /threads/{id}/resume. Today the only one a run can wait on
-# is the Topic review of an ingestion thread; later pauses are added here by kind.
+# Every pause is answered at /threads/{id}/resume, by the kind of thread: the Topic review
+# of an ingestion thread, or a Conflict in a chat (see app/chat/router.py).
 
 
 def _graph():
@@ -170,9 +172,20 @@ def get_thread(thread: ThreadDep):
 
 @router.post("/threads/{thread_id}/resume", response_model=DocumentOut, status_code=202)
 def resume_thread(
-    body: ResumeIn, thread: ThreadDep, session: SessionDep, background: BackgroundTasks
+    body: ResumeIn,
+    thread: ThreadDep,
+    student: StudentDep,
+    session: SessionDep,
+    background: BackgroundTasks,
 ):
-    """Answer the Topic review. Checks the answer, then finishes indexing in the background."""
+    """Answer a pause. A chat continues as an event stream; a Topic review checks the
+    answer and finishes indexing in the background."""
+    if thread.kind == "chat":
+        if not isinstance(body.decision, str):
+            raise ApiError(422, "invalid_decision", "Choose one of the options.")
+        return resume_chat(body.interrupt_id, body.decision, thread, student, session)
+    if not isinstance(body.decision, list):
+        raise ApiError(422, "invalid_topic_review", "Send one entry per Topic.")
     pending = _pending(thread.id) if thread.kind == "ingestion" else None
     if pending is None or pending.interrupt_id != body.interrupt_id:
         raise ApiError(409, "nothing_to_resume", "There is nothing to answer here.")

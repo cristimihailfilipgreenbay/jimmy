@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import { Book, ChevronDown, Plus } from 'lucide-react'
 import { useSearchParams } from 'react-router'
 import { DropdownMenu } from '@/components/DropdownMenu'
+import { ShowMore } from '@/components/ShowMore'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Switch } from '@/components/ui/switch'
@@ -10,6 +11,7 @@ import type { Space } from '@/features/spaces/schemas/space'
 import { errorMessage } from '@/lib/http'
 import { toast } from '@/lib/toast'
 import { cn } from '@/lib/utils'
+import { useBooks } from '../queries/useBooks'
 import { useLibrary } from '../queries/useLibrary'
 import { useSwitchLibrary } from '../queries/useSwitchLibrary'
 import type { LibraryState } from '../schemas/library'
@@ -30,13 +32,45 @@ function Shelf({ on }: { on: boolean }) {
 function statusText(state: LibraryState | undefined): string {
   if (!state || state.status === 'none') return 'No textbooks yet'
   if (state.status === 'indexing') {
-    const ready = state.books.reduce((n, b) => n + b.chapters_ready, 0)
-    const total = state.books.reduce((n, b) => n + b.chapters_total, 0)
-    return `Indexing ${ready} of ${total} chapters…`
+    return `Indexing ${state.chapters_ready} of ${state.chapters_total} chapters…`
   }
   if (state.status === 'failed') return 'Indexing failed · add it again'
-  const n = state.books.length
+  const n = state.book_count
   return state.enabled ? `${n} textbook${n === 1 ? '' : 's'} searched` : 'Off · answers use your notes only'
+}
+
+// The textbooks on the shelf, twenty at a time: many scroll inside the menu instead of making it
+// taller than the screen, and "Show more" loads the next twenty.
+function ShelfList({ studentId, spaceId, on, indexing }: { studentId: string; spaceId: string; on: boolean; indexing: boolean }) {
+  const query = useBooks(studentId, spaceId, indexing)
+  const books = query.data?.books ?? []
+  return (
+    <ScrollArea className="max-h-72 [&>[data-slot=scroll-area-viewport]]:max-h-72">
+      <ul className="p-1.5">
+        {books.map((book) => (
+          <li key={book.pack.id} className={cn('flex items-start gap-3 rounded-md p-2', !on && 'opacity-60')}>
+            <span className="mt-0.5 h-10 w-1.5 flex-none rounded-full bg-lib" aria-hidden />
+            <span className="min-w-0 flex-1">
+              <span className="block font-serif text-[15px] leading-snug italic">{book.pack.title}</span>
+              <span className="block text-xs text-muted-foreground">
+                {book.pack.author} · {book.pack.license} · ch. {book.chapters.join(', ')}
+              </span>
+              <span className="block text-xs text-muted-foreground">
+                {book.status === 'indexing'
+                  ? `Indexing ${book.chapters_ready} of ${book.chapters_total} chapters…`
+                  : book.status === 'failed'
+                    ? 'Indexing failed · add it again'
+                    : `Cited in ${book.cited_in_answers} answer${book.cited_in_answers === 1 ? '' : 's'}`}
+              </span>
+            </span>
+          </li>
+        ))}
+      </ul>
+      <div className="px-2 pb-2">
+        <ShowMore shown={books.length} total={query.data?.total ?? 0} hasMore={!!query.hasNextPage} loading={query.isFetchingNextPage} onMore={() => query.fetchNextPage()} />
+      </div>
+    </ScrollArea>
+  )
 }
 
 // The Subject Library card in a Study Space's header: a switch to use the Library in this
@@ -136,29 +170,7 @@ export function LibraryCard({ studentId, space }: { studentId: string; space: Sp
           </p>
         </div>
         {attached ? (
-          // Many textbooks scroll inside the menu instead of making it taller than the screen.
-          <ScrollArea className="max-h-72 [&>[data-slot=scroll-area-viewport]]:max-h-72">
-            <ul className="p-1.5">
-              {state.books.map((book) => (
-                <li key={book.pack.id} className={cn('flex items-start gap-3 rounded-md p-2', !on && 'opacity-60')}>
-                  <span className="mt-0.5 h-10 w-1.5 flex-none rounded-full bg-lib" aria-hidden />
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-serif text-[15px] leading-snug italic">{book.pack.title}</span>
-                    <span className="block text-xs text-muted-foreground">
-                      {book.pack.author} · {book.pack.license} · ch. {book.chapters.join(', ')}
-                    </span>
-                    <span className="block text-xs text-muted-foreground">
-                      {book.status === 'indexing'
-                        ? `Indexing ${book.chapters_ready} of ${book.chapters_total} chapters…`
-                        : book.status === 'failed'
-                          ? 'Indexing failed · add it again'
-                          : `Cited in ${book.cited_in_answers} answer${book.cited_in_answers === 1 ? '' : 's'}`}
-                    </span>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </ScrollArea>
+          <ShelfList studentId={studentId} spaceId={space.id} on={on} indexing={state.status === 'indexing'} />
         ) : (
           <p className="p-4 text-sm text-muted-foreground">
             No textbooks in this Space yet. Approved web material and textbooks you add will appear here.

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Book, Search } from 'lucide-react'
+import { ShowMore } from '@/components/ShowMore'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -29,10 +30,12 @@ export function PackDialog({
 }) {
   const [typed, setTyped] = useState('')
   const q = useDebouncedValue(typed.trim())
-  const { data: packs, isPending } = usePacks(studentId, q, open)
+  const query = usePacks(studentId, q, open)
+  const { isPending } = query
+  const packs = query.data?.packs
   const add = useAddPack(studentId, space.id)
   const remove = useRemovePack(studentId, space.id)
-  const attached = new Set(state?.books.map((b) => b.pack.id))
+  const attached = new Set(state?.pack_ids)
   const busy = add.isPending || remove.isPending
   const failure = add.error ?? remove.error
   const error = failure ? errorMessage(failure, 'Could not change the textbooks.') : null
@@ -99,6 +102,9 @@ export function PackDialog({
                 </li>
               ))}
             </ul>
+            <div className="pr-3">
+              <ShowMore shown={packs?.length ?? 0} total={query.data?.total ?? 0} hasMore={!!query.hasNextPage} loading={query.isFetchingNextPage} onMore={() => query.fetchNextPage()} />
+            </div>
           </ScrollArea>
           {error && (
             <p role="alert" className="mt-3 text-sm text-destructive">

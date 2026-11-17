@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Layers, X } from 'lucide-react'
-import { useParams } from 'react-router'
+import { useParams, useSearchParams } from 'react-router'
 import { Placeholder } from '@/components/Placeholder'
 import { Button } from '@/components/ui/button'
 import { useSignedInStudent } from '@/features/auth/hooks/useSignedInStudent'
@@ -28,7 +28,10 @@ export function FlashcardsPage() {
   const deck = useDeck(student.id, spaceId, topic)
   const drafts = useDrafts(student.id, spaceId)
   const review = useReviewDraft(student.id, spaceId)
-  const [tab, setTab] = useState<Tab>('browse')
+  // The tab lives in the address (?tab=review), so it survives a refresh and can be linked to.
+  const [params, setParams] = useSearchParams()
+  const tab: Tab = params.get('tab') === 'review' ? 'review' : 'browse'
+  const setTab = (next: Tab) => setParams(next === 'browse' ? {} : { tab: next }, { replace: true })
   const [viewer, setViewer] = useState<number | null>(null)
   const space = spaces?.find((s) => s.id === spaceId)
   // The tabs are not on the page while the lists load or the viewer is open, so the pill is

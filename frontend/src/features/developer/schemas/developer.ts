@@ -5,7 +5,6 @@ export const toolSchema = z.object({ name: z.string(), label: z.string(), descri
 
 export const settingsSchema = z.object({
   tutor_model: z.string(),
-  background_model: z.string(),
   temperature: z.number(),
   max_tokens: z.number(),
   tools: z.array(toolSchema),
@@ -17,14 +16,23 @@ export const settingsSchema = z.object({
 export type DeveloperSettings = z.infer<typeof settingsSchema>
 
 /** What PUT /settings takes; only what is sent changes. */
-export type SettingsChange = Partial<Pick<DeveloperSettings, 'tutor_model' | 'background_model' | 'temperature' | 'max_tokens' | 'show_usage'>> & {
+export type SettingsChange = Partial<Pick<DeveloperSettings, 'tutor_model' | 'temperature' | 'max_tokens' | 'show_usage'>> & {
   tools?: Record<string, boolean>
 }
 
 export const MAX_TOKENS_RANGE = { min: 128, max: 8192, step: 128 }
 export const maxTokensSchema = z.number().int().min(MAX_TOKENS_RANGE.min).max(MAX_TOKENS_RANGE.max)
 
-export const modelSchema = z.object({ id: z.string(), name: z.string(), prompt: z.number().nullable(), completion: z.number().nullable() })
+export const modelSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  prompt: z.number().nullable(),
+  completion: z.number().nullable(),
+  // Whether the model uses a temperature; null when OpenRouter could not be asked.
+  supports_temperature: z.boolean().nullable(),
+})
+export type ModelOption = z.infer<typeof modelSchema>
 export const modelsSchema = z.array(modelSchema)
 
 export const usageItemSchema = z.object({

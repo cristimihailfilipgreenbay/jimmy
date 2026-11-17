@@ -1,17 +1,17 @@
 import { useState } from 'react'
-import { ChevronLeft, Code, Lock, TriangleAlert } from 'lucide-react'
+import { ChevronLeft, Code, Info, Lock, TriangleAlert } from 'lucide-react'
 import { Link } from 'react-router'
 import { buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useSignedInStudent } from '@/features/auth/hooks/useSignedInStudent'
 import { cardClass } from '@/lib/styles'
 import { cn } from '@/lib/utils'
 import { UsageTable } from './components/UsageTable'
 import { useDeveloperSettings, useModels, useUpdateSettings } from './queries/useDeveloper'
 import { MAX_TOKENS_RANGE, maxTokensSchema } from './schemas/developer'
-
-const selectClass = 'h-9 w-full rounded-md border border-input bg-card px-3 text-sm transition-colors duration-200 focus:border-space disabled:opacity-50'
 
 // Model, temperature, tools and cost. Kept apart from the Student's screens on purpose.
 export function DeveloperPage() {
@@ -37,26 +37,13 @@ export function DeveloperPage() {
     if (parsed.data !== settings?.max_tokens) update.mutate({ max_tokens: parsed.data })
     setMaxTokens(null)
   }
-  // The pickers list what OpenRouter offers, plus the model in use if it is not listed.
-  const options = (current: string) => {
-    const ids = models.data?.map((m) => m.id) ?? []
-    return current && !ids.includes(current) ? [current, ...ids] : ids
-  }
-  const modelPicker = (id: string, label: string, value: string, key: 'tutor_model' | 'background_model') => (
-    <>
-      <label className="mt-4 mb-1.5 block text-sm font-medium" htmlFor={id}>
-        {label}
-      </label>
-      <select id={id} className={selectClass} value={value} disabled={!settings || models.isPending} onChange={(e) => update.mutate({ [key]: e.target.value })}>
-        {!value && <option value="">Not set</option>}
-        {options(value).map((m) => (
-          <option key={m} value={m}>
-            {m}
-          </option>
-        ))}
-      </select>
-    </>
-  )
+  // The models Jimmy offers, plus the one in use if the environment set another.
+  const current = settings?.tutor_model ?? ''
+  const offered = models.data ?? []
+  const known = offered.some((m) => m.id === current)
+  const nameOf = (id: string) => offered.find((m) => m.id === id)?.name ?? id
+  // Only known to be false once the model list has answered.
+  const ignoresTemperature = offered.find((m) => m.id === current)?.supports_temperature === false
 
   return (
     <main id="main" className="mx-auto max-w-4xl px-4 py-8 pb-28">
@@ -80,12 +67,39 @@ export function DeveloperPage() {
           <h2 id="d-model" className="font-semibold">
             Model
           </h2>
-          {modelPicker('d-tutor', 'Tutor model', settings?.tutor_model ?? '', 'tutor_model')}
-          {modelPicker('d-background', 'Background model', settings?.background_model ?? '', 'background_model')}
+          <label className="mt-4 mb-1.5 block text-sm font-medium" id="d-tutor-label">
+            Model
+          </label>
+          <Select value={current} onValueChange={(tutor_model) => tutor_model && update.mutate({ tutor_model })} disabled={!settings || models.isPending}>
+            <SelectTrigger className="w-full" aria-labelledby="d-tutor-label">
+              <SelectValue>{(id: string) => nameOf(id)}</SelectValue>
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false} className="min-w-72">
+              {!known && current && <SelectItem value={current}>{current}</SelectItem>}
+              {offered.map((m) => (
+                <SelectItem key={m.id} value={m.id} className="items-start py-1.5">
+                  <span className="flex flex-col">
+                    <span className="font-medium">{m.name}</span>
+                    <span className="text-xs text-muted-foreground">{m.description}</span>
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <div className="mt-4 flex items-center justify-between">
-            <label htmlFor="d-temp" className="text-sm font-medium">
-              Temperature
-            </label>
+            <span className="flex items-center gap-1.5">
+              <label htmlFor="d-temp" className="text-sm font-medium">
+                Temperature
+              </label>
+              <Tooltip>
+                <TooltipTrigger render={<button type="button" aria-label="About temperature" className="grid size-5 place-items-center rounded-full text-muted-foreground hover:text-foreground" />}>
+                  <Info className="size-4" aria-hidden />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-64">
+                  Some models, such as GPT and Claude, ignore temperature, so changing it does nothing for them. Jimmy then does not send it. The slider is switched off for those, and works for models that take one, such as Gemini.
+                </TooltipContent>
+              </Tooltip>
+            </span>
             <output htmlFor="d-temp" className="font-mono text-sm">
               {shownTemperature.toFixed(2)}
             </output>
@@ -97,8 +111,8 @@ export function DeveloperPage() {
             max={1}
             step={0.05}
             value={shownTemperature}
-            disabled={!settings}
-            className="mt-2 w-full accent-space"
+            disabled={!settings || ignoresTemperature}
+            className="mt-2 w-full accent-space disabled:opacity-50"
             aria-describedby="d-temp-hint"
             onChange={(e) => setTemperature(Number(e.target.value))}
             onPointerUp={saveTemperature}
@@ -106,7 +120,7 @@ export function DeveloperPage() {
             onBlur={saveTemperature}
           />
           <p id="d-temp-hint" className="mt-1 text-xs text-muted-foreground">
-            Lower is more consistent. 0.2–0.4 suits tutoring.
+            {ignoresTemperature ? `${nameOf(current)} ignores temperature, so this has no effect.` : 'Lower is more consistent. 0.2–0.4 suits tutoring.'}
           </p>
           <label className="mt-4 mb-1.5 block text-sm font-medium" htmlFor="d-max">
             Max tokens per answer

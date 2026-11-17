@@ -75,9 +75,16 @@ export function LearnedTab({ studentId, spaceId, spaceName }: { studentId: strin
                 <Button variant="space" size="sm" onClick={() => onApprove(item)} disabled={approve.isPending || remove.isPending}>
                   <Check /> Approve
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => onDelete(item)} disabled={approve.isPending || remove.isPending}>
-                  <Trash2 /> Delete
-                </Button>
+                <Button
+                variant="outline"
+                size="icon-sm"
+                aria-label={`Delete “${item.title}”`}
+                className="border-destructive/30 text-destructive enabled:hover:bg-destructive-soft enabled:hover:text-destructive"
+                onClick={() => onDelete(item)}
+                disabled={approve.isPending || remove.isPending}
+              >
+                <Trash2 />
+              </Button>
               </div>
             </div>
           </li>
@@ -104,9 +111,16 @@ export function LearnedTab({ studentId, spaceId, spaceName }: { studentId: strin
                 Approved {item.approved_at ? new Date(item.approved_at).toLocaleDateString() : '–'} · used in {item.used_in_answers} answer{item.used_in_answers === 1 ? '' : 's'}
               </p>
             </div>
-            <Button variant="outline" size="sm" onClick={() => onDelete(item)} disabled={remove.isPending}>
-              <Trash2 /> Delete
-            </Button>
+            <Button
+                variant="outline"
+                size="icon-sm"
+                aria-label={`Delete “${item.title}”`}
+                className="border-destructive/30 text-destructive enabled:hover:bg-destructive-soft enabled:hover:text-destructive"
+                onClick={() => onDelete(item)}
+                disabled={remove.isPending}
+              >
+                <Trash2 />
+              </Button>
           </div>
         </li>
       ))}

@@ -40,7 +40,9 @@ export function useChat(studentId: string, spaceId: string) {
   const resume = useResumeThread()
   const [chosenThread, setChosenThread] = useState<string>()
   const threadId = chosenThread ?? threads?.[0]?.id
-  const { data: messages = [], isPending: loadingMessages } = useMessages(threadId)
+  const stored = useMessages(threadId)
+  const messages = stored.data?.messages ?? []
+  const loadingMessages = stored.isPending
   const [pending, setPending] = useState<Pending | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [pills, setPills] = useState<Record<string, ToolPill[]>>({})
@@ -133,5 +135,5 @@ export function useChat(studentId: string, spaceId: string) {
     }
   }
 
-  return { messages, loadingMessages: !!threadId && loadingMessages, pending, error, pills, conflicts, ask, decide, stop }
+  return { messages, hasOlder: !!stored.hasNextPage, loadingOlder: stored.isFetchingNextPage, loadOlder: () => stored.fetchNextPage().then((r) => !r.isError), loadingMessages: !!threadId && loadingMessages, pending, error, pills, conflicts, ask, decide, stop }
 }

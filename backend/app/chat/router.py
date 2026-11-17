@@ -1,10 +1,12 @@
 import json
+import uuid
 from collections.abc import Iterator
+from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
-from sqlalchemy import select
+from sqlalchemy import case, func, select, tuple_
 
 from app.chat.agent import ModelNotConfigured, build_agent
 from app.chat.dependencies import ThreadDep
@@ -25,6 +27,13 @@ from app.db import SessionDep
 from app.errors import ApiError
 from app.guardrails.classify import OFF_TOPIC, check_input
 from app.learned.models import LearnedMaterial
+from app.pagination import (
+    CursorPage,
+    CursorQuery,
+    LimitQuery,
+    decode_cursor,
+    next_cursor,
+)
 from app.spaces.dependencies import get_owned_space
 from app.spaces.models import Space
 from app.students.dependencies import StudentDep
@@ -53,12 +62,58 @@ def create_thread(space: SpaceDep, session: SessionDep):
     return thread
 
 
-@router.get("/threads/{thread_id}/messages", response_model=list[MessageOut])
-def list_messages(thread: ThreadDep, session: SessionDep):
-    return session.scalars(
-        select(Message)
-        .where(Message.thread_id == thread.id)
-        .order_by(Message.created_at, Message.role.desc())
+def _turn_order():
+    """Within one moment, the question comes before its answer."""
+    return case((Message.role == "user", 0), else_=1)
+
+
+@router.get("/threads/{thread_id}/messages", response_model=CursorPage[MessageOut])
+def list_messages(
+    thread: ThreadDep,
+    session: SessionDep,
+    limit: LimitQuery = 30,
+    cursor: CursorQuery = None,
+):
+    """The newest messages first: the page is the latest `limit` messages, oldest of them
+    first, and `next_cursor` fetches the ones before it."""
+    mine = Message.thread_id == thread.id
+    key = tuple_(Message.created_at, _turn_order(), Message.id)
+    older = ()
+    if cursor:
+        created, turn, message_id = decode_cursor(cursor, 3)
+        try:
+            older = (
+                key
+                < tuple_(
+                    datetime.fromisoformat(created), int(turn), uuid.UUID(message_id)
+                ),
+            )
+        except ValueError as exc:
+            raise ApiError(
+                422, "invalid_cursor", "That page link is not valid."
+            ) from exc
+    rows = list(
+        session.scalars(
+            select(Message)
+            .where(mine, *older)
+            .order_by(
+                Message.created_at.desc(), _turn_order().desc(), Message.id.desc()
+            )
+            .limit(limit + 1)
+        )
+    )
+    return CursorPage(
+        items=list(reversed(rows[:limit])),
+        next_cursor=next_cursor(
+            rows,
+            limit,
+            lambda m: [
+                m.created_at.isoformat(),
+                str(0 if m.role == "user" else 1),
+                str(m.id),
+            ],
+        ),
+        total=session.scalar(select(func.count()).select_from(Message).where(mine)),
     )
 
 

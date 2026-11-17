@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
 import { Check, Loader2, TriangleAlert } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { useParams } from 'react-router'
 import { Placeholder } from '@/components/Placeholder'
 import { useSignedInStudent } from '@/features/auth/hooks/useSignedInStudent'
@@ -32,11 +33,30 @@ export function ChatPage() {
 
   // The first scroll, when the history has just loaded, jumps; later ones glide.
   const scrolled = useRef(false)
+  // Only a new last message (not older ones loaded above) scrolls down.
+  const lastId = chat.messages.at(-1)?.id
   useEffect(() => {
     if (chat.loadingMessages) return
     end.current?.scrollIntoView({ block: 'end', behavior: scrolled.current ? 'smooth' : 'instant' })
     scrolled.current = true
-  }, [chat.loadingMessages, chat.messages.length, chat.pending?.text, chat.pending?.steps.length, chat.pending?.conflicts.length])
+  }, [chat.loadingMessages, lastId, chat.pending?.text, chat.pending?.steps.length, chat.pending?.conflicts.length])
+
+  // Older messages appear above what is on screen; keep the same message where it was.
+  const anchor = useRef<{ height: number; top: number } | null>(null)
+  const count = chat.messages.length
+  useLayoutEffect(() => {
+    const a = anchor.current
+    if (!a) return
+    anchor.current = null
+    window.scrollTo({ top: a.top + (document.documentElement.scrollHeight - a.height), behavior: 'instant' })
+  }, [count])
+  const loadOlder = () => {
+    anchor.current = { height: document.documentElement.scrollHeight, top: window.scrollY }
+    // A failed load leaves nothing to keep in place.
+    chat.loadOlder().then((ok) => {
+      if (!ok) anchor.current = null
+    })
+  }
 
   if (isPending) return null
   if (!space) return <Placeholder title="Study Space not found" note="That Study Space does not exist." />
@@ -59,6 +79,13 @@ export function ChatPage() {
               libraryOn={!!library?.enabled && library.status !== 'none'}
               onAsk={chat.ask}
             />
+          )}
+          {chat.hasOlder && (
+            <div className="flex justify-center">
+              <Button variant="outline" size="sm" disabled={chat.loadingOlder} onClick={loadOlder}>
+                {chat.loadingOlder && <Loader2 className="animate-spin" />} Show earlier messages
+              </Button>
+            </div>
           )}
           {chat.messages.map((m) =>
             m.role === 'user' ? (

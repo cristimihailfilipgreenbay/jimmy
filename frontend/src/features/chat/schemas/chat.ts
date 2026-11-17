@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { cursorPage } from '@/lib/pagination'
 
 // Mirrors the backend's ThreadOut, CitationOut and MessageOut.
 export const threadSchema = z.object({
@@ -35,6 +36,9 @@ export const messageSchema = z.object({
   created_at: z.string(),
 })
 export type Message = z.infer<typeof messageSchema>
+export const messagesPageSchema = cursorPage(messageSchema)
+/** How many messages load at a time. */
+export const MESSAGES_PAGE = 30
 
 // A pause the Student must answer (docs/api.md section 4). Only the Conflict exists so far.
 export const conflictDecisionSchema = z.enum(['keep_notes', 'accept_other', 'unsure'])

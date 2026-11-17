@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { Check, ChevronRight, GraduationCap, Target } from 'lucide-react'
+import { useSearchParams } from 'react-router'
 import { SegmentedControl } from '@/components/SegmentedControl'
 import { PageNav } from '@/components/PageNav'
 import { Button } from '@/components/ui/button'
@@ -21,13 +22,39 @@ const plural = (n: number) => `${n} weak topic${n === 1 ? '' : 's'}`
 // The finished Quizzes and Tests of a Study Space, newest first, ten to a page and grouped
 // by week. Opening one shows its recap.
 export function PastSessions({ studentId, spaceId, onOpen, onStart }: { studentId: string; spaceId: string; onOpen: (id: string) => void; onStart: () => void }) {
-  const [filter, setFilter] = useState<Filter>('all')
-  const [page, setPage] = useState(1)
+  // The filter and the page are kept in the address (?show=quiz&page=2), so a refresh, a
+  // link or the back button from a recap returns to the same place.
+  const [params, setParams] = useSearchParams()
+  const asked = params.get('show')
+  const filter: Filter = FILTERS.some((f) => f.value === asked) ? (asked as Filter) : 'all'
+  const page = Math.max(1, Math.floor(Number(params.get('page'))) || 1)
+  const show = (next: { filter?: Filter; page?: number }, replace = false) =>
+    setParams(
+      (old) => {
+        const out = new URLSearchParams(old)
+        const f = next.filter ?? filter
+        const p = next.page ?? page
+        if (f === 'all') out.delete('show')
+        else out.set('show', f)
+        if (p === 1) out.delete('page')
+        else out.set('page', String(p))
+        return out
+      },
+      { replace },
+    )
+  const setFilter = (f: Filter) => show({ filter: f, page: 1 })
+  const setPage = (p: number) => show({ page: p })
   const { data, isPending } = usePastSessions(studentId, spaceId, filter, page)
   const items = data?.items ?? []
   const total = data?.total ?? 0
   const totalAll = data?.total_all ?? 0
   const pageCount = Math.max(1, Math.ceil(total / PAST_SESSIONS_PAGE))
+  // A page past the end (an old link, or sessions that are gone) goes to the last one.
+  const tooFar = !!data && total > 0 && page > pageCount
+  useEffect(() => {
+    if (tooFar) show({ page: pageCount }, true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tooFar, pageCount])
   // A new page puts focus on its first row, once it has arrived.
   const focusFirst = useRef(false)
   const section = useRef<HTMLElement>(null)
@@ -63,10 +90,7 @@ export function PastSessions({ studentId, spaceId, onOpen, onStart }: { studentI
               label="Show"
               options={FILTERS}
               value={filter}
-              onChange={(value) => {
-                setFilter(value)
-                setPage(1)
-              }}
+              onChange={setFilter}
             />
           </div>
         )}

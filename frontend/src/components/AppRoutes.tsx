@@ -6,7 +6,7 @@ import { RequireAuth } from '@/features/auth/components/RequireAuth'
 import { ChatPage } from '@/features/chat/ChatPage'
 import { OnboardingPage } from '@/features/onboarding/OnboardingPage'
 import { RequireOnboarded } from '@/features/onboarding/components/RequireOnboarded'
-import { ApiStatus } from '@/features/health/components/ApiStatus'
+import { DeveloperPage } from '@/features/developer/DeveloperPage'
 import { FlashcardsPage } from '@/features/flashcards/FlashcardsPage'
 import { SettingsPage } from '@/features/settings/SettingsPage'
 import { StudyPage } from '@/features/study/StudyPage'
@@ -30,14 +30,7 @@ export function AppRoutes() {
             <Route path="spaces/:spaceId/study" element={<StudyPage />} />
             <Route path="spaces/:spaceId/flashcards" element={<FlashcardsPage />} />
             <Route path="settings" element={<SettingsPage />} />
-            <Route
-              path="developer"
-              element={
-                <Placeholder title="Developer" note="Models, tool toggles, token and cost display.">
-                  <ApiStatus />
-                </Placeholder>
-              }
-            />
+            <Route path="developer" element={<DeveloperPage />} />
             <Route path="*" element={<Placeholder title="Not found" note="That page does not exist." />} />
           </Route>
         </Route>

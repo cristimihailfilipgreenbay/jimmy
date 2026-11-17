@@ -1,4 +1,5 @@
-import { TriangleAlert } from 'lucide-react'
+import { ChevronRight, Code, TriangleAlert } from 'lucide-react'
+import { Link } from 'react-router'
 import { Switch } from '@/components/ui/switch'
 import { useSignedInStudent } from '@/features/auth/hooks/useSignedInStudent'
 import { cardClass } from '@/lib/styles'
@@ -40,6 +41,16 @@ export function SettingsPage() {
         )}
       </section>
       <AnswerStyleSection studentId={student.id} />
+      <Link to="/developer" className={cn(cardClass, 'mt-4 flex items-center gap-3 p-4 transition-colors hover:bg-muted/40')}>
+        <span className="grid size-9 place-items-center rounded-md bg-muted">
+          <Code className="size-4" aria-hidden />
+        </span>
+        <span className="flex-1">
+          <span className="block text-sm font-medium">Developer settings</span>
+          <span className="block text-sm text-muted-foreground">Model, temperature, tools and cost. Kept separate on purpose.</span>
+        </span>
+        <ChevronRight className="size-4" aria-hidden />
+      </Link>
     </main>
   )
 }

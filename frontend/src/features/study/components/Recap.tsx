@@ -22,6 +22,8 @@ export function Recap({
   onDone: () => void
 }) {
   const weak = recap.by_topic.filter((t) => t.weak)
+  // The first answer that was not right starts open, so the Student sees what to fix.
+  const firstWrong = recap.questions.find((q) => !q.correct)
   return (
     <>
       <div className={cn(cardClass, 'p-6')}>
@@ -69,7 +71,7 @@ export function Recap({
           </ul>
         </section>
       )}
-      <Accordion multiple className="mt-6 gap-4">
+      <Accordion multiple defaultValue={firstWrong ? [firstWrong.question_id] : []} className="mt-6 gap-4">
         {recap.questions.map((q) => (
           <AccordionItem key={q.question_id} value={q.question_id} className={cn(cardClass, 'px-5 not-last:border-b')}>
             <AccordionTrigger className="items-center gap-3 py-4 hover:no-underline">

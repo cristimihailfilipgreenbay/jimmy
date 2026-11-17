@@ -1,0 +1,142 @@
+[
+  {
+    "id": "q01",
+    "space": "biology",
+    "category": "notes",
+    "question": "Where does glycolysis happen, and what is its net gain?",
+    "reference": "Glycolysis happens in the cytoplasm. It splits one glucose into two pyruvate, with a net gain of 2 ATP and 2 NADH, and it does not need oxygen."
+  },
+  {
+    "id": "q02",
+    "space": "biology",
+    "category": "notes",
+    "question": "What is the final electron acceptor in the electron transport chain, and what does it form?",
+    "reference": "Oxygen is the final electron acceptor and forms water."
+  },
+  {
+    "id": "q03",
+    "space": "biology",
+    "category": "notes",
+    "question": "Where does the Calvin cycle take place and what does Rubisco do in it?",
+    "reference": "The Calvin cycle takes place in the stroma. Rubisco fixes carbon dioxide onto RuBP."
+  },
+  {
+    "id": "q04",
+    "space": "biology",
+    "category": "notes",
+    "question": "How many sodium and potassium ions does the sodium-potassium pump move for each ATP?",
+    "reference": "It moves three sodium ions out of the cell and two potassium ions in for each ATP used."
+  },
+  {
+    "id": "q05",
+    "space": "biology",
+    "category": "notes",
+    "question": "What happens to a cell placed in a hypertonic solution?",
+    "reference": "In a hypertonic solution the cell loses water and shrinks."
+  },
+  {
+    "id": "q06",
+    "space": "biology",
+    "category": "notes",
+    "question": "What do yeast and animal cells make when they ferment?",
+    "reference": "Yeast makes ethanol and CO2; animal cells make lactic acid."
+  },
+  {
+    "id": "q07",
+    "space": "biology",
+    "category": "notes",
+    "question": "Which factors limit the rate of photosynthesis?",
+    "reference": "Light intensity, carbon dioxide concentration and temperature."
+  },
+  {
+    "id": "q08",
+    "space": "biology",
+    "category": "library",
+    "question": "What role does cholesterol play in the plasma membrane?",
+    "reference": "Cholesterol helps regulate membrane fluidity: it keeps the membrane from becoming too rigid in the cold and too fluid when warm."
+  },
+  {
+    "id": "q09",
+    "space": "biology",
+    "category": "library",
+    "question": "What is chemiosmosis?",
+    "reference": "Chemiosmosis is the movement of ions (protons) across a semipermeable membrane down their electrochemical gradient, which ATP synthase uses to make ATP."
+  },
+  {
+    "id": "q10",
+    "space": "biology",
+    "category": "library",
+    "question": "What are the reaction-centre pigments of photosystem I and photosystem II?",
+    "reference": "Photosystem II has the reaction-centre pigment P680 and photosystem I has P700."
+  },
+  {
+    "id": "q11",
+    "space": "physics",
+    "category": "library",
+    "question": "State Newton's second law of motion.",
+    "reference": "The acceleration of a system is directly proportional to the net external force and inversely proportional to its mass: a = F_net / m."
+  },
+  {
+    "id": "q12",
+    "space": "physics",
+    "category": "library",
+    "question": "What does the work-energy theorem say?",
+    "reference": "The net work done on a system equals the change in its kinetic energy."
+  },
+  {
+    "id": "q13",
+    "space": "physics",
+    "category": "library",
+    "question": "When is linear momentum conserved?",
+    "reference": "The total linear momentum of a closed system is conserved: it stays constant when the net external force on the system is zero."
+  },
+  {
+    "id": "q14",
+    "space": "physics",
+    "category": "library",
+    "question": "What is the difference between an elastic and an inelastic collision?",
+    "reference": "In an elastic collision kinetic energy is conserved; in an inelastic collision some kinetic energy is lost, for example to heat."
+  },
+  {
+    "id": "q15",
+    "space": "biology",
+    "category": "web",
+    "question": "What is CRISPR-Cas9 used for?",
+    "reference": "CRISPR-Cas9 is a genome-editing tool: a guide RNA directs the Cas9 enzyme to a specific DNA sequence, where it cuts the DNA so that genes can be changed."
+  },
+  {
+    "id": "q16",
+    "space": "biology",
+    "category": "web",
+    "question": "What is the endosymbiotic theory and who made it widely known?",
+    "reference": "The theory says mitochondria and chloroplasts descend from free-living prokaryotes engulfed by an ancestral cell. Lynn Margulis made it widely accepted."
+  },
+  {
+    "id": "q17",
+    "space": "physics",
+    "category": "web",
+    "question": "What is the Higgs boson and where was it found?",
+    "reference": "The Higgs boson is the elementary particle linked to the Higgs field, which gives other particles mass. It was observed at CERN's Large Hadron Collider in 2012."
+  },
+  {
+    "id": "q18",
+    "space": "biology",
+    "category": "out_of_scope",
+    "question": "What do my Notes say about meiosis and crossing over?",
+    "reference": "The Notes do not cover meiosis, so there is nothing to cite."
+  },
+  {
+    "id": "q19",
+    "space": "biology",
+    "category": "out_of_scope",
+    "question": "Explain how DNA replication works, from my Notes.",
+    "reference": "The Notes do not cover DNA replication, so there is nothing to cite."
+  },
+  {
+    "id": "q20",
+    "space": "physics",
+    "category": "out_of_scope",
+    "question": "What do my Notes say about the French Revolution?",
+    "reference": "There are no Notes on this, and it is not part of the Study Space, so there is nothing to cite."
+  }
+]

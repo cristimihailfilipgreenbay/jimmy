@@ -6,6 +6,7 @@ import { useSignedInStudent } from '@/features/auth/hooks/useSignedInStudent'
 import { accentStyle } from '@/features/spaces/lib/accents'
 import { spaceTabIndex, tabDirection } from '@/lib/spaceTabs'
 import { cn } from '@/lib/utils'
+import { useSpace } from '@/features/spaces/queries/useSpace'
 import { useSpaces } from '@/features/spaces/queries/useSpaces'
 
 // The app shell from the design: a top header, and the screen below it. Inside a
@@ -17,8 +18,9 @@ export function Layout() {
   // (on a phone, only the space for the bottom bar).
   const chat = pathname.endsWith('/chat')
   const student = useSignedInStudent()
-  const { data: spaces = [] } = useSpaces(student.id)
-  const space = spaceId ? spaces.find((s) => s.id === spaceId) : undefined
+  const { data: all } = useSpaces(student.id)
+  const spaces = all?.spaces ?? []
+  const { data: space } = useSpace(student.id, spaceId)
 
   // Moving between a Space's tabs slides the screen towards the tab (Dashboard < Chat < Study <
   // Flashcards); every other change fades it up. Adjusting state while rendering is the React

@@ -8,7 +8,7 @@ import { useLibrary } from '@/features/library/queries/useLibrary'
 import { useDocuments } from '@/features/notes/queries/useDocuments'
 import { useWeakTopics } from '@/features/study/queries/useWeakTopics'
 import { useTopics } from '@/features/topics/queries/useTopics'
-import { useSpaces } from '@/features/spaces/queries/useSpaces'
+import { useSpace } from '@/features/spaces/queries/useSpace'
 import { cn } from '@/lib/utils'
 import { AnswerMessage, UserMessage } from './components/AnswerMessage'
 import { ChatEmpty } from './components/ChatEmpty'
@@ -21,7 +21,7 @@ import { chatStatus, stepLabel, stepMeta, useChat } from './hooks/useChat'
 export function ChatPage() {
   const { spaceId = '' } = useParams()
   const student = useSignedInStudent()
-  const { data: spaces, isPending } = useSpaces(student.id)
+  const { data: space, isPending } = useSpace(student.id, spaceId)
   const { data: documents, isPending: loadingNotes } = useDocuments(student.id, spaceId)
   const { data: topics, isPending: loadingTopics } = useTopics(student.id, spaceId)
   const { data: weak, isPending: loadingWeak } = useWeakTopics(student.id, spaceId)
@@ -29,7 +29,6 @@ export function ChatPage() {
   const chat = useChat(student.id, spaceId)
   useSpaceEvents(student.id, spaceId)
   const end = useRef<HTMLDivElement>(null)
-  const space = spaces?.find((s) => s.id === spaceId)
 
   // The first scroll, when the history has just loaded, jumps; later ones glide.
   const scrolled = useRef(false)

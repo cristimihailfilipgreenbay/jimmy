@@ -4,7 +4,7 @@ import { useParams } from 'react-router'
 import { Placeholder } from '@/components/Placeholder'
 import { Button } from '@/components/ui/button'
 import { useSignedInStudent } from '@/features/auth/hooks/useSignedInStudent'
-import { useSpaces } from '@/features/spaces/queries/useSpaces'
+import { useSpace } from '@/features/spaces/queries/useSpace'
 import { cardClass } from '@/lib/styles'
 import { toast } from '@/lib/toast'
 import { cn } from '@/lib/utils'
@@ -23,14 +23,13 @@ type Tab = 'browse' | 'review'
 export function FlashcardsPage() {
   const { spaceId = '' } = useParams()
   const student = useSignedInStudent()
-  const { data: spaces, isPending } = useSpaces(student.id)
+  const { data: space, isPending } = useSpace(student.id, spaceId)
   const [topic, setTopic] = useState('all')
   const deck = useDeck(student.id, spaceId, topic)
   const drafts = useDrafts(student.id, spaceId)
   const review = useReviewDraft(student.id, spaceId)
   const [tab, setTab] = useState<Tab>('browse')
   const [viewer, setViewer] = useState<number | null>(null)
-  const space = spaces?.find((s) => s.id === spaceId)
   // The tabs are not on the page while the lists load or the viewer is open, so the pill is
   // only placed once they are: the key changes then, and the hook measures them.
   const tabsShown = !!space && !deck.isPending && !drafts.isPending && viewer === null && (deck.data?.totalAll || drafts.data?.total)

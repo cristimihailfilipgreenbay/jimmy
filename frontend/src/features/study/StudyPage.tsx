@@ -4,7 +4,7 @@ import { Link, useParams, useSearchParams } from 'react-router'
 import { Placeholder } from '@/components/Placeholder'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { useSignedInStudent } from '@/features/auth/hooks/useSignedInStudent'
-import { useSpaces } from '@/features/spaces/queries/useSpaces'
+import { useSpace } from '@/features/spaces/queries/useSpace'
 import { useTopics } from '@/features/topics/queries/useTopics'
 import { errorMessage } from '@/lib/http'
 import { cardClass } from '@/lib/styles'
@@ -22,7 +22,7 @@ import { QUIZ_LENGTH, TEST_LENGTH, type AnswerOut, type Feedback, type Question,
 export function StudyPage() {
   const { spaceId = '' } = useParams()
   const student = useSignedInStudent()
-  const { data: spaces, isPending } = useSpaces(student.id)
+  const { data: space, isPending } = useSpace(student.id, spaceId)
   const { data: topics, isPending: loadingTopics } = useTopics(student.id, spaceId)
   const { data: weakData } = useWeakTopics(student.id, spaceId)
   const weak = weakData?.weak ?? []
@@ -81,7 +81,6 @@ export function StudyPage() {
       { replace: true },
     )
 
-  const space = spaces?.find((s) => s.id === spaceId)
   if (isPending || loadingTopics || (storedId && !session && stored.isPending)) return null
   if (!space) return <Placeholder title="Study Space not found" note="That Study Space does not exist." />
 

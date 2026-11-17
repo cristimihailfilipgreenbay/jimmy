@@ -107,6 +107,15 @@ def list_topics(
     )
 
 
+@router.delete("/spaces/{space_id}/topics", status_code=204)
+def delete_all_topics(space: SpaceDep, session: SessionDep):
+    """Delete every Topic of the Space, merged ones included, as deleting them one by
+    one would."""
+    session.execute(delete(Topic).where(Topic.space_id == space.id))
+    session.commit()
+    return Response(status_code=204)
+
+
 @router.patch("/spaces/{space_id}/topics/{topic_id}", response_model=TopicOut)
 def rename_topic(
     topic_id: uuid.UUID, body: TopicRename, space: SpaceDep, session: SessionDep

@@ -92,6 +92,7 @@ Document status values: `uploaded`, `extracting`, `rejected`, `awaiting_topic_re
 |---|---|---|
 | GET | `/spaces/{space_id}/topics` | List Topics by name, thirty at a time (`limit`, `cursor`); merged ones are left out. Returns `{items, next_cursor, total}` |
 | PATCH | `/spaces/{space_id}/topics/{id}` | Rename. `409 topic_exists` if the Space has a Topic with that name (ignoring case) |
+| DELETE | `/spaces/{space_id}/topics` | Delete every Topic of the Space, merged ones included, as deleting them one by one would (`204`). Their Flashcards, weak-topic records and quiz questions are deleted with them |
 | DELETE | `/spaces/{space_id}/topics/{id}` | Delete a Topic (`204`), and any Topics merged into it. The confirmation is a frontend dialog |
 | POST | `/spaces/{space_id}/topics/merge` | Merge several Topics into the first of `ids`, which takes `name`. `409 topic_exists` as above |
 

@@ -110,8 +110,8 @@ export function SpaceDashboardPage() {
           {(
             [
               ['notes', 'Notes', notes.data?.length ?? 0],
-              ['topics', 'Topics', topics.data?.length ?? 0],
-              ['weak', 'Weak topics', weak.data?.length ?? 0],
+              ['topics', 'Topics', topics.data?.total ?? 0],
+              ['weak', 'Weak topics', weak.data?.total ?? 0],
               ['learned', 'Learned material', learned.data?.filter((m) => m.status === 'unreviewed').length ?? 0],
             ] as const
           ).map(([key, label, count]) => (

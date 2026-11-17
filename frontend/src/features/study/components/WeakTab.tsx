@@ -3,6 +3,7 @@ import { Target, X } from 'lucide-react'
 import { Link } from 'react-router'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { ShowMore } from '@/components/ShowMore'
 import { errorMessage } from '@/lib/http'
 import { cardClass } from '@/lib/styles'
 import { toast } from '@/lib/toast'
@@ -13,7 +14,10 @@ const day = (iso: string) => new Date(iso).toLocaleDateString(undefined, { day: 
 
 // The Weak topics tab: Topics the Student keeps getting wrong, each clearable.
 export function WeakTab({ studentId, spaceId }: { studentId: string; spaceId: string }) {
-  const { data = [], isPending } = useWeakTopics(studentId, spaceId)
+  const query = useWeakTopics(studentId, spaceId)
+  const { isPending } = query
+  const data = query.data?.weak ?? []
+  const total = query.data?.total ?? 0
   const clearOne = useClearWeakTopic(studentId, spaceId)
   const clearAll = useClearAllWeakTopics(studentId, spaceId)
   const [confirming, setConfirming] = useState(false)
@@ -74,6 +78,7 @@ export function WeakTab({ studentId, spaceId }: { studentId: string; spaceId: st
           </li>
         ))}
       </ul>
+      <ShowMore shown={data.length} total={total} hasMore={!!query.hasNextPage} loading={query.isFetchingNextPage} onMore={() => query.fetchNextPage()} />
       <ConfirmDialog
         open={confirming}
         onOpenChange={setConfirming}
@@ -82,15 +87,12 @@ export function WeakTab({ studentId, spaceId }: { studentId: string; spaceId: st
         confirmLabel="Clear all"
         pending={clearAll.isPending}
         onConfirm={() =>
-          clearAll.mutate(
-            data.map((w) => w.topic_id),
-            {
-              onSuccess: () => {
-                toast(`Cleared ${data.length} weak topic${data.length === 1 ? '' : 's'}`, X)
-                setConfirming(false)
-              },
+          clearAll.mutate(undefined, {
+            onSuccess: () => {
+              toast(`Cleared ${total} weak topic${total === 1 ? '' : 's'}`, X)
+              setConfirming(false)
             },
-          )
+          })
         }
       />
       <ConfirmDialog

@@ -4,14 +4,21 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query, Response
 from langgraph.types import Command
-from sqlalchemy import func, select
+from sqlalchemy import func, select, tuple_
 from sqlalchemy.orm import Session
 
 from app.chat.agent import ModelNotConfigured
 from app.chat.models import Thread
 from app.db import SessionDep
 from app.errors import ApiError
-from app.pagination import PageDep
+from app.pagination import (
+    CursorPage,
+    CursorQuery,
+    LimitQuery,
+    PageDep,
+    decode_cursor,
+    next_cursor,
+)
 from app.spaces.dependencies import get_owned_space
 from app.spaces.models import Space
 from app.students.dependencies import StudentDep
@@ -487,23 +494,58 @@ def list_disputes(space: SpaceDep, session: SessionDep):
     ]
 
 
-@router.get("/spaces/{space_id}/weak-topics", response_model=list[WeakTopicOut])
-def list_weak_topics(space: SpaceDep, session: SessionDep):
+@router.get("/spaces/{space_id}/weak-topics", response_model=CursorPage[WeakTopicOut])
+def list_weak_topics(
+    space: SpaceDep,
+    session: SessionDep,
+    limit: LimitQuery = 30,
+    cursor: CursorQuery = None,
+):
+    """The Space's weak Topics by name, thirty at a time."""
+    weak = (WeakTopic.space_id == space.id, WeakTopic.is_weak.is_(True))
+    after = ()
+    if cursor:
+        name, topic_id = decode_cursor(cursor, 2)
+        try:
+            after = (tuple_(Topic.name, Topic.id) > tuple_(name, uuid.UUID(topic_id)),)
+        except ValueError as exc:
+            raise ApiError(
+                422, "invalid_cursor", "That page link is not valid."
+            ) from exc
     rows = session.execute(
         select(WeakTopic, Topic.name)
         .join(Topic, Topic.id == WeakTopic.topic_id)
-        .where(WeakTopic.space_id == space.id, WeakTopic.is_weak.is_(True))
-        .order_by(Topic.name)
+        .where(*weak, *after)
+        .order_by(Topic.name, Topic.id)
+        .limit(limit + 1)
     ).all()
-    return [
-        WeakTopicOut(
-            topic_id=w.topic_id,
-            name=name,
-            consecutive_correct=w.consecutive_correct,
-            updated_at=w.updated_at,
+    total = session.scalar(select(func.count()).select_from(WeakTopic).where(*weak))
+    return CursorPage(
+        items=[
+            WeakTopicOut(
+                topic_id=w.topic_id,
+                name=name,
+                consecutive_correct=w.consecutive_correct,
+                updated_at=w.updated_at,
+            )
+            for w, name in rows[:limit]
+        ],
+        next_cursor=next_cursor(rows, limit, lambda r: [r[1], str(r[0].topic_id)]),
+        total=total,
+    )
+
+
+@router.delete("/spaces/{space_id}/weak-topics", status_code=204)
+def clear_all_weak_topics(space: SpaceDep, session: SessionDep):
+    """Clear every weak Topic of the Space at once."""
+    for weak in session.scalars(
+        select(WeakTopic).where(
+            WeakTopic.space_id == space.id, WeakTopic.is_weak.is_(True)
         )
-        for w, name in rows
-    ]
+    ):
+        clear_weak_topic(session, space.id, weak.topic_id)
+    session.commit()
+    return Response(status_code=204)
 
 
 @router.delete("/spaces/{space_id}/weak-topics/{topic_id}", status_code=204)

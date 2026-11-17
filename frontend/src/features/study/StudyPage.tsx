@@ -24,10 +24,11 @@ export function StudyPage() {
   const student = useSignedInStudent()
   const { data: spaces, isPending } = useSpaces(student.id)
   const { data: topics, isPending: loadingTopics } = useTopics(student.id, spaceId)
-  const { data: weak = [] } = useWeakTopics(student.id, spaceId)
+  const { data: weakData } = useWeakTopics(student.id, spaceId)
+  const weak = weakData?.weak ?? []
   // "Practise this" on a weak Topic links here with ?topic=…
   const [params, setParams] = useSearchParams()
-  const only = topics?.find((t) => t.id === params.get('topic'))
+  const onlyId = params.get('topic')
 
   const start = useStartSession(spaceId)
   const answer = useAnswerQuestion(student.id, spaceId)
@@ -96,7 +97,7 @@ export function StudyPage() {
   const begin = (kind: StudyKind) => {
     setError(null)
     start.mutate(
-      { kind, topicIds: only ? [only.id] : [] },
+      { kind, topicIds: onlyId ? [onlyId] : [] },
       {
       onSuccess: (s) => {
         setSession(s)
@@ -132,7 +133,7 @@ export function StudyPage() {
     </main>
   )
 
-  if (!topics?.length) {
+  if (!topics?.total) {
     return frame(
       <div className={`${cardClass} px-6 py-12 text-center`}>
         <span className="mx-auto grid size-11 place-items-center rounded-full bg-muted">
@@ -165,7 +166,7 @@ export function StudyPage() {
       <>
         <h1 className="text-2xl font-semibold tracking-tight">Study {space.name}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          A quiz has {QUIZ_LENGTH} questions and a test {TEST_LENGTH}, from your notes, weighted towards your weak topics: {weak.map((w) => w.name).join(', ') || 'none'}.
+          A quiz has {QUIZ_LENGTH} questions and a test {TEST_LENGTH}, from your notes, weighted towards your weak topics: {weak.length ? `${weak.slice(0, 5).map((w) => w.name).join(', ')}${(weakData?.total ?? 0) > 5 ? ` and ${(weakData?.total ?? 0) - 5} more` : ''}` : 'none'}.
         </p>
         {error && (
           <p role="alert" className="mt-4 flex items-start gap-2 text-sm text-destructive">

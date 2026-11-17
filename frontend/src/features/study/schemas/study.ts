@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { cursorPage } from '@/lib/pagination'
 
 // Mirrors the backend's study schemas (app/study/schemas.py).
 const sourceSchema = z.object({
@@ -124,6 +125,9 @@ export const weakTopicSchema = z.object({
   updated_at: z.string(),
 })
 export type WeakTopic = z.infer<typeof weakTopicSchema>
+export const weakTopicsPageSchema = cursorPage(weakTopicSchema)
+/** How many weak Topics load at a time. */
+export const WEAK_PAGE = 30
 
 /** How many questions a Quiz asks, and a Test. */
 export const QUIZ_LENGTH = 5

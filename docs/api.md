@@ -90,7 +90,7 @@ Document status values: `uploaded`, `extracting`, `rejected`, `awaiting_topic_re
 ### Topics
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/spaces/{space_id}/topics` | List Topics (merged ones are left out) |
+| GET | `/spaces/{space_id}/topics` | List Topics by name, thirty at a time (`limit`, `cursor`); merged ones are left out. Returns `{items, next_cursor, total}` |
 | PATCH | `/spaces/{space_id}/topics/{id}` | Rename. `409 topic_exists` if the Space has a Topic with that name (ignoring case) |
 | DELETE | `/spaces/{space_id}/topics/{id}` | Delete a Topic (`204`), and any Topics merged into it. The confirmation is a frontend dialog |
 | POST | `/spaces/{space_id}/topics/merge` | Merge several Topics into the first of `ids`, which takes `name`. `409 topic_exists` as above |
@@ -124,7 +124,8 @@ A pending Dispute is answered with `POST /threads/{session.thread_id}/resume` (`
 ### Weak Topics, Conflicts, Disputes
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/spaces/{space_id}/weak-topics` | Current Weak Topics |
+| GET | `/spaces/{space_id}/weak-topics` | Current Weak Topics by name, thirty at a time (`limit`, `cursor`). Returns `{items, next_cursor, total}` |
+| DELETE | `/spaces/{space_id}/weak-topics` | Clear every weak Topic of the Space |
 | DELETE | `/spaces/{space_id}/weak-topics/{topic_id}` | Clear one |
 | GET | `/spaces/{space_id}/conflicts` | Stored Conflict decisions, each with the two passages' documents and excerpts |
 | DELETE | `/spaces/{space_id}/conflicts/{id}` | Forget a decision so it is asked again |

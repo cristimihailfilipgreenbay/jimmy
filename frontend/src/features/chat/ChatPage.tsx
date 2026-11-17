@@ -54,8 +54,8 @@ export function ChatPage() {
               spaceId={space.id}
               spaceName={space.name}
               notes={ready}
-              topics={topics ?? []}
-              weak={weak ?? []}
+              topics={topics?.topics ?? []}
+              weak={weak?.weak ?? []}
               libraryOn={!!library?.enabled && library.status !== 'none'}
               onAsk={chat.ask}
             />

@@ -1,9 +1,9 @@
-import { z } from 'zod'
 import { documentSchema } from '@/features/notes/schemas/document'
 import { request, requestVoid } from '@/lib/http'
-import { threadDetailSchema, topicReviewPayloadSchema, topicSchema, type TopicDecision } from '../schemas/topic'
+import { pageQuery } from '@/lib/pagination'
+import { TOPICS_PAGE, threadDetailSchema, topicReviewPayloadSchema, topicSchema, topicsPageSchema, type TopicDecision } from '../schemas/topic'
 
-export const fetchTopics = (spaceId: string) => request(`/spaces/${spaceId}/topics`, z.array(topicSchema))
+export const fetchTopics = (spaceId: string, cursor: string | null) => request(`/spaces/${spaceId}/topics${pageQuery(cursor, { limit: TOPICS_PAGE })}`, topicsPageSchema)
 
 export const renameTopic = (spaceId: string, topicId: string, name: string) =>
   request(`/spaces/${spaceId}/topics/${topicId}`, topicSchema, { method: 'PATCH', body: JSON.stringify({ name }) })

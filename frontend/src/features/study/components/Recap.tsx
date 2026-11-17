@@ -1,4 +1,5 @@
 import { Check, CircleHelp, RotateCcw, X } from 'lucide-react'
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Button } from '@/components/ui/button'
 import { cardClass } from '@/lib/styles'
 import { cn } from '@/lib/utils'
@@ -68,10 +69,10 @@ export function Recap({
           </ul>
         </section>
       )}
-      <ol className="mt-6 space-y-4">
+      <Accordion multiple className="mt-6 gap-4">
         {recap.questions.map((q) => (
-          <li key={q.question_id} className={cn(cardClass, 'p-5')}>
-            <div className="flex items-start gap-3">
+          <AccordionItem key={q.question_id} value={q.question_id} className={cn(cardClass, 'px-5 not-last:border-b')}>
+            <AccordionTrigger className="items-center gap-3 py-4 hover:no-underline">
               <span
                 className={cn(
                   'grid size-7 flex-none place-items-center rounded-full text-xs font-semibold',
@@ -81,28 +82,30 @@ export function Recap({
               >
                 {q.correct ? <Check className="size-3.5" /> : q.decision === 'unsure' ? <CircleHelp className="size-3.5" /> : <X className="size-3.5" />}
               </span>
-              <div className="flex-1">
-                <p className="text-xs text-muted-foreground">
+              <span className="flex-1">
+                <span className="block text-xs font-normal text-muted-foreground">
                   Q{q.position} · {q.topic} · <span className="font-medium">
                     {q.decision === 'unsure' ? 'Marked for review' : `${q.correct ? 'Correct' : 'Incorrect'}${q.graded_by === 'student' ? ' (your call)' : ''}`}
                   </span>
+                </span>
+                <span className="mt-1 block font-serif text-lg leading-snug font-normal">{q.prompt}</span>
+              </span>
+            </AccordionTrigger>
+            <AccordionContent className="pb-5 pl-10 [&_p:not(:last-child)]:mb-0">
+              <p className="text-sm">
+                <span className="text-muted-foreground">Your answer:</span> {q.answer}
+              </p>
+              {!q.correct && (
+                <p className="text-sm">
+                  <span className="text-muted-foreground">Correct:</span> {q.correct_answer}
                 </p>
-                <p className="mt-1 font-serif text-lg leading-snug">{q.prompt}</p>
-                <p className="mt-2 text-sm">
-                  <span className="text-muted-foreground">Your answer:</span> {q.answer}
-                </p>
-                {!q.correct && (
-                  <p className="text-sm">
-                    <span className="text-muted-foreground">Correct:</span> {q.correct_answer}
-                  </p>
-                )}
-                <p className="mt-2 text-sm text-muted-foreground">{q.explanation}</p>
-                <SourceBlock feedback={q} />
-              </div>
-            </div>
-          </li>
+              )}
+              <p className="mt-2 text-sm text-muted-foreground">{q.explanation}</p>
+              <SourceBlock feedback={q} />
+            </AccordionContent>
+          </AccordionItem>
         ))}
-      </ol>
+      </Accordion>
     </>
   )
 }

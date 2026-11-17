@@ -103,7 +103,7 @@ Topic review after an upload is not a plain edit; it is a pause in the ingestion
 | GET | `/spaces/{space_id}/threads` | List conversations |
 | POST | `/spaces/{space_id}/threads` | Start a conversation |
 | GET | `/threads/{thread_id}` | Metadata and any pending pause |
-| GET | `/threads/{thread_id}/messages` | Message history with Citations, cost and trace id |
+| GET | `/threads/{thread_id}/messages` | Message history with Citations, cost and trace id. The newest thirty first (`limit`, `cursor`): a page is oldest first and `next_cursor` fetches the ones before it. Returns `{items, next_cursor, total}` |
 | POST | `/threads/{thread_id}/messages` | Send a message. Response is an event stream (section 3) |
 | POST | `/threads/{thread_id}/cancel` | Stop a run in progress |
 | POST | `/threads/{thread_id}/resume` | Answer a pause (section 4) |

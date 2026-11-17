@@ -1,10 +1,13 @@
 import { z } from 'zod'
 import { ApiError, request, requestStream, requestVoid } from '@/lib/http'
-import { messageSchema, storedConflictSchema, streamEventSchema, threadSchema, type ConflictDecision, type StreamEvent } from '../schemas/chat'
+import { pageQuery } from '@/lib/pagination'
+import { MESSAGES_PAGE, messagesPageSchema, storedConflictSchema, streamEventSchema, threadSchema, type ConflictDecision, type StreamEvent } from '../schemas/chat'
 
 export const listThreads = (spaceId: string) => request(`/spaces/${spaceId}/threads`, z.array(threadSchema))
 export const createThread = (spaceId: string) => request(`/spaces/${spaceId}/threads`, threadSchema, { method: 'POST' })
-export const listMessages = (threadId: string) => request(`/threads/${threadId}/messages`, z.array(messageSchema))
+/** The newest messages when `cursor` is null, else the ones before it; each page is oldest first. */
+export const listMessages = (threadId: string, cursor: string | null) =>
+  request(`/threads/${threadId}/messages${pageQuery(cursor, { limit: MESSAGES_PAGE })}`, messagesPageSchema)
 
 /** Calls `onEvent` for each server-sent event of a response until the stream ends. */
 async function readEvents(res: Response, onEvent: (e: StreamEvent) => void) {

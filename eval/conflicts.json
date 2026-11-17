@@ -1,0 +1,86 @@
+[
+  {
+    "id": "c01",
+    "notes": "Glycolysis happens in the mitochondrial matrix and needs oxygen.",
+    "other": "Glycolysis happens in the cytoplasm of the cell. It does not need oxygen.",
+    "expected": "contradict",
+    "planted": true
+  },
+  {
+    "id": "c02",
+    "notes": "The electron transport chain makes only about 2 ATP per glucose.",
+    "other": "The electron transport chain and ATP synthase make most of the ATP, about 26 to 28 per glucose.",
+    "expected": "contradict",
+    "planted": true
+  },
+  {
+    "id": "c03",
+    "notes": "The Calvin cycle takes place in the thylakoid membranes.",
+    "other": "The Calvin cycle takes place in the stroma of the chloroplast.",
+    "expected": "contradict",
+    "planted": true
+  },
+  {
+    "id": "c04",
+    "notes": "The sodium-potassium pump moves two sodium ions out of the cell and three potassium ions in.",
+    "other": "The sodium-potassium pump moves three sodium ions out of the cell and two potassium ions in for each ATP.",
+    "expected": "contradict",
+    "planted": true
+  },
+  {
+    "id": "c05",
+    "notes": "In a hypertonic solution a cell gains water and may burst.",
+    "other": "In a hypertonic solution a cell loses water and shrinks.",
+    "expected": "contradict",
+    "planted": true
+  },
+  {
+    "id": "c06",
+    "notes": "Newton's second law says acceleration is proportional to mass and inversely proportional to net force.",
+    "other": "Newton's second law: acceleration is directly proportional to the net force and inversely proportional to the mass.",
+    "expected": "contradict",
+    "planted": true
+  },
+  {
+    "id": "c07",
+    "notes": "Momentum is always conserved in a collision, even when external forces act on the system.",
+    "other": "Momentum of a system is conserved only when the net external force on it is zero.",
+    "expected": "contradict",
+    "planted": true
+  },
+  {
+    "id": "c08",
+    "notes": "Yeast fermentation produces lactic acid.",
+    "other": "Yeast fermentation produces ethanol and carbon dioxide.",
+    "expected": "contradict",
+    "planted": true
+  },
+  {
+    "id": "c09",
+    "notes": "Glycolysis happens in the cytoplasm and gains a net 2 ATP.",
+    "other": "Glycolysis takes place in the cytoplasm. Each glucose gives a net gain of two ATP.",
+    "expected": "agree",
+    "planted": false
+  },
+  {
+    "id": "c10",
+    "notes": "Rubisco fixes carbon dioxide onto RuBP in the Calvin cycle.",
+    "other": "The enzyme RuBisCO attaches CO2 to ribulose bisphosphate at the start of the Calvin cycle.",
+    "expected": "agree",
+    "planted": false
+  },
+  {
+    "id": "c11",
+    "notes": "Osmosis is the diffusion of water across a selectively permeable membrane.",
+    "other": "Osmosis is the movement of water through a semipermeable membrane toward the side with more solute. Cells in hypotonic solutions swell.",
+    "expected": "agree",
+    "planted": false
+  },
+  {
+    "id": "c12",
+    "notes": "Kinetic energy depends on mass and speed.",
+    "other": "Momentum is the product of an object's mass and velocity.",
+    "expected": "unrelated",
+    "planted": false
+  }
+]

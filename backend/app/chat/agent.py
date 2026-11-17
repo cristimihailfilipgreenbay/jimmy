@@ -29,6 +29,7 @@ from app.chat.tools import (
 from app.config import get_settings
 from app.conflicts.tool import make_compare_sources
 from app.flashcards.tool import make_save_flashcards
+from app.settings.openrouter import supports_temperature
 from app.settings.service import TutorSettings
 
 OPENROUTER_BASE = "https://openrouter.ai/api/v1"
@@ -47,11 +48,12 @@ def make_model(tutor: TutorSettings | None = None) -> ChatOpenAI:
         raise ModelNotConfigured("TUTOR_MODEL is not set.")
     if not settings.openrouter_api_key:
         raise ModelNotConfigured("OPENROUTER_API_KEY is not set.")
-    options = (
-        {"temperature": tutor.temperature, "max_tokens": tutor.max_tokens}
-        if tutor
-        else {}
-    )
+    options = {}
+    if tutor:
+        options["max_tokens"] = tutor.max_tokens
+        # A model that ignores temperature is not sent one.
+        if supports_temperature(name) is not False:
+            options["temperature"] = tutor.temperature
     return ChatOpenAI(
         model=name,
         **options,

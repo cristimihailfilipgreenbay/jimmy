@@ -19,7 +19,6 @@ def upgrade() -> None:
         "settings",
         sa.Column("student_id", sa.Uuid(), nullable=False),
         sa.Column("tutor_model", sa.String(length=100), nullable=True),
-        sa.Column("background_model", sa.String(length=100), nullable=True),
         sa.Column("temperature", sa.Float(), nullable=True),
         sa.Column("max_tokens", sa.Integer(), nullable=True),
         sa.Column("tools", sa.JSON(), nullable=False),

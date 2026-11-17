@@ -35,12 +35,27 @@ TOOLS: dict[str, tuple[str, str]] = {
 }
 
 
+# The models the Student can pick: ones that work well for tutoring and that OpenRouter
+# offers. Change this list to offer others. `temperature` says whether the model takes
+# one; the live answer comes from OpenRouter (`supported_parameters`) and wins.
+MODELS: dict[str, tuple[str, str]] = {
+    "openai/gpt-6-luna": ("GPT-6 Luna", "Fast and cheap. The default."),
+    "anthropic/claude-sonnet-5.5": (
+        "Claude Sonnet 5.5",
+        "Careful, well-cited answers.",
+    ),
+    "google/gemini-3.8-flash": (
+        "Gemini 3.8 Flash",
+        "Fast, and it takes a temperature.",
+    ),
+}
+
+
 @dataclass(frozen=True)
 class TutorSettings:
-    """What one Tutor run uses: models, sampling and the tools it may call."""
+    """What one Tutor run uses: the model, sampling and the tools it may call."""
 
     tutor_model: str = ""
-    background_model: str = ""
     temperature: float = DEFAULT_TEMPERATURE
     max_tokens: int = DEFAULT_MAX_TOKENS
     disabled: frozenset[str] = frozenset()
@@ -51,12 +66,9 @@ def resolve(row: Settings | None) -> TutorSettings:
     """The row's values; the environment's models and the defaults where it has none."""
     env = get_settings()
     if row is None:
-        return TutorSettings(
-            tutor_model=env.tutor_model, background_model=env.background_model
-        )
+        return TutorSettings(tutor_model=env.tutor_model)
     return TutorSettings(
         tutor_model=row.tutor_model or env.tutor_model,
-        background_model=row.background_model or env.background_model,
         temperature=(
             DEFAULT_TEMPERATURE if row.temperature is None else row.temperature
         ),

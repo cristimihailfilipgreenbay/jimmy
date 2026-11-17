@@ -19,7 +19,7 @@ from app.settings.schemas import (
     UsageItem,
     UsageOut,
 )
-from app.settings.service import TOOLS, resolve
+from app.settings.service import MODELS, TOOLS, resolve
 from app.spaces.models import Space
 from app.students.dependencies import StudentDep
 
@@ -41,7 +41,6 @@ def _out(session, student_id: uuid.UUID, row: Settings | None) -> SettingsOut:
     )
     return SettingsOut(
         tutor_model=tutor.tutor_model,
-        background_model=tutor.background_model,
         temperature=tutor.temperature,
         max_tokens=tutor.max_tokens,
         tools=[
@@ -72,14 +71,15 @@ def update_settings(body: SettingsIn, student: StudentDep, session: SessionDep):
         raise ApiError(
             422, "unknown_tool", f"Jimmy has no switchable tool called {unknown[0]}."
         )
+    chosen = (body.tutor_model or "").strip()
+    if chosen and chosen not in MODELS and chosen != resolve(None).tutor_model:
+        raise ApiError(422, "unknown_model", "Choose one of the models Jimmy offers.")
     row = session.get(Settings, student.id)
     if row is None:
         row = Settings(student_id=student.id, tools={})
         session.add(row)
     if body.tutor_model is not None:
         row.tutor_model = body.tutor_model.strip() or None
-    if body.background_model is not None:
-        row.background_model = body.background_model.strip() or None
     if body.temperature is not None:
         row.temperature = body.temperature
     if body.max_tokens is not None:
@@ -95,13 +95,23 @@ def update_settings(body: SettingsIn, student: StudentDep, session: SessionDep):
 
 @router.get("/settings/models", response_model=list[ModelOut])
 def list_models(student: StudentDep):
-    """The models OpenRouter offers, for the pickers."""
+    """The models Jimmy offers, with OpenRouter's price and whether each takes a
+    temperature. If OpenRouter cannot be reached the list still comes, without those."""
     try:
-        return fetch_models()
-    except ModelListUnavailable as exc:
-        raise ApiError(
-            502, "upstream_unavailable", "OpenRouter's model list is not available."
-        ) from exc
+        live = {m["id"]: m for m in fetch_models()}
+    except ModelListUnavailable:
+        live = {}
+    return [
+        ModelOut(
+            id=model_id,
+            name=name,
+            description=description,
+            prompt=live.get(model_id, {}).get("prompt"),
+            completion=live.get(model_id, {}).get("completion"),
+            supports_temperature=live.get(model_id, {}).get("supports_temperature"),
+        )
+        for model_id, (name, description) in MODELS.items()
+    ]
 
 
 @router.get("/usage", response_model=UsageOut)

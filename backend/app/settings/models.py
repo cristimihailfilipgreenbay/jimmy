@@ -15,7 +15,6 @@ class Settings(Base):
         ForeignKey("students.id", ondelete="CASCADE"), primary_key=True
     )
     tutor_model: Mapped[str | None] = mapped_column(String(100))
-    background_model: Mapped[str | None] = mapped_column(String(100))
     temperature: Mapped[float | None] = mapped_column(Float)
     max_tokens: Mapped[int | None] = mapped_column(Integer)
     # Tool name -> on or off. A tool that is not here is on.

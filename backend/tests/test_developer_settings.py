@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.chat.agent import build_agent
+from app.chat.agent import build_agent, make_model
 from app.chat.cost import calculate_cost
 from app.chat.prompt import build_prompt
 from app.chat.tools import RunSources
@@ -83,7 +83,6 @@ def test_a_disabled_tool_is_left_out_of_the_prompt():
 def row(**values):
     base = {
         "tutor_model": None,
-        "background_model": None,
         "temperature": None,
         "max_tokens": None,
         "tools": {},
@@ -106,3 +105,32 @@ def test_a_temperature_of_zero_is_kept():
 def test_only_switched_off_tools_are_disabled():
     tutor = resolve(row(tools={"search_web": False, "search_library": True}))
     assert tutor.disabled == frozenset({"search_web"})
+
+
+def sampling(monkeypatch, supported):
+    monkeypatch.setattr(
+        "app.chat.agent.get_settings",
+        lambda: SimpleNamespace(tutor_model="a/b", openrouter_api_key="key"),
+    )
+    monkeypatch.setattr("app.chat.agent.supports_temperature", lambda name: supported)
+    return make_model(TutorSettings(temperature=0.2, max_tokens=500))
+
+
+@pytest.mark.parametrize("supported", [True, None])
+def test_temperature_is_sent_unless_the_model_ignores_it(monkeypatch, supported):
+    model = sampling(monkeypatch, supported)
+    assert model.temperature == 0.2
+    assert model.max_tokens == 500
+
+
+def test_a_model_that_ignores_temperature_is_not_sent_one(monkeypatch):
+    model = sampling(monkeypatch, False)
+    assert model.temperature is None
+    assert model.max_tokens == 500
+
+
+def test_the_offered_models_include_the_default():
+    from app.settings.service import MODELS
+
+    assert len(MODELS) == 3
+    assert "openai/gpt-6-luna" in MODELS

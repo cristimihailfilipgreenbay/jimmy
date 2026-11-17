@@ -17,9 +17,7 @@ from app.chat.cost import calculate_cost
 from app.chat.guards import StepLimitReached
 from app.chat.models import Message
 from app.chat.tools import RunSources
-from app.config import get_settings
 from app.db import engine
-from app.guardrails.classify import openrouter_model
 from app.learned.promotion import promote_in_background
 from app.settings.openrouter import prices_for
 from app.settings.service import TutorSettings
@@ -77,18 +75,6 @@ def _model_name(tutor: TutorSettings | None, model) -> str:
     return "" if model is not None else (tutor.tutor_model if tutor else "")
 
 
-def _background_model(tutor: TutorSettings | None):
-    """The Student's own background model, for the tools that use one; None means the
-    tool uses the environment's."""
-    if (
-        tutor
-        and tutor.background_model
-        and tutor.background_model != get_settings().background_model
-    ):
-        return openrouter_model(tutor.background_model)
-    return None
-
-
 def answer_cost(model_name: str, tokens_in: int, tokens_out: int) -> float | None:
     """The answer's estimated cost; None when the model's price is not known."""
     if not model_name or not (tokens_in or tokens_out):
@@ -143,7 +129,6 @@ def run_turn(
 ) -> Iterator[Event]:
     """Stream the answer, then store it. Never raises: failures become `error` events."""
     sources = RunSources()
-    compare_model = compare_model or _background_model(tutor)
     try:
         agent = build_agent(
             space_id,
@@ -192,7 +177,6 @@ def resume_turn(
 ) -> Iterator[Event]:
     """Continue a paused turn with the Student's decision."""
     sources = RunSources()
-    compare_model = compare_model or _background_model(tutor)
     try:
         agent = build_agent(
             space_id,

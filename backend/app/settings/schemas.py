@@ -18,7 +18,6 @@ class ToolOut(BaseModel):
 class SettingsOut(BaseModel):
     # The model in use: the Student's choice, else the one set in the environment.
     tutor_model: str
-    background_model: str
     temperature: float
     max_tokens: int
     tools: list[ToolOut]
@@ -33,7 +32,6 @@ class SettingsIn(BaseModel):
     """Only what is sent changes. An empty model name goes back to the default."""
 
     tutor_model: ModelName | None = None
-    background_model: ModelName | None = None
     temperature: Temperature | None = None
     max_tokens: MaxTokens | None = None
     # Tool name -> on or off.
@@ -44,9 +42,12 @@ class SettingsIn(BaseModel):
 class ModelOut(BaseModel):
     id: str
     name: str
+    description: str
     # Dollars per token; null when OpenRouter does not list one.
     prompt: float | None
     completion: float | None
+    # Whether the model uses a temperature; null when OpenRouter could not be asked.
+    supports_temperature: bool | None
 
 
 class UsageItem(BaseModel):

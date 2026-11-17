@@ -49,6 +49,9 @@ def fetch_models() -> list[dict]:
                 "name": item.get("name") or item["id"],
                 "prompt": _price(pricing.get("prompt")),
                 "completion": _price(pricing.get("completion")),
+                # A model that does not list `temperature` ignores it.
+                "supports_temperature": "temperature"
+                in (item.get("supported_parameters") or []),
             }
         )
     models.sort(key=lambda m: m["id"])
@@ -68,3 +71,14 @@ def prices_for(model: str) -> tuple[float | None, float | None]:
     except ModelListUnavailable:
         log.warning("Could not fetch OpenRouter prices", exc_info=True)
     return None, None
+
+
+def supports_temperature(model: str) -> bool | None:
+    """Whether the model takes a temperature; None when that cannot be found out."""
+    try:
+        for m in fetch_models():
+            if m["id"] == model:
+                return m["supports_temperature"]
+    except ModelListUnavailable:
+        log.warning("Could not fetch OpenRouter models", exc_info=True)
+    return None

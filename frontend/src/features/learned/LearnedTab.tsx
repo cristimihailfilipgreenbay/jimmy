@@ -92,10 +92,10 @@ export function LearnedTab({ studentId, spaceId, spaceName }: { studentId: strin
     <ul role="list" className="space-y-3">
       {approved.map((item) => (
         <li key={item.id} className={`${cardClass} p-4`}>
-          <div className="flex flex-wrap items-start gap-3">
+          <div className="flex items-center gap-3">
             <div className="min-w-0 flex-1">
               <p className="font-medium">{item.title}</p>
-              <p className="mt-1 font-serif text-[15px] leading-relaxed text-foreground/90">“{item.excerpt}”</p>
+              <p className="mt-1 line-clamp-1 font-serif text-[15px] leading-relaxed text-foreground/90">“{item.excerpt}”</p>
               <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                 <span className="chip chip-web ml-0">
                   <Check className="size-3.5" aria-hidden />

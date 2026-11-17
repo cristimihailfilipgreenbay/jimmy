@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { GitMerge, Pencil, Tag, Trash2 } from 'lucide-react'
+import { ShowMore } from '@/components/ShowMore'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { errorMessage } from '@/lib/http'
@@ -14,7 +15,9 @@ import { topicNameSchema, type Topic } from './schemas/topic'
 
 // The Topics tab of a Study Space: the approved Topics, to rename or to merge duplicates.
 export function TopicsTab({ studentId, spaceId }: { studentId: string; spaceId: string }) {
-  const { data: topics = [], isPending } = useTopics(studentId, spaceId)
+  const query = useTopics(studentId, spaceId)
+  const { isPending } = query
+  const topics = query.data?.topics ?? []
   const rename = useRenameTopic(studentId, spaceId)
   const merge = useMergeTopics(studentId, spaceId)
   const [selected, setSelected] = useState<string[]>([])
@@ -82,7 +85,7 @@ export function TopicsTab({ studentId, spaceId }: { studentId: string; spaceId: 
       <div className="flex flex-wrap items-center gap-3 border-b p-3">
         <input
           type="checkbox"
-          aria-label="Select all topics"
+          aria-label="Select all topics shown"
           className="size-4 rounded border-input accent-space"
           checked={selected.length === topics.length}
           ref={(el) => {
@@ -201,6 +204,9 @@ export function TopicsTab({ studentId, spaceId }: { studentId: string; spaceId: 
           </li>
         ))}
       </ul>
+      <div className="px-3 pb-4">
+        <ShowMore shown={topics.length} total={query.data?.total ?? 0} hasMore={!!query.hasNextPage} loading={query.isFetchingNextPage} onMore={() => query.fetchNextPage()} />
+      </div>
       <DeleteTopicDialog
         studentId={studentId}
         spaceId={spaceId}

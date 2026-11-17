@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { cursorPage } from '@/lib/pagination'
 
 // Mirrors the backend's TopicOut.
 export const topicSchema = z.object({
@@ -9,6 +10,9 @@ export const topicSchema = z.object({
   created_at: z.string(),
 })
 export type Topic = z.infer<typeof topicSchema>
+export const topicsPageSchema = cursorPage(topicSchema)
+/** How many Topics load at a time. */
+export const TOPICS_PAGE = 30
 
 // A Topic name is one line of at most 120 characters (the backend's MAX_NAME).
 export const topicNameSchema = z.string().trim().min(1, 'Enter a name.').max(120, 'Use 120 characters or fewer.')

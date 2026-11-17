@@ -6,8 +6,9 @@ from sqlalchemy import select
 from app.db import SessionDep
 from app.errors import ApiError
 from app.profile.models import ProfileFact
-from app.profile.schemas import FactOut
+from app.profile.schemas import FactOut, ProfileIn, ProfileOut
 from app.students.dependencies import StudentDep
+from app.students.models import Profile
 
 router = APIRouter(tags=["profile"])
 
@@ -17,6 +18,29 @@ def _fact(session, student_id: uuid.UUID, fact_id: uuid.UUID) -> ProfileFact:
     if fact is None or fact.student_id != student_id:
         raise ApiError(404, "fact_not_found", "That does not exist.")
     return fact
+
+
+def _profile(session, student_id: uuid.UUID) -> Profile:
+    profile = session.get(Profile, student_id)
+    if profile is None:
+        profile = Profile(student_id=student_id)
+        session.add(profile)
+    return profile
+
+
+@router.get("/profile", response_model=ProfileOut)
+def get_profile(student: StudentDep, session: SessionDep):
+    profile = session.get(Profile, student.id)
+    return ProfileOut(adaptive_difficulty=bool(profile and profile.adaptive_difficulty))
+
+
+@router.patch("/profile", response_model=ProfileOut)
+def update_profile(body: ProfileIn, student: StudentDep, session: SessionDep):
+    profile = _profile(session, student.id)
+    if body.adaptive_difficulty is not None:
+        profile.adaptive_difficulty = body.adaptive_difficulty
+    session.commit()
+    return ProfileOut(adaptive_difficulty=profile.adaptive_difficulty)
 
 
 @router.get("/profile/facts", response_model=list[FactOut])

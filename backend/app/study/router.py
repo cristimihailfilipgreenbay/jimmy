@@ -13,6 +13,8 @@ from app.db import SessionDep
 from app.errors import ApiError
 from app.spaces.dependencies import get_owned_space
 from app.spaces.models import Space
+from app.students.dependencies import StudentDep
+from app.students.models import Profile
 from app.study import questions as q
 from app.study.dependencies import StudySessionDep
 from app.study.models import (
@@ -59,7 +61,7 @@ def _current(session: Session, study: StudySession) -> SessionQuestion | None:
             SessionQuestion.session_id == study.id,
             SessionQuestion.id.not_in(answered),
         )
-        .order_by(SessionQuestion.position.desc())
+        .order_by(SessionQuestion.position)
         .limit(1)
     )
 
@@ -188,7 +190,9 @@ def _run(study: StudySession, payload) -> None:
 
 
 @router.post("/spaces/{space_id}/sessions", response_model=SessionOut, status_code=201)
-def start_session(body: SessionIn, space: SpaceDep, session: SessionDep):
+def start_session(
+    body: SessionIn, space: SpaceDep, student: StudentDep, session: SessionDep
+):
     """Start a Quiz or a Test. The first question is written before this returns."""
     topics = list(
         session.scalars(
@@ -227,6 +231,7 @@ def start_session(body: SessionIn, space: SpaceDep, session: SessionDep):
     )
     session.add(study)
     session.commit()
+    profile = session.get(Profile, student.id)
     try:
         _run(
             study,
@@ -234,6 +239,7 @@ def start_session(body: SessionIn, space: SpaceDep, session: SessionDep):
                 "session_id": str(study.id),
                 "space_id": str(space.id),
                 "kind": study.kind,
+                "adaptive": bool(profile and profile.adaptive_difficulty),
                 "topic_ids": study.topic_ids,
                 "total": study.question_count,
                 "answered": 0,

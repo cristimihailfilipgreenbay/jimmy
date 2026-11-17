@@ -11,3 +11,12 @@ class FactOut(BaseModel):
     status: str
     origin: str
     created_at: datetime
+
+
+class ProfileOut(BaseModel):
+    # Off: a Quiz or Test is written up front at one difficulty. On: it follows the answers.
+    adaptive_difficulty: bool
+
+
+class ProfileIn(BaseModel):
+    adaptive_difficulty: bool | None = None

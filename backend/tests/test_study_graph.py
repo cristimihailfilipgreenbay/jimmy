@@ -99,7 +99,7 @@ def db():
     return engine
 
 
-def _start(engine, total=3, grader=None, kind="quiz"):
+def _start(engine, total=3, grader=None, kind="quiz", adaptive=True):
     with Session(engine) as s:
         topic = Topic(space_id=SPACE, name="Photosynthesis")
         s.add(topic)
@@ -129,6 +129,7 @@ def _start(engine, total=3, grader=None, kind="quiz"):
             "session_id": str(sid),
             "space_id": str(SPACE),
             "kind": kind,
+            "adaptive": adaptive,
             "topic_ids": [str(topic_id)],
             "total": total,
             "answered": 0,
@@ -151,7 +152,7 @@ def _current(engine, sid):
                 SessionQuestion.session_id == sid,
                 SessionQuestion.id.not_in(answered),
             )
-            .order_by(SessionQuestion.position.desc())
+            .order_by(SessionQuestion.position)
         )
 
 
@@ -300,8 +301,41 @@ def test_a_test_never_pauses_for_a_dispute(db, written):
         assert s.scalar(select(Dispute)) is None
 
 
-def test_a_test_keeps_one_difficulty_and_finishes_with_a_score(db):
+def test_a_test_adapts_like_a_quiz_when_asked(db):
     graph, config, sid, _topic = _start(db, total=3, kind="test")
+    _answer(db, graph, config, sid, True)
+    _answer(db, graph, config, sid, True)
+    with Session(db) as s:
+        assert s.get(StudySession, sid).difficulty == "hard"
+
+
+def test_without_adapting_every_question_is_written_up_front(db):
+    _graph, _config, sid, _topic = _start(db, total=3, kind="test", adaptive=False)
+    with Session(db) as s:
+        rows = s.scalars(
+            select(SessionQuestion)
+            .where(SessionQuestion.session_id == sid)
+            .order_by(SessionQuestion.position)
+        ).all()
+        assert [r.position for r in rows] == [1, 2, 3]
+        assert {r.difficulty for r in rows} == {"medium"}
+    assert _current(db, sid).position == 1
+
+
+def test_without_adapting_the_questions_are_answered_in_order(db):
+    graph, config, sid, _topic = _start(db, total=3, adaptive=False)
+    for position in (1, 2, 3):
+        assert _current(db, sid).position == position
+        _answer(db, graph, config, sid, True)
+    with Session(db) as s:
+        assert s.get(StudySession, sid).status == "finished"
+        assert (
+            s.get(StudySession, sid).difficulty == "medium"
+        )  # two right, still medium
+
+
+def test_a_test_keeps_one_difficulty_and_finishes_with_a_score(db):
+    graph, config, sid, _topic = _start(db, total=3, kind="test", adaptive=False)
     for right in (True, True, False):
         _answer(db, graph, config, sid, right)
     with Session(db) as s:

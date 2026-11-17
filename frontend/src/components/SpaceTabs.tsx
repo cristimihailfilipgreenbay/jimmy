@@ -13,7 +13,7 @@ function useActiveTab(spaceId: string) {
 // Flashcard drafts waiting for review, shown on the Flashcards tab (0 shows nothing).
 function useDraftCount(spaceId: string) {
   const student = useSignedInStudent()
-  return useDrafts(student.id, spaceId).data?.length ?? 0
+  return useDrafts(student.id, spaceId).data?.total ?? 0
 }
 
 // Dashboard, Chat, Study and Flashcards of the current Study Space, in the header.

@@ -1,4 +1,5 @@
 import { Layers } from 'lucide-react'
+import { ShowMore } from '@/components/ShowMore'
 import { cardClass } from '@/lib/styles'
 import { cn } from '@/lib/utils'
 import type { Card } from '../schemas/flashcards'
@@ -6,21 +7,40 @@ import type { Card } from '../schemas/flashcards'
 const topicClass = (on: boolean) =>
   cn('rounded-full border px-3 py-1 text-xs transition-colors duration-200', on ? 'border-space bg-space-soft text-space-ink' : 'border-border bg-card text-foreground hover:bg-muted')
 
-// The approved cards, filtered by Topic. A card opens the viewer at its place in the deck.
-export function DeckGrid({ cards, topic, onTopic, onOpen }: { cards: Card[]; topic: string; onTopic: (t: string) => void; onOpen: (card: Card) => void }) {
-  const topics = ['all', ...new Set(cards.map((c) => c.topic))]
-  const shown = cards.filter((c) => topic === 'all' || c.topic === topic)
+// The approved cards loaded so far, for one Topic or all (the server filters). A card opens the
+// viewer at its place in the deck; more cards load on request.
+export function DeckGrid({
+  cards,
+  total,
+  topics,
+  topic,
+  hasMore,
+  loadingMore,
+  onMore,
+  onTopic,
+  onOpen,
+}: {
+  cards: Card[]
+  total: number
+  topics: { id: string; name: string }[]
+  topic: string
+  hasMore: boolean
+  loadingMore: boolean
+  onMore: () => void
+  onTopic: (id: string) => void
+  onOpen: (card: Card) => void
+}) {
   return (
     <>
       <div className="mb-4 flex flex-wrap gap-2" role="group" aria-label="Filter by topic">
-        {topics.map((t) => (
-          <button key={t} type="button" className={topicClass(topic === t)} aria-pressed={topic === t} onClick={() => onTopic(t)}>
-            {t === 'all' ? 'All topics' : t}
+        {[{ id: 'all', name: 'All topics' }, ...topics].map((t) => (
+          <button key={t.id} type="button" className={topicClass(topic === t.id)} aria-pressed={topic === t.id} onClick={() => onTopic(t.id)}>
+            {t.name}
           </button>
         ))}
       </div>
       <ul role="list" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {shown.map((c) => (
+        {cards.map((c) => (
           <li key={c.id} className="fade-in">
             <button
               type="button"
@@ -42,6 +62,7 @@ export function DeckGrid({ cards, topic, onTopic, onOpen }: { cards: Card[]; top
           </li>
         ))}
       </ul>
+      <ShowMore shown={cards.length} total={total} hasMore={hasMore} loading={loadingMore} onMore={onMore} />
     </>
   )
 }

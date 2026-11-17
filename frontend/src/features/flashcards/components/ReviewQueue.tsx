@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Check, CircleCheck, Pencil, X } from 'lucide-react'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { ShowMore } from '@/components/ShowMore'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { CitationChip } from '@/features/chat/components/CitationChip'
@@ -15,11 +16,19 @@ const origin = (type: string) => (type === 'library' ? 'From the Subject Library
 // rejects it.
 export function ReviewQueue({
   drafts,
+  total,
+  hasMore,
+  loadingMore,
+  onMore,
   deciding,
   error,
   onDecide,
 }: {
   drafts: Draft[]
+  total: number
+  hasMore: boolean
+  loadingMore: boolean
+  onMore: () => void
   deciding: boolean
   error: unknown
   onDecide: (draft: Draft, decision: CardDecision) => void
@@ -116,6 +125,7 @@ export function ReviewQueue({
           </li>
         ))}
       </ul>
+      <ShowMore shown={drafts.length} total={total} hasMore={hasMore} loading={loadingMore} onMore={onMore} />
       <ConfirmDialog
         open={!!rejecting}
         onOpenChange={(open) => !open && setRejecting(null)}

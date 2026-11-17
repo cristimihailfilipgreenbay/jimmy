@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { nextCursor } from '@/lib/pagination'
 import type { CardDecision, Draft } from '../schemas/flashcards'
 import { approveFact, deleteFact, fetchDeck, fetchDrafts, fetchFacts, reviewDrafts } from './flashcards'
 
@@ -6,14 +7,32 @@ const deckKey = (studentId: string, spaceId: string) => ['flashcards', studentId
 const draftsKey = (studentId: string, spaceId: string) => ['flashcard-drafts', studentId, spaceId] as const
 const factsKey = (studentId: string) => ['profile-facts', studentId] as const
 
-export const useDeck = (studentId: string, spaceId: string) => useQuery({ queryKey: deckKey(studentId, spaceId), queryFn: () => fetchDeck(spaceId) })
+/** The approved cards, thirty at a time, for one Topic or all ('all'). `fetchNextPage` loads more. */
+export const useDeck = (studentId: string, spaceId: string, topicId: string) =>
+  useInfiniteQuery({
+    queryKey: [...deckKey(studentId, spaceId), topicId],
+    queryFn: ({ pageParam }) => fetchDeck(spaceId, topicId, pageParam),
+    ...nextCursor,
+    // Changing the Topic filter keeps the cards on screen until the new ones arrive.
+    placeholderData: keepPreviousData,
+    select: (data) => ({
+      cards: data.pages.flatMap((p) => p.items),
+      total: data.pages[0]?.total ?? 0,
+      totalAll: data.pages[0]?.total_all ?? 0,
+      topics: data.pages[0]?.topics ?? [],
+    }),
+  })
 
-/** Every draft waiting for review, each with the batch (and pause) it belongs to. */
+/** The drafts waiting for review, ten at a time, each with the pause it answers at. */
 export const useDrafts = (studentId: string, spaceId: string) =>
-  useQuery({
+  useInfiniteQuery({
     queryKey: draftsKey(studentId, spaceId),
-    queryFn: () => fetchDrafts(spaceId),
-    select: (batches): Draft[] => batches.flatMap((b) => b.cards.map((c) => ({ ...c, threadId: b.thread_id, interruptId: b.interrupt_id }))),
+    queryFn: ({ pageParam }) => fetchDrafts(spaceId, pageParam),
+    ...nextCursor,
+    select: (data) => ({
+      drafts: data.pages.flatMap((p) => p.items.map(({ thread_id, interrupt_id, ...card }): Draft => ({ ...card, threadId: thread_id, interruptId: interrupt_id }))),
+      total: data.pages[0]?.total ?? 0,
+    }),
   })
 
 /** A review can add cards to the deck and propose a style, so all three lists are refetched. */

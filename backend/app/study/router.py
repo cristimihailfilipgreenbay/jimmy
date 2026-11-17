@@ -31,11 +31,13 @@ from app.study.schemas import (
     DisputeOut,
     DisputeRecordOut,
     FeedbackOut,
+    HistoryOut,
     QuestionOut,
     RecapOut,
     SessionIn,
     SessionOut,
     SourceOut,
+    TakenOut,
     TopicBreakdown,
     WeakTopicOut,
 )
@@ -103,21 +105,23 @@ def _pending_dispute(
     return None
 
 
+def _question_out(session: Session, question: SessionQuestion) -> QuestionOut:
+    name = topic_names(session, [question.topic_id]).get(question.topic_id, "")
+    return QuestionOut(
+        id=question.id,
+        topic_id=question.topic_id,
+        topic=name,
+        position=question.position,
+        type=question.question_type,
+        prompt=question.prompt,
+        options=question.options,
+        difficulty=question.difficulty,
+    )
+
+
 def _session_out(session: Session, study: StudySession) -> SessionOut:
     question = _current(session, study) if study.status == "active" else None
-    current = None
-    if question:
-        name = topic_names(session, [question.topic_id]).get(question.topic_id, "")
-        current = QuestionOut(
-            id=question.id,
-            topic_id=question.topic_id,
-            topic=name,
-            position=question.position,
-            type=question.question_type,
-            prompt=question.prompt,
-            options=question.options,
-            difficulty=question.difficulty,
-        )
+    current = _question_out(session, question) if question else None
     return SessionOut(
         id=study.id,
         thread_id=study.thread_id,
@@ -332,16 +336,41 @@ def resume_dispute(
     return _resume(study, question, decision, session)
 
 
-@router.get("/sessions/{session_id}/recap", response_model=RecapOut)
-def recap(study: StudySessionDep, session: SessionDep):
-    if study.status != "finished":
-        raise ApiError(409, "session_not_finished", "This session is still going.")
-    rows = session.execute(
+def _answered_rows(session: Session, study: StudySession):
+    return session.execute(
         select(SessionQuestion, QuizAttempt)
         .join(QuizAttempt, QuizAttempt.question_id == SessionQuestion.id)
         .where(SessionQuestion.session_id == study.id)
         .order_by(SessionQuestion.position)
     ).all()
+
+
+@router.get("/sessions/{session_id}/history", response_model=HistoryOut)
+def history(study: StudySessionDep, session: SessionDep):
+    """What the Student has already seen in this session, for picking it up again after
+    a reload. A Quiz returns its feedback; a Test only the answers given."""
+    rows = _answered_rows(session, study)
+    if study.kind == "test":
+        return HistoryOut(
+            feedback=[],
+            taken=[
+                TakenOut(
+                    question=_question_out(session, question), answer=attempt.answer
+                )
+                for question, attempt in rows
+            ],
+        )
+    return HistoryOut(
+        feedback=[_feedback(session, question, attempt) for question, attempt in rows],
+        taken=[],
+    )
+
+
+@router.get("/sessions/{session_id}/recap", response_model=RecapOut)
+def recap(study: StudySessionDep, session: SessionDep):
+    if study.status != "finished":
+        raise ApiError(409, "session_not_finished", "This session is still going.")
+    rows = _answered_rows(session, study)
     feedback = [_feedback(session, question, attempt) for question, attempt in rows]
     by_topic: dict[uuid.UUID, TopicBreakdown] = {}
     for f in feedback:

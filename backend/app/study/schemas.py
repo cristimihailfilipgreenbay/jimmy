@@ -115,6 +115,22 @@ class AnswerOut(BaseModel):
     session: SessionOut
 
 
+class TakenOut(BaseModel):
+    """A Test question the Student already answered, with their answer (an option number
+    for multiple choice). A Test shows nothing more until the recap."""
+
+    question: QuestionOut
+    answer: str
+
+
+class HistoryOut(BaseModel):
+    """What a session already showed the Student, so a reloaded page can go on where it
+    was: the feedback of a Quiz, or the answers given in a Test."""
+
+    feedback: list[FeedbackOut]
+    taken: list[TakenOut]
+
+
 class TopicBreakdown(BaseModel):
     topic_id: uuid.UUID
     topic: str

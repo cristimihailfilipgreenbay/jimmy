@@ -13,8 +13,8 @@ import { spaceCourseSchema, spaceNameSchema, type Accent, type Space } from '../
 import { AccentSwatches } from './AccentSwatches'
 
 /** The design pre-selects the first colour no Space of yours uses yet. */
-const firstUnusedAccent = (spaces: Space[]): Accent => {
-  const used = new Set(spaces.map((s) => s.accent))
+const firstUnusedAccent = (usedAccents: Accent[]): Accent => {
+  const used = new Set(usedAccents)
   return (ACCENTS.find((a) => !used.has(a.value)) ?? ACCENTS[0]).value
 }
 
@@ -24,13 +24,14 @@ const firstUnusedAccent = (spaces: Space[]): Accent => {
  */
 export function SpaceFormDialog({
   studentId,
-  spaces,
+  usedAccents,
   space,
   open,
   onClose,
 }: {
   studentId: string
-  spaces: Space[]
+  /** The colours the Student's Spaces already use. */
+  usedAccents: Accent[]
   space?: Space
   open: boolean
   onClose: () => void
@@ -40,7 +41,7 @@ export function SpaceFormDialog({
   const [name, setName] = useState(space?.name ?? '')
   const [code, setCode] = useState(initialCode)
   const [lecturer, setLecturer] = useState(initialLecturer)
-  const [accent, setAccent] = useState<Accent>(() => space?.accent ?? firstUnusedAccent(spaces))
+  const [accent, setAccent] = useState<Accent>(() => space?.accent ?? firstUnusedAccent(usedAccents))
   const [invalid, setInvalid] = useState<{ name?: string; course?: string }>({})
   const create = useCreateSpace(studentId)
   const update = useUpdateSpace(studentId)

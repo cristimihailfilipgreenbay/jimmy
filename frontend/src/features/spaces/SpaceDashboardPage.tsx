@@ -20,6 +20,7 @@ import { useSignedInStudent } from '@/features/auth/hooks/useSignedInStudent'
 import { cn } from '@/lib/utils'
 import { DeleteSpaceDialog } from './components/DeleteSpaceDialog'
 import { SpaceFormDialog } from './components/SpaceFormDialog'
+import { useSpace } from './queries/useSpace'
 import { useSpaces } from './queries/useSpaces'
 
 // A Study Space's dashboard: its header, with the "⋯" menu that deletes it, and the
@@ -30,7 +31,8 @@ export function SpaceDashboardPage() {
   const { spaceId } = useParams()
   const student = useSignedInStudent()
   const navigate = useNavigate()
-  const { data: spaces, isPending } = useSpaces(student.id)
+  const { data: space, isPending } = useSpace(student.id, spaceId)
+  const { data: all } = useSpaces(student.id)
   // The tab lives in the address (?tab=topics), so it survives a refresh and can be linked to.
   const [params, setParams] = useSearchParams()
   const asked = params.get('tab')
@@ -39,7 +41,6 @@ export function SpaceDashboardPage() {
   const [deleting, setDeleting] = useState(false)
   const [edit, setEdit] = useState({ open: false, n: 0 })
   const openEdit = () => setEdit((e) => ({ open: true, n: e.n + 1 }))
-  const space = spaces?.find((s) => s.id === spaceId)
   // Not placed until the Space has loaded: before that the tabs are not on the page.
   const { container, indicator } = useSlidingIndicator<HTMLDivElement>(space ? tab : '', true)
   const notes = useDocuments(student.id, spaceId ?? '')
@@ -152,7 +153,7 @@ export function SpaceDashboardPage() {
       <SpaceFormDialog
         key={edit.n}
         studentId={student.id}
-        spaces={spaces ?? []}
+        usedAccents={all?.accents ?? []}
         space={space}
         open={edit.open}
         onClose={() => setEdit((e) => ({ ...e, open: false }))}

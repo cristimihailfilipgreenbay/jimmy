@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { ArrowRight, Book, Layers, Palette, Plus } from 'lucide-react'
 import { Link } from 'react-router'
+import { ShowMore } from '@/components/ShowMore'
 import { Button } from '@/components/ui/button'
 import { useSignedInStudent } from '@/features/auth/hooks/useSignedInStudent'
 import { errorMessage } from '@/lib/http'
@@ -26,7 +27,9 @@ type DialogState = { space: Space; open: boolean; n: number }
 
 export function SpacesPage() {
   const student = useSignedInStudent()
-  const { data: spaces, error } = useSpaces(student.id)
+  const query = useSpaces(student.id)
+  const { error } = query
+  const spaces = query.data?.spaces
   const update = useUpdateSpace(student.id)
   const [create, setCreate] = useState({ open: false, n: 0 })
   const [menu, setMenu] = useState<MenuState | null>(null)
@@ -75,6 +78,9 @@ export function SpacesPage() {
           </li>
         </ul>
       )}
+      {spaces && spaces.length > 0 && (
+        <ShowMore shown={spaces.length} total={query.data?.total ?? 0} hasMore={!!query.hasNextPage} loading={query.isFetchingNextPage} onMore={() => query.fetchNextPage()} />
+      )}
 
       {menu && (
         <SpaceContextMenu
@@ -89,7 +95,7 @@ export function SpacesPage() {
       <SpaceFormDialog
         key={create.n}
         studentId={student.id}
-        spaces={spaces ?? []}
+        usedAccents={query.data?.accents ?? []}
         open={create.open}
         onClose={() => setCreate((c) => ({ ...c, open: false }))}
       />

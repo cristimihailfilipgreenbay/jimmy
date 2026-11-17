@@ -45,6 +45,9 @@ export function DeleteTopicDialog({
                 <DialogTitle>{all ? `Delete all ${all} topics?` : topics.length === 1 ? `Delete “${topics[0].name}”?` : `Delete ${topics.length} topics?`}</DialogTitle>
                 <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
                   <li>Jimmy will stop using {!all && topics.length === 1 ? 'it' : 'them'} for quizzes and weak-topic tracking.</li>
+                  <li>
+                    Flashcards, weak-topic records and past quiz questions about {!all && topics.length === 1 ? 'it' : 'them'} are deleted too.
+                  </li>
                   <li>Your notes stay as they are.</li>
                 </ul>
                 {error && (

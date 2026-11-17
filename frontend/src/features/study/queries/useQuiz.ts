@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { DisputeDecision, StudyKind } from '../schemas/study'
-import { answerQuestion, decideDispute, fetchRecap, fetchSession, startSession } from './study'
+import { answerQuestion, decideDispute, fetchHistory, fetchRecap, fetchSession, startSession } from './study'
 import { weakKey } from './useWeakTopics'
 
 export const useStartSession = (spaceId: string) =>
@@ -28,6 +28,17 @@ export function useDecideDispute(studentId: string, spaceId: string) {
 
 export const useRecap = (sessionId: string | undefined) =>
   useQuery({ queryKey: ['recap', sessionId], queryFn: () => fetchRecap(sessionId!), enabled: !!sessionId })
+
+/** A session started earlier (its id is in the address) with what it already showed. Loaded once. */
+export const useStoredSession = (sessionId: string | null) =>
+  useQuery({
+    queryKey: ['stored-session', sessionId],
+    queryFn: async () => ({ session: await fetchSession(sessionId!), history: await fetchHistory(sessionId!) }),
+    enabled: !!sessionId,
+    staleTime: Infinity,
+    gcTime: 0,
+    retry: false,
+  })
 
 /** Asks the backend to write a question that failed earlier, and returns the session. */
 export const useReloadQuiz = () => useMutation({ mutationFn: (sessionId: string) => fetchSession(sessionId) })

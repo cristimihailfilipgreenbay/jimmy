@@ -11,7 +11,7 @@ import { cardClass } from '@/lib/styles'
 import { cn } from '@/lib/utils'
 import { QuestionCard } from './components/QuestionCard'
 import { Recap } from './components/Recap'
-import { useAnswerQuestion, useDecideDispute, useRecap, useReloadQuiz, useStartSession } from './queries/useQuiz'
+import { useAnswerQuestion, useDecideDispute, useRecap, useReloadQuiz, useStartSession, useStoredSession } from './queries/useQuiz'
 import { useWeakTopics } from './queries/useWeakTopics'
 import { QUIZ_LENGTH, TEST_LENGTH, type AnswerOut, type Feedback, type Question, type StudyKind, type StudySession } from './schemas/study'
 
@@ -24,7 +24,7 @@ export function StudyPage() {
   const { data: topics, isPending: loadingTopics } = useTopics(student.id, spaceId)
   const { data: weak = [] } = useWeakTopics(student.id, spaceId)
   // "Practise this" on a weak Topic links here with ?topic=…
-  const [params] = useSearchParams()
+  const [params, setParams] = useSearchParams()
   const only = topics?.find((t) => t.id === params.get('topic'))
 
   const start = useStartSession(spaceId)
@@ -42,9 +42,32 @@ export function StudyPage() {
   const [recapOpen, setRecapOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const recap = useRecap(recapOpen ? session?.id : undefined)
+  // The session in progress is kept in the address (?session=…), so a reload goes on where it was.
+  const storedId = params.get('session')
+  const stored = useStoredSession(session ? null : storedId)
+  const [restored, setRestored] = useState<string | null>(null)
+  if (stored.data && storedId && restored !== storedId && !session) {
+    const { session: s, history: h } = stored.data
+    setRestored(storedId)
+    setSession(s)
+    setHistory(h.feedback)
+    setTaken(h.taken)
+    setViewing(s.kind === 'test' ? h.taken.length : h.feedback.length)
+    setRecapOpen(s.status === 'finished')
+  }
+  const remember = (id: string | null) =>
+    setParams(
+      (old) => {
+        const next = new URLSearchParams(old)
+        if (id) next.set('session', id)
+        else next.delete('session')
+        return next
+      },
+      { replace: true },
+    )
 
   const space = spaces?.find((s) => s.id === spaceId)
-  if (isPending || loadingTopics) return null
+  if (isPending || loadingTopics || (storedId && !session && stored.isPending)) return null
   if (!space) return <Placeholder title="Study Space not found" note="That Study Space does not exist." />
 
   const reset = () => {
@@ -54,6 +77,7 @@ export function StudyPage() {
     setViewing(0)
     setRecapOpen(false)
     setError(null)
+    remember(null)
   }
   const begin = (kind: StudyKind) => {
     setError(null)
@@ -62,6 +86,7 @@ export function StudyPage() {
       {
       onSuccess: (s) => {
         setSession(s)
+        remember(s.id)
         setHistory([])
         setTaken([])
         setViewing(0)

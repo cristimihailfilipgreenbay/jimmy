@@ -88,6 +88,14 @@ export const recapSchema = z.object({
 })
 export type Recap = z.infer<typeof recapSchema>
 
+// What a session already showed, to pick it up again after a reload: a Quiz's feedback, or
+// the answers given in a Test.
+export const historySchema = z.object({
+  feedback: z.array(feedbackSchema),
+  taken: z.array(z.object({ question: questionSchema, answer: z.string() })),
+})
+export type History = z.infer<typeof historySchema>
+
 export const weakTopicSchema = z.object({
   topic_id: z.uuid(),
   name: z.string(),

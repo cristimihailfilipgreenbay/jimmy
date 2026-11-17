@@ -51,7 +51,7 @@ from app.study.schemas import (
     TopicBreakdown,
     WeakTopicOut,
 )
-from app.study.service import clear_weak_topic, topic_names
+from app.study.service import clear_weak_topic, remembers_weak_topics, topic_names
 from app.study.sources import NoSource
 from app.topics.models import Topic
 
@@ -175,7 +175,8 @@ def _feedback(
         explanation=question.explanation,
         note=attempt.explanation,
         source=SourceOut(**question.source),
-        topic_weak=bool(weak and weak.is_weak),
+        topic_weak=bool(weak and weak.is_weak)
+        and remembers_weak_topics(session, space_id),
     )
 
 
@@ -544,6 +545,19 @@ def clear_all_weak_topics(space: SpaceDep, session: SessionDep):
         )
     ):
         clear_weak_topic(session, space.id, weak.topic_id)
+    session.commit()
+    return Response(status_code=204)
+
+
+@router.delete("/weak-topics", status_code=204)
+def clear_every_weak_topic(student: StudentDep, session: SessionDep):
+    """Clear every weak Topic in every one of the Student's Study Spaces."""
+    for weak in session.scalars(
+        select(WeakTopic)
+        .join(Space, Space.id == WeakTopic.space_id)
+        .where(Space.student_id == student.id, WeakTopic.is_weak.is_(True))
+    ).all():
+        clear_weak_topic(session, weak.space_id, weak.topic_id)
     session.commit()
     return Response(status_code=204)
 

@@ -33,7 +33,15 @@ class SpaceOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class SpacesPage(CursorPage[SpaceOut]):
+class SpaceCardOut(SpaceOut):
+    """A Space on the Spaces page, with what is in it."""
+
+    notes_count: int
+    flashcards_count: int
+    weak_topics_count: int
+
+
+class SpacesPage(CursorPage[SpaceCardOut]):
     """One page of the Student's Study Spaces, newest first."""
 
     # The colours the Student's Spaces use, so a new one can start with an unused colour.

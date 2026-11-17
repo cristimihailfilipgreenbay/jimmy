@@ -15,11 +15,7 @@ import { accentInfo, accentStyle } from './lib/accents'
 import { createdLabel } from './lib/relativeTime'
 import { useSpaces } from './queries/useSpaces'
 import { useUpdateSpace } from './queries/useUpdateSpace'
-import type { Space } from './schemas/space'
-
-// What each Study Space shows under its name. The features that own this data
-// (Notes, Flashcards, Weak Topics) do not exist yet, so for now there is none.
-const NO_STATS = { notes: 0, flashcards: 0, weak: 0 }
+import type { Space, SpaceCard as SpaceCardData } from './schemas/space'
 
 type MenuState = { space: Space; x: number; y: number; returnTo: HTMLElement | null }
 // A dialog keeps its Space while it fades out, and `n` gives each opening fresh fields.
@@ -124,7 +120,7 @@ export function SpacesPage() {
 
 const LONG_PRESS_MS = 520
 
-function SpaceCard({ space, onMenu }: { space: Space; onMenu: (x: number, y: number, returnTo: HTMLElement | null) => void }) {
+function SpaceCard({ space, onMenu }: { space: SpaceCardData; onMenu: (x: number, y: number, returnTo: HTMLElement | null) => void }) {
   const link = useRef<HTMLAnchorElement>(null)
   const pressTimer = useRef<number | null>(null)
   const pressFired = useRef(false)
@@ -187,15 +183,15 @@ function SpaceCard({ space, onMenu }: { space: Space; onMenu: (x: number, y: num
           <dl className="mt-5 grid grid-cols-3 gap-2 text-sm">
             <div>
               <dt className="text-xs text-muted-foreground">Notes</dt>
-              <dd className="font-semibold">{NO_STATS.notes}</dd>
+              <dd className="font-semibold">{space.notes_count}</dd>
             </div>
             <div>
               <dt className="text-xs text-muted-foreground">Flashcards</dt>
-              <dd className="font-semibold">{NO_STATS.flashcards}</dd>
+              <dd className="font-semibold">{space.flashcards_count}</dd>
             </div>
             <div>
               <dt className="text-xs text-muted-foreground">Weak topics</dt>
-              <dd className="font-semibold">{NO_STATS.weak}</dd>
+              <dd className="font-semibold">{space.weak_topics_count}</dd>
             </div>
           </dl>
           <p className="mt-4 flex items-center justify-between border-t pt-3 text-xs text-muted-foreground">

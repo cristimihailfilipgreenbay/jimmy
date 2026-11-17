@@ -26,8 +26,12 @@ export const spaceSchema = z.object({
 })
 export type Space = z.infer<typeof spaceSchema>
 
+// A Space on the Spaces page, with what is in it.
+export const spaceCardSchema = spaceSchema.extend({ notes_count: z.number(), flashcards_count: z.number(), weak_topics_count: z.number() })
+export type SpaceCard = z.infer<typeof spaceCardSchema>
+
 // One page of the Student's Spaces, with the colours their Spaces use.
-export const spacesPageSchema = cursorPage(spaceSchema).extend({ accents: z.array(accentSchema) })
+export const spacesPageSchema = cursorPage(spaceCardSchema).extend({ accents: z.array(accentSchema) })
 /** How many Spaces load at a time. */
 export const SPACES_PAGE = 12
 

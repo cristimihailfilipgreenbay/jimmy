@@ -6,7 +6,9 @@ from sqlalchemy import func, select, tuple_
 from sqlalchemy.exc import IntegrityError
 
 from app.db import SessionDep
+from app.documents.models import Document
 from app.errors import ApiError
+from app.flashcards.models import Flashcard
 from app.pagination import (
     CursorQuery,
     LimitQuery,
@@ -15,8 +17,15 @@ from app.pagination import (
 )
 from app.spaces.dependencies import get_owned_space
 from app.spaces.models import Space
-from app.spaces.schemas import SpaceIn, SpaceOut, SpacesPage, SpaceUpdate
+from app.spaces.schemas import (
+    SpaceCardOut,
+    SpaceIn,
+    SpaceOut,
+    SpacesPage,
+    SpaceUpdate,
+)
 from app.students.dependencies import StudentDep
+from app.study.models import WeakTopic
 
 router = APIRouter(tags=["spaces"])
 
@@ -24,6 +33,17 @@ router = APIRouter(tags=["spaces"])
 def _duplicate() -> ApiError:
     return ApiError(
         409, "space_exists", "You already have a Study Space with that name."
+    )
+
+
+def _counts(session, space_column, condition, space_ids) -> dict[uuid.UUID, int]:
+    """How many rows match `condition` in each of the Spaces."""
+    return dict(
+        session.execute(
+            select(space_column, func.count())
+            .where(space_column.in_(space_ids), condition)
+            .group_by(space_column)
+        ).all()
     )
 
 
@@ -56,8 +76,21 @@ def list_spaces(
             .limit(limit + 1)
         )
     )
+    page = rows[:limit]
+    ids = [s.id for s in page]
+    notes = _counts(session, Document.space_id, Document.kind == "notes", ids)
+    cards = _counts(session, Flashcard.space_id, Flashcard.status == "approved", ids)
+    weak = _counts(session, WeakTopic.space_id, WeakTopic.is_weak.is_(True), ids)
     return SpacesPage(
-        items=rows[:limit],
+        items=[
+            SpaceCardOut(
+                **SpaceOut.model_validate(s).model_dump(),
+                notes_count=notes.get(s.id, 0),
+                flashcards_count=cards.get(s.id, 0),
+                weak_topics_count=weak.get(s.id, 0),
+            )
+            for s in page
+        ],
         next_cursor=next_cursor(
             rows, limit, lambda s: [s.created_at.isoformat(), str(s.id)]
         ),

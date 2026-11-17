@@ -3,6 +3,7 @@ import { Switch } from '@/components/ui/switch'
 import { useSignedInStudent } from '@/features/auth/hooks/useSignedInStudent'
 import { cardClass } from '@/lib/styles'
 import { cn } from '@/lib/utils'
+import { AnswerStyleSection } from './components/AnswerStyleSection'
 import { useProfile, useUpdateProfile } from './queries/useProfile'
 
 // What the Student can change about how Jimmy works. More sections come with their features.
@@ -38,6 +39,7 @@ export function SettingsPage() {
           </p>
         )}
       </section>
+      <AnswerStyleSection studentId={student.id} />
     </main>
   )
 }

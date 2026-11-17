@@ -4,6 +4,8 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, StringConstraints, field_validator
 
+from app.pagination import CursorPage
+
 # The accent is only a colour the Student picked; it says nothing about the subject.
 # The ten colours from the design, by name.
 Accent = Literal[
@@ -29,6 +31,13 @@ class SpaceOut(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class SpacesPage(CursorPage[SpaceOut]):
+    """One page of the Student's Study Spaces, newest first."""
+
+    # The colours the Student's Spaces use, so a new one can start with an unused colour.
+    accents: list[str]
 
 
 class SpaceIn(BaseModel):

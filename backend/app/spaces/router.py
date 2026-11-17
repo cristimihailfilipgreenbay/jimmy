@@ -1,14 +1,21 @@
 import uuid
+from datetime import datetime
 
 from fastapi import APIRouter, Response
-from sqlalchemy import func, select
+from sqlalchemy import func, select, tuple_
 from sqlalchemy.exc import IntegrityError
 
 from app.db import SessionDep
 from app.errors import ApiError
+from app.pagination import (
+    CursorQuery,
+    LimitQuery,
+    decode_cursor,
+    next_cursor,
+)
 from app.spaces.dependencies import get_owned_space
 from app.spaces.models import Space
-from app.spaces.schemas import SpaceIn, SpaceOut, SpaceUpdate
+from app.spaces.schemas import SpaceIn, SpaceOut, SpacesPage, SpaceUpdate
 from app.students.dependencies import StudentDep
 
 router = APIRouter(tags=["spaces"])
@@ -20,12 +27,42 @@ def _duplicate() -> ApiError:
     )
 
 
-@router.get("/spaces", response_model=list[SpaceOut])
-def list_spaces(session: SessionDep, student: StudentDep):
-    return session.scalars(
-        select(Space)
-        .where(Space.student_id == student.id)
-        .order_by(Space.created_at.desc())
+@router.get("/spaces", response_model=SpacesPage)
+def list_spaces(
+    session: SessionDep,
+    student: StudentDep,
+    limit: LimitQuery = 12,
+    cursor: CursorQuery = None,
+):
+    """The Student's Study Spaces, newest first, twelve at a time."""
+    mine = Space.student_id == student.id
+    older = ()
+    if cursor:
+        created, space_id = decode_cursor(cursor, 2)
+        try:
+            older = (
+                tuple_(Space.created_at, Space.id)
+                < tuple_(datetime.fromisoformat(created), uuid.UUID(space_id)),
+            )
+        except ValueError as exc:
+            raise ApiError(
+                422, "invalid_cursor", "That page link is not valid."
+            ) from exc
+    rows = list(
+        session.scalars(
+            select(Space)
+            .where(mine, *older)
+            .order_by(Space.created_at.desc(), Space.id.desc())
+            .limit(limit + 1)
+        )
+    )
+    return SpacesPage(
+        items=rows[:limit],
+        next_cursor=next_cursor(
+            rows, limit, lambda s: [s.created_at.isoformat(), str(s.id)]
+        ),
+        total=session.scalar(select(func.count()).select_from(Space).where(mine)),
+        accents=list(session.scalars(select(Space.accent).where(mine).distinct())),
     )
 
 

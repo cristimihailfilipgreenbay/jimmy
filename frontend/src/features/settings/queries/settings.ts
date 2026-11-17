@@ -7,3 +7,5 @@ export const updateProfile = (changes: Partial<Profile>) => request('/profile', 
 export const fetchFacts = () => request('/profile/facts', z.array(factSchema))
 export const approveFact = (id: string) => request(`/profile/facts/${id}/approve`, factSchema, { method: 'POST' })
 export const deleteFact = (id: string) => requestVoid(`/profile/facts/${id}`, { method: 'DELETE' })
+/** Clears every weak Topic in every Study Space. */
+export const clearEveryWeakTopic = () => requestVoid('/weak-topics', { method: 'DELETE' })

@@ -10,7 +10,24 @@ export const EXPLANATION_STYLES: { value: ExplanationStyle; label: string; hint:
 ]
 
 // Mirrors the backend's ProfileOut (app/profile/schemas.py).
+export const yearSchema = z.enum(['1st', '2nd', '3rd', '4th+', "Master's"])
+export const YEARS: { value: z.infer<typeof yearSchema>; label: string }[] = [
+  { value: '1st', label: '1st' },
+  { value: '2nd', label: '2nd' },
+  { value: '3rd', label: '3rd' },
+  { value: '4th+', label: '4th+' },
+  { value: "Master's", label: 'Master’s' },
+]
+
 export const profileSchema = z.object({
+  name: z.string().nullable(),
+  course: z.string().nullable(),
+  university: z.string().nullable(),
+  year: yearSchema.nullable(),
+  // Search Wikipedia and the web when the Notes and Library have no answer.
+  web_search: z.boolean(),
+  // Off: Weak Topics are paused (nothing updates them or picks questions by them).
+  remember_weak_topics: z.boolean(),
   // The language answers come in; null means the Student's own language.
   language: z.string().nullable(),
   explanation_style: explanationStyleSchema,

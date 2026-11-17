@@ -8,12 +8,14 @@ import { errorMessage } from '@/lib/http'
 import { cardClass } from '@/lib/styles'
 import { toast } from '@/lib/toast'
 import { cn } from '@/lib/utils'
+import { useProfile } from '@/features/settings/queries/useProfile'
 import { useClearWeakTopic, useClearAllWeakTopics, useWeakTopics } from '../queries/useWeakTopics'
 
 const day = (iso: string) => new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
 
 // The Weak topics tab: Topics the Student keeps getting wrong, each clearable.
 export function WeakTab({ studentId, spaceId }: { studentId: string; spaceId: string }) {
+  const paused = useProfile(studentId).data?.remember_weak_topics === false
   const query = useWeakTopics(studentId, spaceId)
   const { isPending } = query
   const data = query.data?.weak ?? []
@@ -34,6 +36,7 @@ export function WeakTab({ studentId, spaceId }: { studentId: string; spaceId: st
         <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
           When you miss questions in a quiz, Jimmy notes the topic here so you can focus. You can clear any of them.
         </p>
+        {paused && <PausedNote />}
       </div>
     )
   }
@@ -41,7 +44,9 @@ export function WeakTab({ studentId, spaceId }: { studentId: string; spaceId: st
   return (
     <>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm text-muted-foreground">Jimmy remembers these to prioritise them in quizzes.</p>
+        <p className="text-sm text-muted-foreground">
+          Jimmy remembers these to prioritise them in quizzes. {paused && <PausedNote inline />}
+        </p>
         <Button variant="outline" size="sm" onClick={() => setConfirming(true)}>
           Clear all
         </Button>
@@ -113,5 +118,14 @@ export function WeakTab({ studentId, spaceId }: { studentId: string; spaceId: st
         }
       />
     </>
+  )
+}
+
+// Shown while Weak Topics are paused: nothing is being added to or used from this list.
+function PausedNote({ inline = false }: { inline?: boolean }) {
+  return (
+    <strong className={cn('font-medium text-foreground', !inline && 'mx-auto mt-2 block max-w-md text-sm')}>
+      Remembering is paused in <Link to="/settings" className="underline underline-offset-2">Settings</Link>.
+    </strong>
   )
 }

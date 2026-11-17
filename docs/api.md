@@ -55,11 +55,13 @@ The app is closed to a Student who has not finished onboarding: the frontend sen
 ### Profile
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/profile` | The current Student's Profile (language, explanation style, `adaptive_difficulty`) |
-| PATCH | `/profile` | Update language, explanation style or `adaptive_difficulty` (off: a Quiz or Test is written up front at one difficulty; on: each question follows the last answer) |
+| GET | `/profile` | The current Student's Profile (`language`, `explanation_style`, `adaptive_difficulty`) |
+| PATCH | `/profile` | Update `language` (free text, up to 40 characters; empty answers in the Student's own language), `explanation_style` (`short`, `balanced`, `detailed`) or `adaptive_difficulty` (off: a Quiz or Test is written up front at one difficulty; on: each question follows the last answer) |
 | GET | `/profile/facts` | Stored facts and style preferences, with status |
 | POST | `/profile/facts/{id}/approve` | Approve a proposed fact or style change |
 | DELETE | `/profile/facts/{id}` | Delete a fact |
+
+Three 👎 with the reason `Too long` (each counted once) propose a style fact with origin `feedback`: "Keep explanations short and to the point." Only after `POST /profile/facts/{id}/approve` is it added to the Tutor's instructions, with the Profile's language and explanation style, for the next answers. Deleting a proposed fact is saying no.
 
 When every draft of a batch is decided, the Student's edits are read for a style (for example "keep the front a short question") and saved as a proposed style fact with origin `flashcard_edits`. Only after `POST /profile/facts/{id}/approve` does it shape the next batch of cards.
 
@@ -111,7 +113,8 @@ Topic review after an upload is not a plain edit; it is a pause in the ingestion
 | POST | `/threads/{thread_id}/messages` | Send a message. Response is an event stream (section 3) |
 | POST | `/threads/{thread_id}/cancel` | Stop a run in progress |
 | POST | `/threads/{thread_id}/resume` | Answer a pause (section 4) |
-| POST | `/messages/{message_id}/feedback` | `rating` up or down, optional `comment` |
+| POST | `/messages/{message_id}/feedback` | Rate one of the Student's answers: `rating` up or down, optional `comment` (the reason chosen on a 👎: `Wrong source`, `Factually wrong`, `Too long`, `Didn’t answer`, or free text). One rating per answer; a new one replaces it. The rating is sent to LangSmith as feedback on the answer's trace (`trace_id`) and stored. Returns `{message_id, rating, comment, style_proposed}`; `style_proposed` is true when this rating made Jimmy propose a style change. `404 message_not_found` for any answer but the Student's own |
+| DELETE | `/messages/{message_id}/feedback` | Take a rating back (`204`) |
 
 ### Study sessions
 | Method | Path | Purpose |

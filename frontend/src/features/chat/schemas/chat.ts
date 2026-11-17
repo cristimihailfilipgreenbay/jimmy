@@ -47,6 +47,9 @@ export const messageSchema = z.object({
   cost_usd: z.number().nullable(),
   trace_id: z.string().nullable(),
   created_at: z.string(),
+  // The Student's 👍/👎 on this answer, and why.
+  rating: z.enum(['up', 'down']).nullable(),
+  rating_comment: z.string().nullable(),
 })
 export type Message = z.infer<typeof messageSchema>
 export const messagesPageSchema = cursorPage(messageSchema)
@@ -91,4 +94,18 @@ export const storedConflictSchema = z.object({
   topic: z.string(),
   other_source_type: z.enum(['library', 'learned']),
   decision: conflictDecisionSchema,
+})
+
+export const ratingSchema = z.enum(['up', 'down'])
+export type Rating = z.infer<typeof ratingSchema>
+
+/** Why a 👎 was given. "Too long" is the one that is about style, and repeated it proposes a change. */
+export const DOWN_REASONS = ['Wrong source', 'Factually wrong', 'Too long', 'Didn’t answer'] as const
+
+// Mirrors the backend's FeedbackOut.
+export const feedbackSchema = z.object({
+  message_id: z.string(),
+  rating: ratingSchema,
+  comment: z.string().nullable(),
+  style_proposed: z.boolean(),
 })

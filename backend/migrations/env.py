@@ -6,6 +6,7 @@ from app.chunks import models as _chunks_models  # noqa: F401
 from app.conflicts import models as _conflicts_models  # noqa: F401
 from app.db import Base, make_engine
 from app.documents import models as _documents_models  # noqa: F401
+from app.feedback import models as _feedback_models  # noqa: F401
 from app.flashcards import models as _flashcards_models  # noqa: F401
 from app.jobs import models as _jobs_models  # noqa: F401
 from app.learned import models as _learned_models  # noqa: F401

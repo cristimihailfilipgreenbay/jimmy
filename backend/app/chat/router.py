@@ -11,6 +11,7 @@ from sqlalchemy import case, func, select, tuple_
 from app.chat.agent import ModelNotConfigured, build_agent
 from app.chat.dependencies import ThreadDep
 from app.chat.models import Message, Thread
+from app.chat.prompt import preferences_text
 from app.chat.runner import (
     config_for,
     history_messages,
@@ -32,6 +33,8 @@ from app.checkpointer import get_checkpointer
 from app.conflicts.service import DECISIONS
 from app.db import SessionDep
 from app.errors import ApiError
+from app.feedback.models import Feedback
+from app.feedback.service import approved_answer_styles
 from app.guardrails.classify import OFF_TOPIC, check_input
 from app.learned.models import LearnedMaterial
 from app.pagination import (
@@ -199,8 +202,22 @@ def list_messages(
             .limit(limit + 1)
         )
     )
+    page = list(reversed(rows[:limit]))
+    ratings = {
+        f.message_id: f
+        for f in session.scalars(
+            select(Feedback).where(Feedback.message_id.in_([m.id for m in page]))
+        )
+    }
+    items = []
+    for m in page:
+        out = MessageOut.model_validate(m)
+        rated = ratings.get(m.id)
+        out.rating = rated.rating if rated else None
+        out.rating_comment = rated.comment if rated else None
+        items.append(out)
     return CursorPage(
-        items=list(reversed(rows[:limit])),
+        items=items,
         next_cursor=next_cursor(
             rows,
             limit,
@@ -264,11 +281,21 @@ def send_message(
         learned=_has_learned(session, thread.space_id),
         checkpointer=get_checkpointer(),
         turn_id=question.id,
+        preferences=_preferences(session, student.id, profile),
     )
     return StreamingResponse(
         _sse(events),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+def _preferences(session, student_id, profile) -> str:
+    """The Profile's language and length, and the style changes the Student approved."""
+    return preferences_text(
+        profile.language if profile else None,
+        profile.explanation_style if profile else "balanced",
+        approved_answer_styles(session, student_id),
     )
 
 
@@ -305,6 +332,7 @@ def resume_chat(
         "library": bool(space and space.library_enabled),
         "web": bool(profile and profile.web_search_enabled),
         "learned": _has_learned(session, thread.space_id),
+        "preferences": _preferences(session, student.id, profile),
     }
     checkpointer = get_checkpointer()
     try:

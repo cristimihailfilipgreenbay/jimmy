@@ -46,6 +46,8 @@ class Profile(Base):
     explanation_style: Mapped[str] = mapped_column(
         String(20), default="balanced", server_default="balanced"
     )
+    # The language answers are written in; empty means the Student's own language.
+    language: Mapped[str | None] = mapped_column(String(40))
     web_search_enabled: Mapped[bool] = mapped_column(
         Boolean, default=True, server_default="true"
     )

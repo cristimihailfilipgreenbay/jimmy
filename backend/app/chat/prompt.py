@@ -55,6 +55,36 @@ def _join(items: list[str], last: str = "and") -> str:
     )
 
 
+_LENGTH = {
+    "short": "Keep answers short: a few sentences, straight to the point.",
+    "balanced": "",
+    "detailed": "Give full explanations, with examples and context.",
+}
+
+
+def preferences_text(
+    language: str | None = None,
+    explanation_style: str = "balanced",
+    styles: list[str] | None = None,
+) -> str:
+    """What the Student's Profile asks of every answer: language, length and the style
+    changes they approved. Empty when there is nothing to add."""
+    lines = []
+    if language:
+        lines.append(
+            f"Write every answer in {language}, whatever language the Student writes in."
+        )
+    if _LENGTH.get(explanation_style):
+        lines.append(_LENGTH[explanation_style])
+    lines.extend(styles or [])
+    if not lines:
+        return ""
+    return (
+        "The Student's preferences, which apply to how you write (never to what the sources say):\n"
+        + "\n".join(f"- {line}" for line in lines)
+    )
+
+
 def build_prompt(
     library: bool = False,
     wikipedia: bool = False,
@@ -62,6 +92,7 @@ def build_prompt(
     learned: bool = False,
     compare: bool = False,
     flashcards: bool = False,
+    preferences: str = "",
 ) -> str:
     steps = [_NOTES]
     tools = ["`search_notes`"]
@@ -91,7 +122,8 @@ def build_prompt(
     rules = _RULES.format(
         n=n, m=n + 1, k=n + 2, tools=_join(tools), sources=_join(sources)
     )
-    return _INTRO + numbered + "\n" + rules
+    prompt = _INTRO + numbered + "\n" + rules
+    return prompt + "\n\n" + preferences if preferences else prompt
 
 
 SYSTEM_PROMPT = build_prompt(False)

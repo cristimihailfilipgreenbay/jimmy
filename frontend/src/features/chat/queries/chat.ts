@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { ApiError, request, requestStream, requestVoid } from '@/lib/http'
 import { pageQuery } from '@/lib/pagination'
-import { MESSAGES_PAGE, THREADS_PAGE, messagesPageSchema, storedConflictSchema, threadItemSchema, threadsPageSchema, streamEventSchema, threadSchema, type ConflictDecision, type StreamEvent } from '../schemas/chat'
+import { MESSAGES_PAGE, THREADS_PAGE, feedbackSchema, messagesPageSchema, storedConflictSchema, threadItemSchema, threadsPageSchema, streamEventSchema, threadSchema, type ConflictDecision, type Rating, type StreamEvent } from '../schemas/chat'
 
 /** A page of the Space's chats, the most recently active first. */
 export const listThreads = (spaceId: string, cursor: string | null) => request(`/spaces/${spaceId}/threads${pageQuery(cursor, { limit: THREADS_PAGE })}`, threadsPageSchema)
@@ -58,3 +58,8 @@ export async function resumeThread(
 
 export const listConflicts = (spaceId: string) => request(`/spaces/${spaceId}/conflicts`, z.array(storedConflictSchema))
 export const forgetConflict = (spaceId: string, id: string) => requestVoid(`/spaces/${spaceId}/conflicts/${id}`, { method: 'DELETE' })
+
+/** Rate an answer; a new rating replaces the old one. */
+export const rateAnswer = (messageId: string, rating: Rating, comment?: string) =>
+  request(`/messages/${messageId}/feedback`, feedbackSchema, { method: 'POST', body: JSON.stringify({ rating, comment }) })
+export const clearRating = (messageId: string) => requestVoid(`/messages/${messageId}/feedback`, { method: 'DELETE' }).then(() => null)

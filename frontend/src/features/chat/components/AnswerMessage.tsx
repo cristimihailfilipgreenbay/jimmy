@@ -3,7 +3,8 @@ import { Check, ThumbsDown, ThumbsUp } from 'lucide-react'
 import { JimmyBadge } from '@/components/JimmyBadge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import type { Citation } from '../schemas/chat'
+import { toast } from '@/lib/toast'
+import { DOWN_REASONS, type Citation, type Rating } from '../schemas/chat'
 import { ConflictCard, type ConflictCardState } from './ConflictCard'
 import { Segments } from './Segments'
 import type { ConflictDecision } from '../schemas/chat'
@@ -27,6 +28,8 @@ export function AnswerMessage({
   onDecide,
   streaming = false,
   status,
+  rated = { rating: null, comment: null },
+  onRate,
 }: {
   content: string
   citations: Citation[]
@@ -37,9 +40,21 @@ export function AnswerMessage({
   streaming?: boolean
   // What Jimmy is doing while the answer streams, shown beside the avatar.
   status?: { label: string; working: boolean }
+  // The Student's stored 👍/👎 on this answer, and why. `onRate(null)` takes it back.
+  rated?: { rating: Rating | null; comment: string | null }
+  onRate?: (rating: Rating | null, comment?: string) => Promise<unknown>
 }) {
-  // Rating is not stored yet (the feedback endpoint comes later); it only toggles here.
-  const [rating, setRating] = useState<'up' | 'down' | null>(null)
+  // Shown at once; put back if the rating could not be saved.
+  const [mine, setMine] = useState(rated)
+  const rating = mine.rating
+  const rate = (next: Rating | null, comment: string | null = null) => {
+    const before = mine
+    setMine({ rating: next, comment })
+    onRate?.(next, comment ?? undefined).catch(() => {
+      setMine(before)
+      toast('Could not save your rating. Try again.')
+    })
+  }
   return (
     <article aria-label="Jimmy's answer">
       <div className="mb-2 flex items-center gap-2">
@@ -82,7 +97,7 @@ export function AnswerMessage({
             variant="ghost"
             size="icon-sm"
             className={cn(rating === 'up' && 'bg-success-soft text-success')}
-            onClick={() => setRating(rating === 'up' ? null : 'up')}
+            onClick={() => rate(rating === 'up' ? null : 'up')}
             aria-pressed={rating === 'up'}
             aria-label="Helpful"
           >
@@ -92,12 +107,30 @@ export function AnswerMessage({
             variant="ghost"
             size="icon-sm"
             className={cn(rating === 'down' && 'bg-destructive-soft text-destructive')}
-            onClick={() => setRating(rating === 'down' ? null : 'down')}
+            onClick={() => rate(rating === 'down' ? null : 'down')}
             aria-pressed={rating === 'down'}
             aria-label="Not helpful"
           >
             <ThumbsDown />
           </Button>
+          {rating === 'down' && (
+            <span className="ml-1 flex flex-wrap gap-1">
+              {DOWN_REASONS.map((reason) => (
+                <button
+                  key={reason}
+                  type="button"
+                  aria-pressed={mine.comment === reason}
+                  className={cn('rounded-full border border-border px-2 py-0.5 text-xs hover:bg-muted', mine.comment === reason && 'bg-muted text-foreground')}
+                  onClick={() => {
+                    rate('down', mine.comment === reason ? null : reason)
+                    if (mine.comment !== reason) toast(`Thanks, noted: ${reason}`)
+                  }}
+                >
+                  {reason}
+                </button>
+              ))}
+            </span>
+          )}
           {rating === 'up' && <span className="text-xs">Thanks!</span>}
         </div>
       )}

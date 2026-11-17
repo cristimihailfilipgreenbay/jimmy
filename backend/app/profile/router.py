@@ -28,10 +28,17 @@ def _profile(session, student_id: uuid.UUID) -> Profile:
     return profile
 
 
+def _out(profile: Profile | None) -> ProfileOut:
+    return ProfileOut(
+        language=profile.language if profile else None,
+        explanation_style=profile.explanation_style if profile else "balanced",
+        adaptive_difficulty=bool(profile and profile.adaptive_difficulty),
+    )
+
+
 @router.get("/profile", response_model=ProfileOut)
 def get_profile(student: StudentDep, session: SessionDep):
-    profile = session.get(Profile, student.id)
-    return ProfileOut(adaptive_difficulty=bool(profile and profile.adaptive_difficulty))
+    return _out(session.get(Profile, student.id))
 
 
 @router.patch("/profile", response_model=ProfileOut)
@@ -39,8 +46,12 @@ def update_profile(body: ProfileIn, student: StudentDep, session: SessionDep):
     profile = _profile(session, student.id)
     if body.adaptive_difficulty is not None:
         profile.adaptive_difficulty = body.adaptive_difficulty
+    if body.language is not None:
+        profile.language = body.language.strip() or None
+    if body.explanation_style is not None:
+        profile.explanation_style = body.explanation_style
     session.commit()
-    return ProfileOut(adaptive_difficulty=profile.adaptive_difficulty)
+    return _out(profile)
 
 
 @router.get("/profile/facts", response_model=list[FactOut])

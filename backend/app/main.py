@@ -14,6 +14,7 @@ from app.conflicts.router import router as conflicts_router
 from app.db import engine
 from app.documents.router import router as documents_router
 from app.errors import install_error_handlers
+from app.feedback.router import router as feedback_router
 from app.flashcards.router import router as flashcards_router
 from app.jobs.router import router as jobs_router
 from app.learned.router import router as learned_router
@@ -53,6 +54,7 @@ app.include_router(conflicts_router)
 app.include_router(study_router)
 app.include_router(flashcards_router)
 app.include_router(profile_router)
+app.include_router(feedback_router)
 app.include_router(jobs_router)
 
 

@@ -4,6 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from app.pagination import CursorPage
 from app.study.schemas import SourceOut
 
 
@@ -23,6 +24,26 @@ class CardOut(BaseModel):
     was_edited: bool
     source: SourceOut
     created_at: datetime
+
+
+class TopicRef(BaseModel):
+    id: uuid.UUID
+    name: str
+
+
+class DeckPage(CursorPage[CardOut]):
+    """One page of the deck. `total` follows the Topic filter, `total_all` does not."""
+
+    total_all: int
+    # The Topics that have approved cards, for the filter.
+    topics: list[TopicRef]
+
+
+class DraftOut(CardOut):
+    """A draft with the pause to answer at POST /threads/{thread_id}/resume."""
+
+    thread_id: uuid.UUID
+    interrupt_id: str
 
 
 class DraftBatchOut(BaseModel):

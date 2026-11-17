@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Layers, X } from 'lucide-react'
-import { useParams } from 'react-router'
+import { useParams, useSearchParams } from 'react-router'
+import { z } from 'zod'
 import { Placeholder } from '@/components/Placeholder'
 import { Button } from '@/components/ui/button'
 import { useSignedInStudent } from '@/features/auth/hooks/useSignedInStudent'
@@ -24,29 +25,47 @@ export function FlashcardsPage() {
   const { spaceId = '' } = useParams()
   const student = useSignedInStudent()
   const { data: spaces, isPending } = useSpaces(student.id)
-  const deck = useDeck(student.id, spaceId)
+  // The tab and the Topic filter live in the address (?tab=review&topic=…), so they survive a
+  // refresh and can be linked to.
+  const [params, setParams] = useSearchParams()
+  const tab: Tab = params.get('tab') === 'review' ? 'review' : 'browse'
+  const asked = params.get('topic')
+  const topic = asked && z.uuid().safeParse(asked).success ? asked : 'all'
+  const change = (key: 'tab' | 'topic', value: string | null) =>
+    setParams(
+      (old) => {
+        const next = new URLSearchParams(old)
+        if (value) next.set(key, value)
+        else next.delete(key)
+        return next
+      },
+      { replace: true },
+    )
+  const setTab = (next: Tab) => change('tab', next === 'browse' ? null : next)
+  const setTopic = (id: string) => change('topic', id === 'all' ? null : id)
+  const deck = useDeck(student.id, spaceId, topic)
   const drafts = useDrafts(student.id, spaceId)
   const review = useReviewDraft(student.id, spaceId)
-  const [tab, setTab] = useState<Tab>('browse')
-  const [topic, setTopic] = useState('all')
   const [viewer, setViewer] = useState<number | null>(null)
   const space = spaces?.find((s) => s.id === spaceId)
   // The tabs are not on the page while the lists load or the viewer is open, so the pill is
   // only placed once they are: the key changes then, and the hook measures them.
-  const tabsShown = !!space && !deck.isPending && !drafts.isPending && viewer === null && (deck.data?.length || drafts.data?.length)
+  const tabsShown = !!space && !deck.isPending && !drafts.isPending && viewer === null && (deck.data?.totalAll || drafts.data?.total)
   const { container, indicator } = useSlidingIndicator<HTMLDivElement>(tabsShown ? tab : '')
   if (isPending || deck.isPending || drafts.isPending) return null
   if (!space) return <Placeholder title="Study Space not found" note="That Study Space does not exist." />
 
-  const cards = deck.data ?? []
-  const waiting = drafts.data ?? []
+  const cards = deck.data?.cards ?? []
+  const waiting = drafts.data?.drafts ?? []
+  const deckTotal = deck.data?.totalAll ?? 0
+  const draftsTotal = drafts.data?.total ?? 0
   const frame = (children: React.ReactNode) => (
     <main id="main" className="mx-auto max-w-4xl px-4 py-8 pb-28">
       {children}
     </main>
   )
 
-  if (!cards.length && !waiting.length) {
+  if (!deckTotal && !draftsTotal) {
     return frame(
       <div className={`${cardClass} px-6 py-12 text-center`}>
         <span className="mx-auto grid size-11 place-items-center rounded-full bg-muted">
@@ -57,7 +76,19 @@ export function FlashcardsPage() {
       </div>,
     )
   }
-  if (viewer !== null && cards.length) return <CardViewer cards={cards} start={viewer} onClose={() => setViewer(null)} />
+  if (viewer !== null && cards.length) {
+    return (
+      <CardViewer
+        cards={cards}
+        total={deck.data?.total ?? cards.length}
+        hasMore={!!deck.hasNextPage}
+        loadingMore={deck.isFetchingNextPage}
+        onMore={() => deck.fetchNextPage()}
+        start={viewer}
+        onClose={() => setViewer(null)}
+      />
+    )
+  }
 
   const decide = (draft: Draft, decision: CardDecision) =>
     review.mutate(
@@ -67,7 +98,6 @@ export function FlashcardsPage() {
           decision.action === 'approve' ? toast('Added to your deck', Layers) : decision.action === 'edit' ? toast('Edited and added to your deck', Layers) : toast('Draft rejected', X),
       },
     )
-  const shown = cards.filter((c) => topic === 'all' || c.topic === topic)
 
   return (
     <main id="main" className="mx-auto max-w-6xl px-4 py-6 pb-28">
@@ -75,10 +105,10 @@ export function FlashcardsPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Flashcards</h1>
           <p className="text-sm text-muted-foreground">
-            {cards.length} in your deck · {waiting.length} drafts to review
+            {deckTotal} in your deck · {draftsTotal} drafts to review
           </p>
         </div>
-        <Button variant="space" disabled={!shown.length} onClick={() => setViewer(0)}>
+        <Button variant="space" disabled={!cards.length} onClick={() => setViewer(0)}>
           <Layers /> Study deck
         </Button>
       </div>
@@ -88,7 +118,7 @@ export function FlashcardsPage() {
         {(
           [
             ['browse', 'Browse deck'],
-            ['review', `Review drafts (${waiting.length})`],
+            ['review', `Review drafts (${draftsTotal})`],
           ] as const
         ).map(([key, label]) => (
           <button
@@ -107,9 +137,28 @@ export function FlashcardsPage() {
       </div>
       <div className="fade-in" key={tab}>
         {tab === 'browse' ? (
-          <DeckGrid cards={cards} topic={topic} onTopic={setTopic} onOpen={(c) => setViewer(Math.max(0, shown.findIndex((s) => s.id === c.id)))} />
+          <DeckGrid
+            cards={cards}
+            total={deck.data?.total ?? 0}
+            topics={deck.data?.topics ?? []}
+            topic={topic}
+            hasMore={!!deck.hasNextPage}
+            loadingMore={deck.isFetchingNextPage}
+            onMore={() => deck.fetchNextPage()}
+            onTopic={setTopic}
+            onOpen={(c) => setViewer(Math.max(0, cards.findIndex((s) => s.id === c.id)))}
+          />
         ) : (
-          <ReviewQueue drafts={waiting} deciding={review.isPending} error={review.error} onDecide={decide} />
+          <ReviewQueue
+            drafts={waiting}
+            total={draftsTotal}
+            hasMore={!!drafts.hasNextPage}
+            loadingMore={drafts.isFetchingNextPage}
+            onMore={() => drafts.fetchNextPage()}
+            deciding={review.isPending}
+            error={review.error}
+            onDecide={decide}
+          />
         )}
       </div>
     </main>

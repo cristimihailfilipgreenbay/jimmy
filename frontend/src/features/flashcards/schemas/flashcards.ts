@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { cursorPage } from '@/lib/pagination'
 
 // Mirrors the backend's flashcards schemas (app/flashcards/schemas.py, app/profile/schemas.py).
 export const cardSchema = z.object({
@@ -21,13 +22,20 @@ export const cardSchema = z.object({
 })
 export type Card = z.infer<typeof cardSchema>
 
-// Drafts waiting for the Student, with the pause they answer at /threads/{id}/resume.
-export const draftBatchSchema = z.object({
-  thread_id: z.uuid(),
-  interrupt_id: z.string(),
-  cards: z.array(cardSchema),
+// One page of the deck: `total` follows the Topic filter, `total_all` does not.
+export const deckPageSchema = cursorPage(cardSchema).extend({
+  total_all: z.number(),
+  // The Topics that have approved cards, for the filter.
+  topics: z.array(z.object({ id: z.uuid(), name: z.string() })),
 })
-export type DraftBatch = z.infer<typeof draftBatchSchema>
+
+// A draft waiting for the Student, with the pause it answers at /threads/{id}/resume.
+export const draftSchema = cardSchema.extend({ thread_id: z.uuid(), interrupt_id: z.string() })
+export const draftsPageSchema = cursorPage(draftSchema)
+
+/** How many cards the deck loads at a time, and how many drafts. */
+export const DECK_PAGE = 30
+export const DRAFTS_PAGE = 10
 
 /** A draft with the batch that waits on it. */
 export type Draft = Card & { threadId: string; interruptId: string }

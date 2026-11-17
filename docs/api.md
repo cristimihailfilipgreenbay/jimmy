@@ -15,6 +15,13 @@ The HTTP contract between the frontend and the backend. Structure is in [archite
 - **Pagination:** list endpoints take `limit` (default 50, max 200) and an opaque `cursor`, and return `next_cursor`.
 - **Status codes:** `200` read or update, `201` created, `202` accepted for background work, `204` deleted, `400` validation, `401` no Student, `404` not found, `409` conflict with current state, `413` file too large, `422` unprocessable, `429` guardrail or rate refusal, `502` upstream service failed.
 
+### Pagination
+
+Long lists are paged in one of two ways, by what the list is for:
+
+- **Page-based** (`page` from 1, `page_size`): for lists the Student browses by page number, such as past sessions. The response is `{items, total, ...}`.
+- **Cursor** (`limit`, `cursor`): for lists that grow at one end and are read in one direction, such as the deck, drafts, Topics and messages. The response is `{items, next_cursor, total}`; `next_cursor` is an opaque text to pass as `cursor` for the next page, and is `null` on the last one. A cursor that is not ours returns `422 invalid_cursor`.
+
 ### Error shape
 
 ```json
@@ -127,8 +134,8 @@ A pending Dispute is answered with `POST /threads/{session.thread_id}/resume` (`
 | Method | Path | Purpose |
 |---|---|---|
 | POST | `/spaces/{space_id}/flashcards/drafts` | Ask Jimmy to draft cards (`topic_ids`, none means every Topic; `count` 1 to 10). Each card is written from one passage of the Notes, Subject Library or approved Learned Material. The drafts are saved with status `draft` and the run pauses for review (section 4). Returns `201 {thread_id, interrupt_id, cards}`. `409 no_topics`, `409 no_sources`. The Tutor's `save_flashcards` tool starts the same run from a chat |
-| GET | `/spaces/{space_id}/flashcards/drafts` | Every batch still waiting: `[{thread_id, interrupt_id, cards}]` |
-| GET | `/spaces/{space_id}/flashcards` | The deck: approved cards, each with its Topic and Source passage |
+| GET | `/spaces/{space_id}/flashcards/drafts` | The drafts still waiting, oldest first, ten at a time (`limit`, `cursor`). Returns `{items, next_cursor, total}`; each item is a card with the `thread_id` and `interrupt_id` of the pause it answers at. Pass `next_cursor` as `cursor` for the next page |
+| GET | `/spaces/{space_id}/flashcards` | The deck: approved cards, oldest first, thirty at a time (`limit`, `cursor`, `topic_id` to filter). Returns `{items, next_cursor, total, total_all, topics}`: `total` follows the filter, `total_all` does not, `topics` are the Topics that have cards |
 | DELETE | `/spaces/{space_id}/flashcards/{id}` | Delete a card |
 
 ### Learned Material

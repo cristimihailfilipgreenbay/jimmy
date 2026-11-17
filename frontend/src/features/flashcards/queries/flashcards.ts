@@ -1,9 +1,11 @@
 import { z } from 'zod'
 import { request, requestVoid } from '@/lib/http'
-import { cardSchema, draftBatchSchema, factSchema, reviewOutSchema, type CardDecision } from '../schemas/flashcards'
+import { pageQuery } from '@/lib/pagination'
+import { DECK_PAGE, DRAFTS_PAGE, deckPageSchema, draftsPageSchema, factSchema, reviewOutSchema, type CardDecision } from '../schemas/flashcards'
 
-export const fetchDeck = (spaceId: string) => request(`/spaces/${spaceId}/flashcards`, z.array(cardSchema))
-export const fetchDrafts = (spaceId: string) => request(`/spaces/${spaceId}/flashcards/drafts`, z.array(draftBatchSchema))
+export const fetchDeck = (spaceId: string, topicId: string, cursor: string | null) =>
+  request(`/spaces/${spaceId}/flashcards${pageQuery(cursor, { limit: DECK_PAGE, topic_id: topicId === 'all' ? undefined : topicId })}`, deckPageSchema)
+export const fetchDrafts = (spaceId: string, cursor: string | null) => request(`/spaces/${spaceId}/flashcards/drafts${pageQuery(cursor, { limit: DRAFTS_PAGE })}`, draftsPageSchema)
 
 // Decisions on drafts are answered like every other pause, on the batch's thread.
 export const reviewDrafts = (threadId: string, interruptId: string, decision: CardDecision[]) =>

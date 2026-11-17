@@ -31,13 +31,33 @@ function Collapse({ open, children }: { open: boolean; children: React.ReactNode
 }
 
 // The deck, one card at a time: click or press Space to flip, arrows or a swipe to move.
-export function CardViewer({ cards, start, onClose }: { cards: Card[]; start: number; onClose: () => void }) {
+// More cards are loaded when it gets near the end of those it has.
+export function CardViewer({
+  cards,
+  total,
+  hasMore,
+  loadingMore,
+  onMore,
+  start,
+  onClose,
+}: {
+  cards: Card[]
+  total: number
+  hasMore: boolean
+  loadingMore: boolean
+  onMore: () => void
+  start: number
+  onClose: () => void
+}) {
   const [index, setIndex] = useState(Math.min(start, cards.length - 1))
   const [flipped, setFlipped] = useState(false)
   // 'on' / 'off' play the flip animation.
   const [anim, setAnim] = useState<'on' | 'off' | null>(null)
   const busy = useRef(false)
   const touchX = useRef<number | null>(null)
+  useEffect(() => {
+    if (hasMore && !loadingMore && index >= cards.length - 5) onMore()
+  }, [index, cards.length, hasMore, loadingMore, onMore])
 
   const flip = () => {
     if (busy.current) return
@@ -93,7 +113,7 @@ export function CardViewer({ cards, start, onClose }: { cards: Card[]; start: nu
             <ArrowLeft /> All cards
           </Button>
           <span className="ml-auto text-sm text-muted-foreground" aria-live="polite">
-            Card {index + 1} of {cards.length}
+            Card {index + 1} of {total}
           </span>
         </div>
         <div
@@ -187,7 +207,7 @@ export function CardViewer({ cards, start, onClose }: { cards: Card[]; start: nu
               </Button>
             </div>
           </Collapse>
-          <Button variant="outline" size="icon" className="mx-1" aria-label="Next card" disabled={index === cards.length - 1} onClick={() => move(index + 1)}>
+          <Button variant="outline" size="icon" className="mx-1" aria-label="Next card" disabled={index >= cards.length - 1} onClick={() => move(index + 1)}>
             <ArrowRight />
           </Button>
         </div>

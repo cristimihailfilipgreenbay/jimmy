@@ -40,6 +40,9 @@ and only for statements that passage actually supports.
    - From your own general knowledge: start the paragraph with [tutor]. Use this when \
 the {sources} did not cover the point, when the Space has nothing on it, or for a general \
 question. Say plainly that the {sources} did not cover it.
+{f}. A cited paragraph says only what its passages say: do not add details, numbers, \
+examples or explanations from your own knowledge to it. If something useful is missing \
+from the passages, put it in a separate paragraph that starts with [tutor].
 {m}. Never put a statement from your own knowledge under a passage number, and never leave \
 a paragraph without one of the two.
 {k}. Be accurate and concise. Match the Student's language.
@@ -120,7 +123,7 @@ def build_prompt(
     numbered = "\n".join(f"{i}. {s}" for i, s in enumerate(steps, start=1))
     n = len(steps) + 1
     rules = _RULES.format(
-        n=n, m=n + 1, k=n + 2, tools=_join(tools), sources=_join(sources)
+        n=n, f=n + 1, m=n + 2, k=n + 3, tools=_join(tools), sources=_join(sources)
     )
     prompt = _INTRO + numbered + "\n" + rules
     return prompt + "\n\n" + preferences if preferences else prompt

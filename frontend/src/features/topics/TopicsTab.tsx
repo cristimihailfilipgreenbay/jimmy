@@ -18,9 +18,13 @@ export function TopicsTab({ studentId, spaceId }: { studentId: string; spaceId: 
   const query = useTopics(studentId, spaceId)
   const { isPending } = query
   const topics = query.data?.topics ?? []
+  const total = query.data?.total ?? 0
   const rename = useRenameTopic(studentId, spaceId)
   const merge = useMergeTopics(studentId, spaceId)
   const [selected, setSelected] = useState<string[]>([])
+  // "Select all N topics": every Topic of the Space, including the ones not loaded yet.
+  const [allSelected, setAllSelected] = useState(false)
+  const [deletingAll, setDeletingAll] = useState(false)
   const [renaming, setRenaming] = useState<{ id: string; name: string } | null>(null)
   const [deleting, setDeleting] = useState<Topic[]>([])
   const [problem, setProblem] = useState<string | null>(null)
@@ -52,6 +56,12 @@ export function TopicsTab({ studentId, spaceId }: { studentId: string; spaceId: 
   }
   const toggle = (id: string) => {
     reset()
+    // Taking one out of "all" leaves the ones on screen, minus that one.
+    if (allSelected) {
+      setAllSelected(false)
+      setSelected(topics.filter((t) => t.id !== id).map((t) => t.id))
+      return
+    }
     setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))
   }
 
@@ -87,17 +97,20 @@ export function TopicsTab({ studentId, spaceId }: { studentId: string; spaceId: 
           type="checkbox"
           aria-label="Select all topics shown"
           className="size-4 rounded border-input accent-space"
-          checked={selected.length === topics.length}
+          checked={allSelected || selected.length === topics.length}
           ref={(el) => {
-            if (el) el.indeterminate = selected.length > 0 && selected.length < topics.length
+            if (el) el.indeterminate = !allSelected && selected.length > 0 && selected.length < topics.length
           }}
           onChange={() => {
             reset()
-            setSelected(selected.length === topics.length ? [] : topics.map((t) => t.id))
+            setAllSelected(false)
+            setSelected(allSelected || selected.length === topics.length ? [] : topics.map((t) => t.id))
           }}
         />
         <p className="text-sm text-muted-foreground">
-          {selected.length ? (
+          {allSelected ? (
+            <strong className="text-foreground">All {total} selected</strong>
+          ) : selected.length ? (
             <strong className="text-foreground">{selected.length} selected</strong>
           ) : (
             'Select topics to merge duplicates or delete'
@@ -108,19 +121,39 @@ export function TopicsTab({ studentId, spaceId }: { studentId: string; spaceId: 
             variant="outline"
             size="sm"
             className="enabled:hover:bg-destructive-soft enabled:hover:text-destructive"
-            disabled={selected.length === 0}
+            disabled={!allSelected && selected.length === 0}
             disabledReason="Select at least one topic to delete"
-            onClick={() => setDeleting(topics.filter((t) => selected.includes(t.id)))}
+            onClick={() => (allSelected ? setDeletingAll(true) : setDeleting(topics.filter((t) => selected.includes(t.id))))}
           >
             <Trash2 /> Delete
           </Button>
-          <Button variant="outline" size="sm" disabled={selected.length < 2 || merge.isPending}
-            disabledReason={merge.isPending ? 'Merging…' : 'Select at least two topics to merge'}
+          <Button variant="outline" size="sm" disabled={allSelected || selected.length < 2 || merge.isPending}
+            disabledReason={merge.isPending ? 'Merging…' : allSelected ? 'Pick the topics to merge: not all of them' : 'Select at least two topics to merge'}
             onClick={mergeSelected}>
             <GitMerge /> Merge
           </Button>
         </div>
       </div>
+      {/* All the loaded topics are ticked and there are more: offer every topic of the Space. */}
+      {(allSelected || (selected.length === topics.length && total > topics.length)) && (
+        <p className="border-b bg-muted/50 px-3 py-2 text-sm" role="status">
+          {allSelected ? (
+            <>
+              All {total} topics are selected.{' '}
+              <button type="button" className="font-medium text-space-ink underline underline-offset-2" onClick={() => setAllSelected(false)}>
+                Clear selection
+              </button>
+            </>
+          ) : (
+            <>
+              The {selected.length} topics on this screen are selected.{' '}
+              <button type="button" className="font-medium text-space-ink underline underline-offset-2" onClick={() => setAllSelected(true)}>
+                Select all {total} topics
+              </button>
+            </>
+          )}
+        </p>
+      )}
       {error && (
         <p role="alert" className="border-b px-3 py-2 text-sm text-destructive">
           {error}
@@ -132,14 +165,14 @@ export function TopicsTab({ studentId, spaceId }: { studentId: string; spaceId: 
             key={t.id}
             className={cn(
               'flex items-center gap-3 px-3 py-2.5 transition-colors duration-200',
-              selected.includes(t.id) ? 'bg-space/5' : 'hover:bg-muted/40',
+              allSelected || selected.includes(t.id) ? 'bg-space/5' : 'hover:bg-muted/40',
             )}
           >
             <input
               type="checkbox"
               id={`topic-${t.id}`}
               className="size-4 rounded border-input accent-space"
-              checked={selected.includes(t.id)}
+              checked={allSelected || selected.includes(t.id)}
               onChange={() => toggle(t.id)}
             />
             {renaming?.id === t.id ? (
@@ -211,7 +244,15 @@ export function TopicsTab({ studentId, spaceId }: { studentId: string; spaceId: 
         studentId={studentId}
         spaceId={spaceId}
         topics={deleting}
+        all={deletingAll ? total : undefined}
+        onDeleted={() => {
+          if (deletingAll) {
+            setAllSelected(false)
+            setSelected([])
+          }
+        }}
         onClose={() => {
+          setDeletingAll(false)
           setDeleting([])
           setSelected((s) => s.filter((id) => !deleting.some((t) => t.id === id)))
         }}

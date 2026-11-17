@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { Check, ChevronRight, GraduationCap, Target } from 'lucide-react'
 import { SegmentedControl } from '@/components/SegmentedControl'
+import { PageNav } from '@/components/PageNav'
 import { Button } from '@/components/ui/button'
 import { cardClass } from '@/lib/styles'
 import { cn } from '@/lib/utils'
 import { longDate, shortDate, tile, weekLabel } from '../lib/dates'
-import type { PastSession } from '../schemas/study'
+import { usePastSessions } from '../queries/useQuiz'
+import { PAST_SESSIONS_PAGE, type PastSession } from '../schemas/study'
 
-const PAGE = 8
 type Filter = 'all' | 'quiz' | 'test'
 const FILTERS: { value: Filter; label: string }[] = [
   { value: 'all', label: 'All' },
@@ -17,53 +18,46 @@ const FILTERS: { value: Filter; label: string }[] = [
 
 const plural = (n: number) => `${n} weak topic${n === 1 ? '' : 's'}`
 
-// The finished Quizzes and Tests of a Study Space, newest first, grouped by week. Opening
-// one shows its recap.
-export function PastSessions({
-  sessions,
-  loading,
-  onOpen,
-  onStart,
-}: {
-  sessions: PastSession[]
-  loading: boolean
-  onOpen: (id: string) => void
-  onStart: () => void
-}) {
+// The finished Quizzes and Tests of a Study Space, newest first, ten to a page and grouped
+// by week. Opening one shows its recap.
+export function PastSessions({ studentId, spaceId, onOpen, onStart }: { studentId: string; spaceId: string; onOpen: (id: string) => void; onStart: () => void }) {
   const [filter, setFilter] = useState<Filter>('all')
-  const [shown, setShown] = useState(PAGE)
-  const list = sessions.filter((s) => filter === 'all' || s.kind === filter)
-  const visible = list.slice(0, shown)
-  const left = list.length - visible.length
-  // "Show more" moves focus to the first new row, once it is on the page.
-  const focusRow = useRef<number | null>(null)
-  const body = useRef<HTMLDivElement>(null)
+  const [page, setPage] = useState(1)
+  const { data, isPending } = usePastSessions(studentId, spaceId, filter, page)
+  const items = data?.items ?? []
+  const total = data?.total ?? 0
+  const totalAll = data?.total_all ?? 0
+  const pageCount = Math.max(1, Math.ceil(total / PAST_SESSIONS_PAGE))
+  // A new page puts focus on its first row, once it has arrived.
+  const focusFirst = useRef(false)
+  const section = useRef<HTMLElement>(null)
   useEffect(() => {
-    if (focusRow.current === null) return
-    body.current?.querySelector<HTMLElement>(`[data-row="${focusRow.current}"]`)?.focus()
-    focusRow.current = null
-  }, [shown])
+    if (!focusFirst.current) return
+    focusFirst.current = false
+    section.current?.querySelector<HTMLElement>('[data-row="0"]')?.focus()
+  }, [data])
 
   const groups: { label: string; items: { session: PastSession; index: number }[] }[] = []
-  visible.forEach((session, index) => {
+  items.forEach((session, index) => {
     const label = weekLabel(session.finished_at)
     const group = groups.at(-1)
     if (group?.label === label) group.items.push({ session, index })
     else groups.push({ label, items: [{ session, index }] })
   })
+  const from = (page - 1) * PAST_SESSIONS_PAGE + 1
 
   return (
-    <section className="mt-10" aria-labelledby="past-h">
+    <section ref={section} className="mt-10" aria-labelledby="past-h">
       <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold tracking-tight" id="past-h">
             Past sessions
           </h2>
           <p className="text-sm text-muted-foreground">
-            {loading ? 'Loading…' : sessions.length ? `${sessions.length} finished · newest first` : 'Your finished quizzes and tests will appear here.'}
+            {isPending ? 'Loading…' : totalAll ? `${totalAll} finished · newest first` : 'Your finished quizzes and tests will appear here.'}
           </p>
         </div>
-        {!loading && sessions.length > 0 && (
+        {!isPending && totalAll > 0 && (
           <div className="sm:w-64">
             <SegmentedControl
               label="Show"
@@ -71,79 +65,75 @@ export function PastSessions({
               value={filter}
               onChange={(value) => {
                 setFilter(value)
-                setShown(PAGE)
+                setPage(1)
               }}
             />
           </div>
         )}
       </div>
-      <div ref={body}>
-        {loading ? (
-          <div className={cardClass} aria-busy="true" aria-label="Loading past sessions">
-            <ul className="divide-y divide-border">
-              {[1, 2, 3, 4].map((i) => (
-                <li key={i} className="flex items-center gap-4 px-4 py-3.5">
-                  <div className="skel h-11 w-12 rounded-lg" />
-                  <div className="flex-1">
-                    <div className="skel h-3 w-24 rounded" />
-                    <div className="skel mt-2 h-3 w-2/3 rounded" />
-                  </div>
-                  <div className="skel h-5 w-12 rounded" />
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : !sessions.length ? (
-          <div className="rounded-xl border border-dashed border-border px-6 py-10 text-center">
-            <span className="mx-auto grid size-11 place-items-center rounded-full bg-space/12 text-space-ink">
-              <GraduationCap className="size-5" aria-hidden />
-            </span>
-            <p className="mt-3 font-semibold">No finished sessions yet</p>
-            <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">When you finish a quiz or test, its recap lands here: your score, every answer and the source behind it.</p>
-            <Button variant="space" size="sm" className="mt-4" onClick={onStart}>
-              <Check /> Start your first quiz
-            </Button>
-          </div>
-        ) : !list.length ? (
-          <div className="rounded-xl border border-dashed border-border px-6 py-8 text-center text-sm text-muted-foreground">
-            No {filter === 'test' ? 'tests' : 'quizzes'} yet.{' '}
-            <Button variant="link" size="sm" className="h-auto" onClick={() => setFilter('all')}>
-              Show all sessions
-            </Button>
-          </div>
-        ) : (
-          <>
-            {groups.map((group, g) => (
-              <div key={group.label} className={cn(cardClass, 'overflow-hidden', g > 0 && 'mt-4')}>
-                <p className="border-b border-border bg-muted/40 px-4 py-2 text-xs font-medium text-muted-foreground">{group.label}</p>
-                <ul className="divide-y divide-border">
-                  {group.items.map(({ session, index }) => (
-                    <Row key={session.id} session={session} index={index} onOpen={() => onOpen(session.id)} />
-                  ))}
-                </ul>
-              </div>
+      {isPending ? (
+        <div className={cardClass} aria-busy="true" aria-label="Loading past sessions">
+          <ul className="divide-y divide-border">
+            {[1, 2, 3, 4].map((i) => (
+              <li key={i} className="flex items-center gap-4 px-4 py-3.5">
+                <div className="skel h-11 w-12 rounded-lg" />
+                <div className="flex-1">
+                  <div className="skel h-3 w-24 rounded" />
+                  <div className="skel mt-2 h-3 w-2/3 rounded" />
+                </div>
+                <div className="skel h-5 w-12 rounded" />
+              </li>
             ))}
-            {left > 0 ? (
-              <div className="mt-4 flex flex-col items-center gap-1">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    focusRow.current = visible.length
-                    setShown(shown + PAGE)
-                  }}
-                >
-                  Show {Math.min(PAGE, left)} more
-                </Button>
-                <p className="text-xs text-muted-foreground">
-                  Showing {visible.length} of {list.length}
-                </p>
-              </div>
-            ) : (
-              list.length > PAGE && <p className="mt-4 text-center text-xs text-muted-foreground">That’s everything · {list.length} sessions</p>
-            )}
-          </>
-        )}
-      </div>
+          </ul>
+        </div>
+      ) : !totalAll ? (
+        <div className="rounded-xl border border-dashed border-border px-6 py-10 text-center">
+          <span className="mx-auto grid size-11 place-items-center rounded-full bg-space/12 text-space-ink">
+            <GraduationCap className="size-5" aria-hidden />
+          </span>
+          <p className="mt-3 font-semibold">No finished sessions yet</p>
+          <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">When you finish a quiz or test, its recap lands here: your score, every answer and the source behind it.</p>
+          <Button variant="space" size="sm" className="mt-4" onClick={onStart}>
+            <Check /> Start your first quiz
+          </Button>
+        </div>
+      ) : !total ? (
+        <div className="rounded-xl border border-dashed border-border px-6 py-8 text-center text-sm text-muted-foreground">
+          No {filter === 'test' ? 'tests' : 'quizzes'} yet.{' '}
+          <Button variant="link" size="sm" className="h-auto" onClick={() => setFilter('all')}>
+            Show all sessions
+          </Button>
+        </div>
+      ) : (
+        <>
+          {groups.map((group, g) => (
+            <div key={group.label} className={cn(cardClass, 'overflow-hidden', g > 0 && 'mt-4')}>
+              <p className="border-b border-border bg-muted/40 px-4 py-2 text-xs font-medium text-muted-foreground">{group.label}</p>
+              <ul className="divide-y divide-border">
+                {group.items.map(({ session, index }) => (
+                  <Row key={session.id} session={session} index={index} onOpen={() => onOpen(session.id)} />
+                ))}
+              </ul>
+            </div>
+          ))}
+          {pageCount > 1 && (
+            <div className="mt-4 flex flex-col items-center gap-2">
+              <PageNav
+                label="Past sessions pages"
+                page={page}
+                pageCount={pageCount}
+                onPage={(n) => {
+                  focusFirst.current = true
+                  setPage(n)
+                }}
+              />
+              <p className="text-xs text-muted-foreground">
+                Showing {from}–{from + items.length - 1} of {total}
+              </p>
+            </div>
+          )}
+        </>
+      )}
     </section>
   )
 }
@@ -155,7 +145,7 @@ function Row({ session, index, onOpen }: { session: PastSession; index: number; 
   const weak = session.weak_left
   const test = session.kind === 'test'
   return (
-    <li className="ob-pop" style={{ animationDelay: `${Math.min(index % PAGE, 8) * 40}ms` }}>
+    <li className="ob-pop" style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}>
       <button
         type="button"
         data-row={index}

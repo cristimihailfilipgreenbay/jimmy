@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { request, requestVoid } from '@/lib/http'
-import { answerOutSchema, historySchema, pastSessionSchema, recapSchema, sessionSchema, weakTopicSchema, QUIZ_LENGTH, TEST_LENGTH, type DisputeDecision, type StudyKind } from '../schemas/study'
+import { answerOutSchema, historySchema, pastSessionsSchema, PAST_SESSIONS_PAGE, recapSchema, sessionSchema, weakTopicSchema, QUIZ_LENGTH, TEST_LENGTH, type DisputeDecision, type StudyKind } from '../schemas/study'
 
 export const startSession = (spaceId: string, kind: StudyKind, topicIds: string[]) =>
   request(`/spaces/${spaceId}/sessions`, sessionSchema, {
@@ -21,7 +21,8 @@ export const decideDispute = (threadId: string, interruptId: string, decision: D
     body: JSON.stringify({ interrupt_id: interruptId, decision }),
   })
 
-export const fetchPastSessions = (spaceId: string) => request(`/spaces/${spaceId}/sessions`, z.array(pastSessionSchema))
+export const fetchPastSessions = (spaceId: string, kind: StudyKind | 'all', page: number) =>
+  request(`/spaces/${spaceId}/sessions?page=${page}&page_size=${PAST_SESSIONS_PAGE}${kind === 'all' ? '' : `&kind=${kind}`}`, pastSessionsSchema)
 export const fetchRecap = (sessionId: string) => request(`/sessions/${sessionId}/recap`, recapSchema)
 export const fetchWeakTopics = (spaceId: string) => request(`/spaces/${spaceId}/weak-topics`, z.array(weakTopicSchema))
 export const clearWeakTopic = (spaceId: string, topicId: string) => requestVoid(`/spaces/${spaceId}/weak-topics/${topicId}`, { method: 'DELETE' })

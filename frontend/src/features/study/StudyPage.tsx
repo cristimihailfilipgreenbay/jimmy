@@ -13,7 +13,7 @@ import { useLeaveGuard } from '@/lib/useLeaveGuard'
 import { PastSessions } from './components/PastSessions'
 import { QuestionCard } from './components/QuestionCard'
 import { Recap } from './components/Recap'
-import { useAnswerQuestion, useDecideDispute, usePastSessions, useRecap, useReloadQuiz, useStartSession, useStoredSession } from './queries/useQuiz'
+import { useAnswerQuestion, useDecideDispute, useRecap, useReloadQuiz, useStartSession, useStoredSession } from './queries/useQuiz'
 import { useWeakTopics } from './queries/useWeakTopics'
 import { QUIZ_LENGTH, TEST_LENGTH, type AnswerOut, type Feedback, type Question, type StudyKind, type StudySession } from './schemas/study'
 
@@ -45,7 +45,6 @@ export function StudyPage() {
   const [error, setError] = useState<string | null>(null)
   // A past session's recap is opened from the list and kept in the address (?past=…).
   const pastId = params.get('past')
-  const past = usePastSessions(student.id, spaceId)
   const recap = useRecap(recapOpen ? session?.id : (pastId ?? undefined))
   const [backToList, setBackToList] = useState(false)
   // A Quiz or Test in progress asks before the page is refreshed or closed.
@@ -56,7 +55,7 @@ export function StudyPage() {
     if (pastId || !opened.current) return
     document.querySelector<HTMLElement>(`[data-session="${opened.current}"]`)?.focus()
     opened.current = null
-  }, [pastId, past.data])
+  }, [pastId])
   // The session in progress is kept in the address (?session=…), so a reload goes on where it was.
   const storedId = params.get('session')
   const stored = useStoredSession(session ? null : storedId)
@@ -214,7 +213,7 @@ export function StudyPage() {
             </p>
           </button>
         </div>
-        <PastSessions sessions={past.data ?? []} loading={past.isPending} onOpen={(id) => openPast(id)} onStart={() => begin('quiz')} />
+        <PastSessions studentId={student.id} spaceId={spaceId} onOpen={(id) => openPast(id)} onStart={() => begin('quiz')} />
       </>,
       false,
       backToList ? 'q-prev' : '',

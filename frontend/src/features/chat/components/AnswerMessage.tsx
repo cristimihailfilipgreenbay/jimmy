@@ -3,6 +3,7 @@ import { Check, ThumbsDown, ThumbsUp } from 'lucide-react'
 import { JimmyBadge } from '@/components/JimmyBadge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { formatCost } from '@/features/developer/lib/cost'
 import { toast } from '@/lib/toast'
 import { DOWN_REASONS, type Citation, type Rating } from '../schemas/chat'
 import { ConflictCard, type ConflictCardState } from './ConflictCard'
@@ -30,6 +31,7 @@ export function AnswerMessage({
   status,
   rated = { rating: null, comment: null },
   onRate,
+  usage,
 }: {
   content: string
   citations: Citation[]
@@ -43,6 +45,8 @@ export function AnswerMessage({
   // The Student's stored 👍/👎 on this answer, and why. `onRate(null)` takes it back.
   rated?: { rating: Rating | null; comment: string | null }
   onRate?: (rating: Rating | null, comment?: string) => Promise<unknown>
+  // Tokens and estimated cost, shown when the Developer settings ask for it.
+  usage?: { tokensIn: number; tokensOut: number; costUsd: number | null }
 }) {
   // Shown at once; put back if the rating could not be saved.
   const [mine, setMine] = useState(rated)
@@ -132,6 +136,11 @@ export function AnswerMessage({
             </span>
           )}
           {rating === 'up' && <span className="text-xs">Thanks!</span>}
+          {usage && (
+            <span className="ml-auto rounded-md bg-muted px-2 py-0.5 font-mono text-[11px]">
+              {usage.tokensIn.toLocaleString()} in · {usage.tokensOut.toLocaleString()} out · {usage.costUsd === null ? 'cost unknown' : `≈ ${formatCost(usage.costUsd)}`}
+            </span>
+          )}
         </div>
       )}
     </article>

@@ -57,6 +57,9 @@ class Message(Base):
     tokens_out: Mapped[int | None] = mapped_column(Integer)
     cost_usd: Mapped[float | None] = mapped_column(Numeric(12, 6))
     trace_id: Mapped[str | None] = mapped_column(String(64))
+    # The model that wrote the answer and the tools it called, for the usage table.
+    model: Mapped[str | None] = mapped_column(String(100))
+    tools: Mapped[list] = mapped_column(JSON, default=list)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

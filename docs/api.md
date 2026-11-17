@@ -156,10 +156,10 @@ A pending Dispute is answered with `POST /threads/{session.thread_id}/resume` (`
 ### Settings, usage, events
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/settings` | Models, temperature, max tokens, tool toggles, thresholds, locked embedding model |
-| PUT | `/settings` | Update. Changing the embedding model after chunks exist fails with `409 embedding_model_locked` |
-| GET | `/settings/models` | Models available through OpenRouter for the pickers |
-| GET | `/usage` | Tokens and estimated cost, filterable by Space and date |
+| GET | `/settings` | The Student's Tutor settings with the defaults filled in: `tutor_model` (their choice, else `TUTOR_MODEL`), `temperature` (default 0.3), `max_tokens` (default 2048), `tools` (a list of `{name, label, description, enabled}`), `show_usage`, and the embedding model (`embedding_model`, `embedding_dimensions`, `embedding_locked`) |
+| PUT | `/settings` | Change what is sent: `tutor_model` (one of the models in `GET /settings/models`, or the environment's; empty goes back to the default; `422 unknown_model` otherwise), `temperature` (0 to 1), `max_tokens` (128 to 8192), `tools` (name to on or off), `show_usage`. `422 unknown_tool` for a tool that cannot be switched (`search_notes` is always on). The embedding model is set in the environment and is not changed here: it is locked once Notes exist, because changing it means embedding them again |
+| GET | `/settings/models` | The three models Jimmy offers (a list in `app/settings/service.py`), each with `id`, `name`, `description`, OpenRouter's list prices in dollars per token (`prompt`, `completion`) and `supports_temperature` (from OpenRouter's `supported_parameters`). OpenRouter's data is kept for an hour; if it cannot be reached the list still comes, with those three fields null |
+| GET | `/usage` | Tokens and estimated cost of the Student's answers, newest first (`limit`, up to 100, default 20; optional `space_id` and `since`): `{total_usd, answers, items}`, each item with the question, `model`, `tools`, `tokens_in`, `tokens_out` and `cost_usd` |
 | GET | `/spaces/{space_id}/events` | Event stream for background work (Promotion toasts, ingestion progress) |
 
 ## 3. Streaming
@@ -210,7 +210,9 @@ Deleting Notes or a Study Space, approving Learned Material and approving a Prof
 - **Assessments:** questions, answer keys and drafted Flashcards come only from Notes, Subject Library and approved Learned Material.
 - **Guardrails:** a message the guardrail blocks returns `429 guardrail_blocked`; an off-topic message gets a normal friendly assistant reply, not an error.
 - **Limits:** uploads over 20 MB return `413`; over 200 pages return `422 too_many_pages`. A run stops after eight agent steps or three identical tool calls and ends with `error: step_limit_reached`.
-- **Tool toggles:** a disabled tool is not offered to the agent; asking for it directly returns `409 tool_disabled`.
+- **Tool toggles:** a disabled tool is not offered to the agent and the prompt does not mention it. The Tutor has no endpoint that runs a tool directly, so `409 tool_disabled` is not used.
+- **Temperature:** a model that does not list `temperature` as a supported parameter (GPT and Claude at the time of writing) is not sent one, and the Developer screen switches the slider off for it.
+- **Cost:** an answer's `cost_usd` is its tokens times the model's OpenRouter list price, and is null when the price is unknown. The `cost` event and `GET /threads/{id}/messages` carry it.
 - **Background work:** Promotion never blocks a response. It is reported afterwards through `job` events and is visible in Learned Material.
 - **Upstream failures:** OpenRouter, Tavily, Wikipedia or LangSmith failing returns `502 upstream_unavailable` where the request cannot proceed. A failed search tool inside an agent run does not fail the whole run; the agent is told the tool failed and carries on.
 

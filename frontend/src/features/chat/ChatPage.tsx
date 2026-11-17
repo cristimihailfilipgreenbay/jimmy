@@ -19,6 +19,7 @@ import { ChatHeader } from './components/ChatHeader'
 import { ChatList } from './components/ChatList'
 import { ChatSheet } from './components/ChatSheet'
 import { ChatSidePanel, type Side } from './components/ChatSidePanel'
+import { useDeveloperSettings } from '@/features/developer/queries/useDeveloper'
 import { Composer } from './components/Composer'
 import { StyleProposal } from './components/StyleProposal'
 import { RenameChatDialog } from './components/RenameChatDialog'
@@ -63,6 +64,7 @@ export function ChatPage() {
     )
   const chat = useChat(student.id, spaceId, threadId, (id) => openChat(id))
   const rate = useRateAnswer(student.id, threadId ?? '')
+  const showUsage = useDeveloperSettings(student.id).data?.show_usage ?? false
   const remove = useDeleteChat(student.id, spaceId)
   const [side, setSide] = useState<Side>('chats')
   const [sheet, setSheet] = useState(false)
@@ -211,6 +213,7 @@ export function ChatPage() {
                 conflicts={chat.conflicts[m.id]}
                 rated={{ rating: m.rating, comment: m.rating_comment }}
                 onRate={(rating, comment) => rate.mutateAsync({ messageId: m.id, rating, comment })}
+                usage={showUsage && m.tokens_in !== null ? { tokensIn: m.tokens_in, tokensOut: m.tokens_out ?? 0, costUsd: m.cost_usd } : undefined}
               />
             ),
           )}

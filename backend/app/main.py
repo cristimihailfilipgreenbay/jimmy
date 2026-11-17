@@ -21,6 +21,7 @@ from app.learned.router import router as learned_router
 from app.library.router import router as library_router
 from app.onboarding.router import router as onboarding_router
 from app.profile.router import router as profile_router
+from app.settings.router import router as settings_router
 from app.spaces.router import router as spaces_router
 from app.study.router import router as study_router
 from app.topics.router import router as topics_router
@@ -55,6 +56,7 @@ app.include_router(study_router)
 app.include_router(flashcards_router)
 app.include_router(profile_router)
 app.include_router(feedback_router)
+app.include_router(settings_router)
 app.include_router(jobs_router)
 
 

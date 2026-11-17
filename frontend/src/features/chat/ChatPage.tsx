@@ -30,9 +30,13 @@ export function ChatPage() {
   const end = useRef<HTMLDivElement>(null)
   const space = spaces?.find((s) => s.id === spaceId)
 
+  // The first scroll, when the history has just loaded, jumps; later ones glide.
+  const scrolled = useRef(false)
   useEffect(() => {
-    end.current?.scrollIntoView({ block: 'end', behavior: 'smooth' })
-  }, [chat.messages.length, chat.pending?.text, chat.pending?.steps.length, chat.pending?.conflicts.length])
+    if (chat.loadingMessages) return
+    end.current?.scrollIntoView({ block: 'end', behavior: scrolled.current ? 'smooth' : 'instant' })
+    scrolled.current = true
+  }, [chat.loadingMessages, chat.messages.length, chat.pending?.text, chat.pending?.steps.length, chat.pending?.conflicts.length])
 
   if (isPending) return null
   if (!space) return <Placeholder title="Study Space not found" note="That Study Space does not exist." />
@@ -83,7 +87,6 @@ export function ChatPage() {
               <span>{chat.error}</span>
             </div>
           )}
-          <div ref={end} />
         </div>
         <div className="sticky bottom-16 z-10 bg-background md:bottom-0">
           {chat.pending && chat.pending.steps.length > 0 && (
@@ -99,6 +102,8 @@ export function ChatPage() {
           )}
           <Composer empty={empty} spaceName={space.name} busy={!!chat.pending} onSend={chat.ask} onStop={chat.stop} />
         </div>
+        {/* After the composer, which sticks over the bottom of the page: scrolling here keeps the last message above it. */}
+        <div ref={end} />
       </div>
       <SourceGuide space={space} />
     </div>

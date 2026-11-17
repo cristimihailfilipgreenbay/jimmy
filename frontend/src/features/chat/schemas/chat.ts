@@ -46,6 +46,7 @@ export const messageSchema = z.object({
   tokens_out: z.number().nullable(),
   cost_usd: z.number().nullable(),
   trace_id: z.string().nullable(),
+  model: z.string().nullable(),
   created_at: z.string(),
   // The Student's 👍/👎 on this answer, and why.
   rating: z.enum(['up', 'down']).nullable(),

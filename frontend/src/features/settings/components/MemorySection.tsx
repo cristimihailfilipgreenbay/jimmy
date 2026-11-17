@@ -26,7 +26,7 @@ export function MemorySection({ studentId }: { studentId: string }) {
           id="r-weak"
           title="Remember weak topics"
           description="Jimmy notes topics you keep getting wrong and asks about them more in quizzes. Switch it off to pause that."
-          info="Switched off, your quiz answers are still saved, but Jimmy stops marking new topics as weak and stops asking about weak ones more often. Topics already marked weak stay in the list until you clear them. Switch it back on and Jimmy counts every answer since you last cleared a topic, including the ones you gave while it was off."
+          info={<WeakTopicsInfo />}
         >
           <Switch
             checked={profile?.remember_weak_topics ?? true}
@@ -56,5 +56,37 @@ export function MemorySection({ studentId }: { studentId: string }) {
         onConfirm={() => clear.mutate(undefined, { onSuccess: () => { setConfirming(false); toast('Weak topics cleared') } })}
       />
     </section>
+  )
+}
+
+// What the switch does, as a short list: what stops while it is off, what stays, what happens on return.
+function WeakTopicsInfo() {
+  const list = 'mt-1 list-disc space-y-1 pl-4'
+  return (
+    <div className="space-y-2.5">
+      <div>
+        <p className="font-semibold">While it is off</p>
+        <ul className={list}>
+          <li>Your quiz answers are still saved.</li>
+          <li>Jimmy stops marking new topics as weak.</li>
+          <li>Quizzes and tests stop asking about weak topics more often.</li>
+          <li>Feedback and recaps stop calling a topic weak.</li>
+        </ul>
+      </div>
+      <div>
+        <p className="font-semibold">What stays</p>
+        <ul className={list}>
+          <li>Topics already marked weak stay in the list.</li>
+          <li>You can still clear them yourself.</li>
+        </ul>
+      </div>
+      <div>
+        <p className="font-semibold">When you switch it back on</p>
+        <ul className={list}>
+          <li>Jimmy counts every answer since you last cleared a topic.</li>
+          <li>That includes the answers you gave while it was off.</li>
+        </ul>
+      </div>
+    </div>
   )
 }

@@ -78,7 +78,9 @@ flowchart TD
     REC -->|done| RC[recap]
 ```
 
-A Quiz shows feedback after each answer. A Test withholds results until the recap: it never pauses for a Dispute (the grade stands) and keeps one difficulty.
+A Quiz shows feedback after each answer. A Test withholds results until the recap: it never pauses for a Dispute (the grade stands).
+
+The Student's *adaptive difficulty* setting decides how questions are written. Off (the default): every question is written at once before the first one is shown (the model calls run in parallel), at medium difficulty, so answering never waits. On: each question is written after the last answer, and the difficulty follows the answers.
 
 ### 4.3 Ingestion (`StateGraph`)
 

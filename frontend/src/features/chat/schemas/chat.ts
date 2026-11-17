@@ -11,6 +11,19 @@ export const threadSchema = z.object({
 })
 export type Thread = z.infer<typeof threadSchema>
 
+// A chat in the list (ThreadItemOut): its name, when it was last active, how long it is.
+export const threadItemSchema = z.object({
+  id: z.uuid(),
+  title: z.string(),
+  created_at: z.string(),
+  updated_at: z.string(),
+  message_count: z.number(),
+})
+export type ThreadItem = z.infer<typeof threadItemSchema>
+export const threadsPageSchema = cursorPage(threadItemSchema)
+/** How many chats load at a time. */
+export const THREADS_PAGE = 20
+
 export const citationSchema = z.object({
   id: z.number(),
   source_type: z.string(),

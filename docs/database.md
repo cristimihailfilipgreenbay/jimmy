@@ -64,7 +64,7 @@ Postgres schema, conventions and migrations. See [architecture.md](./architectur
 ### Conversations, feedback, jobs
 | Table | Purpose | Key columns *(proposed)* |
 |---|---|---|
-| `threads` | A conversation or run | `id`, `space_id`, `kind` (chat, session, ingestion, flashcard_draft), `title`. The `id` is also the LangGraph thread id |
+| `threads` | A conversation or run | `id`, `space_id`, `kind` (chat, session, ingestion, flashcard_draft), `title` (the first question of a chat), `custom_title` (a name the Student chose; empty means `title` is used). The `id` is also the LangGraph thread id |
 | `messages` | What the Student sees in the chat | `id`, `thread_id`, `role`, `content`, `citations` (JSON), `tokens_in`, `tokens_out`, `cost_usd`, `trace_id` |
 | `feedback` | 👍/👎 on an answer | `id`, `message_id`, `rating` (up, down), `comment`, `synced_to_langsmith_at` |
 | `jobs` | Background work such as Promotion | `id`, `space_id`, `kind`, `status` (queued, running, succeeded, failed, cancelled), `payload` (JSON, with the Promotion `outcome`), `message`, `error`, `created_at`, `updated_at`, `finished_at` |

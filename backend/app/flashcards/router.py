@@ -1,10 +1,11 @@
 import uuid
+from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Response
 from langgraph.types import Command
 from pydantic import ValidationError
-from sqlalchemy import select
+from sqlalchemy import func, select, tuple_
 from sqlalchemy.orm import Session
 
 from app.chat.models import Thread
@@ -14,23 +15,33 @@ from app.flashcards.cards import MAX_BACK, MAX_FRONT
 from app.flashcards.models import Flashcard
 from app.flashcards.runtime import get_flashcard_graph
 from app.flashcards.schemas import (
-    CardOut,
+    DeckPage,
     DraftBatchOut,
     DraftIn,
+    DraftOut,
     FlashcardDecision,
     ReviewOut,
     StyleProposalOut,
 )
 from app.flashcards.service import (
-    batch_out,
+    card_out,
     cards_out,
     config,
     pending_pause,
     start_batch,
 )
+from app.pagination import (
+    CursorPage,
+    CursorQuery,
+    LimitQuery,
+    decode_cursor,
+    encode_cursor,
+)
 from app.profile.models import ProfileFact
 from app.spaces.dependencies import get_owned_space
 from app.spaces.models import Space
+from app.study.service import topic_names
+from app.topics.models import Topic
 
 router = APIRouter(tags=["flashcards"])
 
@@ -47,28 +58,101 @@ def draft_flashcards(body: DraftIn, space: SpaceDep, session: SessionDep):
     return start_batch(session, space, body.topic_ids, body.count)
 
 
-@router.get("/spaces/{space_id}/flashcards/drafts", response_model=list[DraftBatchOut])
-def list_drafts(space: SpaceDep, session: SessionDep):
-    """Every batch of drafts still waiting for the Student."""
-    threads = session.scalars(
-        select(Flashcard.thread_id)
-        .where(Flashcard.space_id == space.id, Flashcard.status == "draft")
+def _after(cursor: str | None):
+    """The keyset condition for the rows after a cursor, oldest first."""
+    if not cursor:
+        return ()
+    created, card_id = decode_cursor(cursor, 2)
+    try:
+        key = (datetime.fromisoformat(created), uuid.UUID(card_id))
+    except ValueError as exc:
+        raise ApiError(422, "invalid_cursor", "That page link is not valid.") from exc
+    return (tuple_(Flashcard.created_at, Flashcard.id) > tuple_(*key),)
+
+
+def _next_cursor(rows: list[Flashcard], limit: int) -> str | None:
+    if len(rows) <= limit:
+        return None
+    last = rows[limit - 1]
+    return encode_cursor(last.created_at.isoformat(), str(last.id))
+
+
+@router.get("/spaces/{space_id}/flashcards/drafts", response_model=CursorPage[DraftOut])
+def list_drafts(
+    space: SpaceDep,
+    session: SessionDep,
+    limit: LimitQuery = 10,
+    cursor: CursorQuery = None,
+):
+    """Drafts still waiting for the Student, oldest first, ten at a time."""
+    mine = (Flashcard.space_id == space.id, Flashcard.status == "draft")
+    rows = list(
+        session.scalars(
+            select(Flashcard)
+            .where(*mine, *_after(cursor))
+            .order_by(Flashcard.created_at, Flashcard.id)
+            .limit(limit + 1)
+        )
+    )
+    page = rows[:limit]
+    # The pause each card waits on. A card whose run is not waiting any more has
+    # nothing the Student can decide, so it is left out of the page.
+    pauses = {}
+    for thread_id in {c.thread_id for c in page if c.thread_id}:
+        pause = pending_pause(thread_id)
+        if pause:
+            pauses[thread_id] = (pause.id, set(pause.value["card_ids"]))
+    names = topic_names(session, [c.topic_id for c in page])
+    items = [
+        DraftOut(
+            **card_out(c, names.get(c.topic_id, "")).model_dump(),
+            thread_id=c.thread_id,
+            interrupt_id=pauses[c.thread_id][0],
+        )
+        for c in page
+        if c.thread_id in pauses and str(c.id) in pauses[c.thread_id][1]
+    ]
+    total = session.scalar(select(func.count()).select_from(Flashcard).where(*mine))
+    return CursorPage(items=items, next_cursor=_next_cursor(rows, limit), total=total)
+
+
+@router.get("/spaces/{space_id}/flashcards", response_model=DeckPage)
+def list_flashcards(
+    space: SpaceDep,
+    session: SessionDep,
+    limit: LimitQuery = 30,
+    cursor: CursorQuery = None,
+    topic_id: uuid.UUID | None = None,
+):
+    """The deck: approved cards, oldest first, thirty at a time."""
+    mine = (Flashcard.space_id == space.id, Flashcard.status == "approved")
+    chosen = mine + ((Flashcard.topic_id == topic_id,) if topic_id else ())
+    rows = list(
+        session.scalars(
+            select(Flashcard)
+            .where(*chosen, *_after(cursor))
+            .order_by(Flashcard.created_at, Flashcard.id)
+            .limit(limit + 1)
+        )
+    )
+    topics = session.execute(
+        select(Topic.id, Topic.name)
+        .join(Flashcard, Flashcard.topic_id == Topic.id)
+        .where(*mine)
         .distinct()
+        .order_by(Topic.name)
     ).all()
-    batches = [batch_out(session, t) for t in threads if t]
-    # A batch whose run is not waiting any more has nothing the Student can decide.
-    return [b for b in batches if b.interrupt_id and b.cards]
-
-
-@router.get("/spaces/{space_id}/flashcards", response_model=list[CardOut])
-def list_flashcards(space: SpaceDep, session: SessionDep):
-    """The deck: approved cards, oldest first."""
-    cards = session.scalars(
-        select(Flashcard)
-        .where(Flashcard.space_id == space.id, Flashcard.status == "approved")
-        .order_by(Flashcard.created_at, Flashcard.id)
-    ).all()
-    return cards_out(session, list(cards))
+    return DeckPage(
+        items=cards_out(session, rows[:limit]),
+        next_cursor=_next_cursor(rows, limit),
+        total=session.scalar(
+            select(func.count()).select_from(Flashcard).where(*chosen)
+        ),
+        total_all=session.scalar(
+            select(func.count()).select_from(Flashcard).where(*mine)
+        ),
+        topics=[{"id": i, "name": n} for i, n in topics],
+    )
 
 
 @router.delete("/spaces/{space_id}/flashcards/{card_id}", status_code=204)

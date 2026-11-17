@@ -169,7 +169,7 @@ export function ChatPage() {
           onMenu={(x, y, el) => current && showMenu(current, x, y, el)}
           onNew={newChat}
         />
-        <div className="flex-1 space-y-6 pb-4" aria-live="polite" aria-busy={!!chat.pending}>
+        <div className="flex-1 space-y-6 pt-6 pb-4" aria-live="polite" aria-busy={!!chat.pending}>
           {empty && settled && (
             <ChatEmpty
               spaceId={space.id}

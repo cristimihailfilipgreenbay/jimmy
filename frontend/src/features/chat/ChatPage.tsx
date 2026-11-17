@@ -20,6 +20,7 @@ import { ChatList } from './components/ChatList'
 import { ChatSheet } from './components/ChatSheet'
 import { ChatSidePanel, type Side } from './components/ChatSidePanel'
 import { Composer } from './components/Composer'
+import { StyleProposal } from './components/StyleProposal'
 import { RenameChatDialog } from './components/RenameChatDialog'
 import { SourceGuide } from './components/SourceGuide'
 import { useSpaceEvents } from '@/features/learned/queries/useSpaceEvents'
@@ -27,6 +28,7 @@ import { chatStatus, stepLabel, stepMeta, useChat } from './hooks/useChat'
 import { chatWhen } from './lib/chatDates'
 import { trimTitle } from './lib/chatTitle'
 import { useDeleteChat, useThreads } from './queries/useThreads'
+import { useRateAnswer } from './queries/useRateAnswer'
 import type { ThreadItem } from './schemas/chat'
 
 type Menu = { chat: Pick<ThreadItem, 'id' | 'title'> & Partial<ThreadItem>; x: number; y: number; returnTo: HTMLElement | null }
@@ -60,6 +62,7 @@ export function ChatPage() {
       { replace: true },
     )
   const chat = useChat(student.id, spaceId, threadId, (id) => openChat(id))
+  const rate = useRateAnswer(student.id, threadId ?? '')
   const remove = useDeleteChat(student.id, spaceId)
   const [side, setSide] = useState<Side>('chats')
   const [sheet, setSheet] = useState(false)
@@ -199,7 +202,16 @@ export function ChatPage() {
             m.role === 'user' ? (
               <UserMessage key={m.id} text={m.content} />
             ) : (
-              <AnswerMessage key={m.id} content={m.content} citations={m.citations} tools={chat.pills[m.id]} spaceId={space.id} conflicts={chat.conflicts[m.id]} />
+              <AnswerMessage
+                key={m.id}
+                content={m.content}
+                citations={m.citations}
+                tools={chat.pills[m.id]}
+                spaceId={space.id}
+                conflicts={chat.conflicts[m.id]}
+                rated={{ rating: m.rating, comment: m.rating_comment }}
+                onRate={(rating, comment) => rate.mutateAsync({ messageId: m.id, rating, comment })}
+              />
             ),
           )}
           {chat.pending && (
@@ -224,6 +236,7 @@ export function ChatPage() {
           )}
         </div>
         <div className="sticky bottom-16 z-10 bg-background md:bottom-0">
+          <StyleProposal studentId={student.id} />
           {chat.pending && chat.pending.steps.length > 0 && (
             <div className="mb-2 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm" role="status" aria-live="polite">
               {chat.pending.steps.map((s, i) => (

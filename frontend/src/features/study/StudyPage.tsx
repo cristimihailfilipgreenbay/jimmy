@@ -9,6 +9,7 @@ import { useTopics } from '@/features/topics/queries/useTopics'
 import { errorMessage } from '@/lib/http'
 import { cardClass } from '@/lib/styles'
 import { cn } from '@/lib/utils'
+import { useLeaveGuard } from '@/lib/useLeaveGuard'
 import { PastSessions } from './components/PastSessions'
 import { QuestionCard } from './components/QuestionCard'
 import { Recap } from './components/Recap'
@@ -47,6 +48,8 @@ export function StudyPage() {
   const past = usePastSessions(student.id, spaceId)
   const recap = useRecap(recapOpen ? session?.id : (pastId ?? undefined))
   const [backToList, setBackToList] = useState(false)
+  // A Quiz or Test in progress asks before the page is refreshed or closed.
+  useLeaveGuard(!!session && session.status === 'active' && !recapOpen)
   const opened = useRef<string | null>(null)
   // Going back puts focus on the row that was opened.
   useEffect(() => {

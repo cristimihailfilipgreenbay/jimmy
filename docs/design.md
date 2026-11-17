@@ -73,6 +73,7 @@ Two things in this feature are not in the prototype, because the issue asks for 
 - **Demo data.** A seed script downloads 2–3 OpenStax chapters each for Biology and Physics into `data/seed/` (not committed), with `ATTRIBUTION.md` giving title, author and licence.
 - **Golden set.** About 20 questions across the two Spaces: answerable from Notes, only from the Library, needing the web fallback, and out of scope.
 - **Ragas.** Faithfulness, context precision and context recall.
+- **One command.** `docker compose exec backend python -m eval.run` builds two eval Study Spaces (Biology with sample Notes and the Library book, Physics with the Library book), asks the golden set to the real Tutor, scores everything and writes `eval/report.md`. It calls real models and is not part of the test suite.
 - **Custom checks.** Share of answers with correct Citations; quiz answer keys matching the source (LLM judge); Conflict detection on a small set with planted wrong statements in Notes.
 
 ## 8. Risks

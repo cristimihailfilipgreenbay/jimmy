@@ -19,7 +19,23 @@ from app.guardrails.classify import scan_passages
 log = logging.getLogger(__name__)
 
 TOP_K = 5
+# A search always returns its nearest passages, however far away. Passages much farther
+# than the best one, or plainly unrelated, would only be noise to cite or ignore.
+MAX_DISTANCE = 0.65
+DISTANCE_SLACK = 0.12
 WITHHELD = "[a passage was withheld: it tried to give instructions to the assistant]"
+
+
+def relevant(hits: list) -> list:
+    """The hits worth showing the Tutor: close in absolute terms and close to the best one."""
+    if not hits:
+        return []
+    best = min(h.distance for h in hits)
+    return [
+        h
+        for h in hits
+        if h.distance <= MAX_DISTANCE and h.distance <= best + DISTANCE_SLACK
+    ]
 
 
 @dataclass
@@ -73,6 +89,7 @@ def _make_search(
                 limit=TOP_K,
                 source_types=(source_type,),
             )
+        hits = relevant(hits)
         if not hits:
             return none, []
         # Notes are the Student's own uploads, so they are scanned; the Library is trusted.

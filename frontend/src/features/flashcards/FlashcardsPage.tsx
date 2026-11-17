@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Layers, X } from 'lucide-react'
 import { useParams, useSearchParams } from 'react-router'
+import { z } from 'zod'
 import { Placeholder } from '@/components/Placeholder'
 import { Button } from '@/components/ui/button'
 import { useSignedInStudent } from '@/features/auth/hooks/useSignedInStudent'
@@ -24,14 +25,27 @@ export function FlashcardsPage() {
   const { spaceId = '' } = useParams()
   const student = useSignedInStudent()
   const { data: spaces, isPending } = useSpaces(student.id)
-  const [topic, setTopic] = useState('all')
+  // The tab and the Topic filter live in the address (?tab=review&topic=…), so they survive a
+  // refresh and can be linked to.
+  const [params, setParams] = useSearchParams()
+  const tab: Tab = params.get('tab') === 'review' ? 'review' : 'browse'
+  const asked = params.get('topic')
+  const topic = asked && z.uuid().safeParse(asked).success ? asked : 'all'
+  const change = (key: 'tab' | 'topic', value: string | null) =>
+    setParams(
+      (old) => {
+        const next = new URLSearchParams(old)
+        if (value) next.set(key, value)
+        else next.delete(key)
+        return next
+      },
+      { replace: true },
+    )
+  const setTab = (next: Tab) => change('tab', next === 'browse' ? null : next)
+  const setTopic = (id: string) => change('topic', id === 'all' ? null : id)
   const deck = useDeck(student.id, spaceId, topic)
   const drafts = useDrafts(student.id, spaceId)
   const review = useReviewDraft(student.id, spaceId)
-  // The tab lives in the address (?tab=review), so it survives a refresh and can be linked to.
-  const [params, setParams] = useSearchParams()
-  const tab: Tab = params.get('tab') === 'review' ? 'review' : 'browse'
-  const setTab = (next: Tab) => setParams(next === 'browse' ? {} : { tab: next }, { replace: true })
   const [viewer, setViewer] = useState<number | null>(null)
   const space = spaces?.find((s) => s.id === spaceId)
   // The tabs are not on the page while the lists load or the viewer is open, so the pill is

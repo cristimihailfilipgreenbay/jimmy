@@ -79,8 +79,24 @@ export const answerOutSchema = z.object({ feedback: feedbackSchema.nullable(), s
 
 export type AnswerOut = z.infer<typeof answerOutSchema>
 
+// A finished Quiz or Test, one row of the past sessions list.
+export const pastSessionSchema = z.object({
+  id: z.uuid(),
+  kind: z.enum(['quiz', 'test']),
+  finished_at: z.string(),
+  score: z.number(),
+  total: z.number(),
+  topics: z.array(z.string()),
+  // The Topics that were weak when the session finished.
+  weak_left: z.array(z.string()),
+})
+export type PastSession = z.infer<typeof pastSessionSchema>
+
 export const recapSchema = z.object({
   session_id: z.uuid(),
+  kind: z.enum(['quiz', 'test']),
+  finished_at: z.string().nullable(),
+  weak_left: z.array(z.string()),
   score: z.number(),
   total: z.number(),
   by_topic: z.array(z.object({ topic_id: z.uuid(), topic: z.string(), correct: z.number(), total: z.number(), weak: z.boolean() })),

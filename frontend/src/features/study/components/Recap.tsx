@@ -1,50 +1,89 @@
-import { Check, CircleHelp, RotateCcw, X } from 'lucide-react'
+import { ArrowLeft, Check, CircleHelp, RotateCcw, Target, X } from 'lucide-react'
+import { Link } from 'react-router'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Button } from '@/components/ui/button'
 import { cardClass } from '@/lib/styles'
 import { cn } from '@/lib/utils'
+import { longDate } from '../lib/dates'
 import type { Recap as RecapData } from '../schemas/study'
 import { SourceBlock } from './SourceBlock'
 
 // The end of a Quiz or a Test: the score (and for a Test, the score per Topic), then every
-// question with its answer and source. A Test shows all of it only here.
+// question with its answer and source. A Test shows all of it only here. Opened from the
+// past sessions list (`past`), it is read-only: a link back instead of Try again and Done,
+// and a note on the weak Topics the session left.
 export function Recap({
   recap,
   kind,
   spaceName,
   onAgain,
   onDone,
+  past,
 }: {
   recap: RecapData
   kind: 'quiz' | 'test'
   spaceName: string
-  onAgain: () => void
-  onDone: () => void
+  onAgain?: () => void
+  onDone?: () => void
+  past?: { onBack: () => void; weakHref: string }
 }) {
   const weak = recap.by_topic.filter((t) => t.weak)
   // The first answer that was not right starts open, so the Student sees what to fix.
   const firstWrong = recap.questions.find((q) => !q.correct)
+  const back = (bottom: boolean) =>
+    past && (
+      <div className={bottom ? 'mt-6 flex justify-center' : undefined}>
+        <Button variant={bottom ? 'outline' : 'ghost'} size={bottom ? 'default' : 'sm'} className={bottom ? undefined : '-ml-2 mb-3'} onClick={past.onBack}>
+          <ArrowLeft /> {bottom ? 'Back to past sessions' : 'Past sessions'}
+        </Button>
+      </div>
+    )
   return (
     <>
+      {back(false)}
       <div className={cn(cardClass, 'p-6')}>
-        <p className="text-sm text-muted-foreground">{kind === 'test' ? 'Test results' : 'Quiz summary'} · {spaceName}</p>
+        <p className="text-sm text-muted-foreground">
+          {past ? `${kind === 'test' ? 'Test' : 'Quiz'} recap · ${recap.finished_at ? longDate(recap.finished_at) : ''}` : `${kind === 'test' ? 'Test results' : 'Quiz summary'} · ${spaceName}`}
+        </p>
         <div className="mt-2 flex flex-wrap items-end gap-4">
           <p className="text-4xl font-semibold tabular-nums">
             {recap.score}
             <span className="text-xl text-muted-foreground"> / {recap.total}</span>
           </p>
           <p className="pb-1 text-sm text-muted-foreground">
-            {weak.length ? `Weak topics: ${weak.map((t) => t.topic).join(', ')}.` : 'Weak topics have been updated.'}
+            {past
+              ? `${spaceName} · ${recap.by_topic.length} topic${recap.by_topic.length === 1 ? '' : 's'}`
+              : weak.length
+                ? `Weak topics: ${weak.map((t) => t.topic).join(', ')}.`
+                : 'Weak topics have been updated.'}
           </p>
         </div>
-        <div className="mt-4 flex gap-2">
-          <Button variant="space" size="sm" onClick={onAgain}>
-            <RotateCcw /> Try again
-          </Button>
-          <Button variant="outline" size="sm" onClick={onDone}>
-            Done
-          </Button>
-        </div>
+        {past && recap.weak_left.length > 0 && (
+          <div className="mt-4 flex items-start gap-3 rounded-lg bg-space/6 p-3 text-sm">
+            <span className="grid size-7 flex-none place-items-center rounded-full bg-space/14 text-space-ink">
+              <Target className="size-3.5" aria-hidden />
+            </span>
+            <div>
+              <p className="font-medium">
+                This session left {recap.weak_left.length} weak topic{recap.weak_left.length === 1 ? '' : 's'}
+              </p>
+              <p className="text-muted-foreground">{recap.weak_left.join(', ')}</p>
+              <Link to={past.weakHref} className="mt-1 inline-block text-sm font-medium text-space-ink underline-offset-4 hover:underline">
+                See Weak topics
+              </Link>
+            </div>
+          </div>
+        )}
+        {!past && (
+          <div className="mt-4 flex gap-2">
+            <Button variant="space" size="sm" onClick={onAgain}>
+              <RotateCcw /> Try again
+            </Button>
+            <Button variant="outline" size="sm" onClick={onDone}>
+              Done
+            </Button>
+          </div>
+        )}
       </div>
       {kind === 'test' && (
         <section className={cn(cardClass, 'mt-6 p-5')} aria-labelledby="by-topic">
@@ -72,8 +111,13 @@ export function Recap({
         </section>
       )}
       <Accordion multiple defaultValue={firstWrong ? [firstWrong.question_id] : []} className="mt-6 gap-4">
-        {recap.questions.map((q) => (
-          <AccordionItem key={q.question_id} value={q.question_id} className={cn(cardClass, 'px-5 not-last:border-b')}>
+        {recap.questions.map((q, i) => (
+          <AccordionItem
+            key={q.question_id}
+            value={q.question_id}
+            className={cn(cardClass, 'px-5 not-last:border-b', past && 'ob-pop')}
+            style={past ? { animationDelay: `${Math.min(i, 6) * 50}ms` } : undefined}
+          >
             <AccordionTrigger className="items-center gap-3 py-4 hover:no-underline">
               <span
                 className={cn(
@@ -108,6 +152,7 @@ export function Recap({
           </AccordionItem>
         ))}
       </Accordion>
+      {back(true)}
     </>
   )
 }

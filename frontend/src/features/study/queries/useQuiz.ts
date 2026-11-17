@@ -1,7 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { DisputeDecision, StudyKind } from '../schemas/study'
-import { answerQuestion, decideDispute, fetchHistory, fetchRecap, fetchSession, startSession } from './study'
+import { answerQuestion, decideDispute, fetchHistory, fetchPastSessions, fetchRecap, fetchSession, startSession } from './study'
 import { weakKey } from './useWeakTopics'
+
+export const pastSessionsKey = (studentId: string, spaceId: string) => ['past-sessions', studentId, spaceId] as const
+
+/** Finished Quizzes and Tests of the Study Space, newest first. */
+export const usePastSessions = (studentId: string, spaceId: string) =>
+  useQuery({ queryKey: pastSessionsKey(studentId, spaceId), queryFn: () => fetchPastSessions(spaceId) })
 
 export const useStartSession = (spaceId: string) =>
   useMutation({ mutationFn: ({ kind, topicIds }: { kind: StudyKind; topicIds: string[] }) => startSession(spaceId, kind, topicIds) })
@@ -12,7 +18,9 @@ export function useAnswerQuestion(studentId: string, spaceId: string) {
   return useMutation({
     mutationFn: ({ sessionId, questionId, answer }: { sessionId: string; questionId: string; answer: string }) =>
       answerQuestion(sessionId, questionId, answer),
-    onSuccess: () => qc.invalidateQueries({ queryKey: weakKey(studentId, spaceId) }),
+    // The last answer finishes the session, which then joins the past sessions list.
+    onSuccess: () =>
+      Promise.all([qc.invalidateQueries({ queryKey: weakKey(studentId, spaceId) }), qc.invalidateQueries({ queryKey: pastSessionsKey(studentId, spaceId) })]),
   })
 }
 

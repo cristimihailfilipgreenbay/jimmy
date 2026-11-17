@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Check, Globe, Trash2, TriangleAlert } from 'lucide-react'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { Button } from '@/components/ui/button'
 import { errorMessage } from '@/lib/http'
 import { cardClass } from '@/lib/styles'
@@ -20,6 +21,7 @@ export function LearnedTab({ studentId, spaceId, spaceName }: { studentId: strin
   const approve = useApproveLearned(studentId, spaceId)
   const remove = useDeleteLearned(studentId, spaceId)
   const [view, setView] = useState<View>('review')
+  const [deleting, setDeleting] = useState<LearnedMaterial | null>(null)
   const waiting = data.filter((m) => m.status === 'unreviewed')
   const approved = data.filter((m) => m.status === 'approved')
   const error = approve.error ?? remove.error
@@ -30,8 +32,15 @@ export function LearnedTab({ studentId, spaceId, spaceName }: { studentId: strin
 
   const onApprove = (item: LearnedMaterial) =>
     approve.mutate(item.id, { onSuccess: () => toast(`Saved to ${spaceName} library · “${item.title}”`, Check) })
-  const onDelete = (item: LearnedMaterial) =>
-    remove.mutate(item.id, { onSuccess: () => toast(`Deleted “${item.title}”. Answers that used it are now marked.`, Trash2) })
+  const onDelete = (item: LearnedMaterial) => setDeleting(item)
+  const confirmDelete = () =>
+    deleting &&
+    remove.mutate(deleting.id, {
+      onSuccess: () => {
+        toast(`Deleted “${deleting.title}”. Answers that used it are now marked.`, Trash2)
+        setDeleting(null)
+      },
+    })
 
   const empty = (title: string, note: string) => (
     <div className={`${cardClass} px-6 py-12 text-center`}>
@@ -164,6 +173,15 @@ export function LearnedTab({ studentId, spaceId, spaceName }: { studentId: strin
       <div className="fade-in" key={view}>
         {view === 'review' ? review : approvedList}
       </div>
+      <ConfirmDialog
+        open={!!deleting}
+        onOpenChange={(open) => !open && setDeleting(null)}
+        title={`Delete “${deleting?.title ?? ''}”?`}
+        description="It is removed from this Study Space for good, with its saved text. Answers that used it are marked."
+        confirmLabel="Delete"
+        pending={remove.isPending}
+        onConfirm={confirmDelete}
+      />
     </>
   )
 }

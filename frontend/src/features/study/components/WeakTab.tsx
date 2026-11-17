@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Target, X } from 'lucide-react'
 import { Link } from 'react-router'
 import { Button, buttonVariants } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogFooter, DialogTitle } from '@/components/ui/dialog'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { errorMessage } from '@/lib/http'
 import { cardClass } from '@/lib/styles'
 import { toast } from '@/lib/toast'
@@ -17,6 +17,7 @@ export function WeakTab({ studentId, spaceId }: { studentId: string; spaceId: st
   const clearOne = useClearWeakTopic(studentId, spaceId)
   const clearAll = useClearAllWeakTopics(studentId, spaceId)
   const [confirming, setConfirming] = useState(false)
+  const [clearing, setClearing] = useState<{ id: string; name: string } | null>(null)
 
   if (isPending) return null
   if (!data.length) {
@@ -64,7 +65,7 @@ export function WeakTab({ studentId, spaceId }: { studentId: string; spaceId: st
                   variant="ghost"
                   size="sm"
                   disabled={clearOne.isPending}
-                  onClick={() => clearOne.mutate(w.topic_id, { onSuccess: () => toast(`Cleared “${w.name}”`, X) })}
+                  onClick={() => setClearing({ id: w.topic_id, name: w.name })}
                 >
                   <X /> Clear
                 </Button>
@@ -73,36 +74,42 @@ export function WeakTab({ studentId, spaceId }: { studentId: string; spaceId: st
           </li>
         ))}
       </ul>
-      <Dialog open={confirming} onOpenChange={setConfirming}>
-        <DialogContent role="alertdialog">
-          <div className="p-5">
-            <DialogTitle>Clear all weak topics in this Space?</DialogTitle>
-            <p className="mt-2 text-sm text-muted-foreground">Jimmy will stop prioritising them. Your notes, topics and flashcards are not affected.</p>
-            <DialogFooter className="mt-5">
-              <Button variant="ghost" autoFocus onClick={() => setConfirming(false)}>
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                disabled={clearAll.isPending}
-                onClick={() =>
-                  clearAll.mutate(
-                    data.map((w) => w.topic_id),
-                    {
-                      onSuccess: () => {
-                        toast(`Cleared ${data.length} weak topic${data.length === 1 ? '' : 's'}`, X)
-                        setConfirming(false)
-                      },
-                    },
-                  )
-                }
-              >
-                Clear all
-              </Button>
-            </DialogFooter>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        open={confirming}
+        onOpenChange={setConfirming}
+        title="Clear all weak topics in this Space?"
+        description="Jimmy will stop prioritising them. Your notes, topics and flashcards are not affected."
+        confirmLabel="Clear all"
+        pending={clearAll.isPending}
+        onConfirm={() =>
+          clearAll.mutate(
+            data.map((w) => w.topic_id),
+            {
+              onSuccess: () => {
+                toast(`Cleared ${data.length} weak topic${data.length === 1 ? '' : 's'}`, X)
+                setConfirming(false)
+              },
+            },
+          )
+        }
+      />
+      <ConfirmDialog
+        open={!!clearing}
+        onOpenChange={(open) => !open && setClearing(null)}
+        title={`Clear “${clearing?.name ?? ''}”?`}
+        description="Jimmy will stop prioritising this topic, and your earlier answers to it stop counting."
+        confirmLabel="Clear"
+        pending={clearOne.isPending}
+        onConfirm={() =>
+          clearing &&
+          clearOne.mutate(clearing.id, {
+            onSuccess: () => {
+              toast(`Cleared “${clearing.name}”`, X)
+              setClearing(null)
+            },
+          })
+        }
+      />
     </>
   )
 }

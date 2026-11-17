@@ -29,7 +29,13 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.study import questions as q
-from app.study.models import Dispute, QuizAttempt, SessionQuestion, StudySession
+from app.study.models import (
+    Dispute,
+    QuizAttempt,
+    SessionQuestion,
+    StudySession,
+    WeakTopic,
+)
 from app.study.routing import DISPUTE_CONFIDENCE, DISPUTE_MARGIN, needs_dispute
 from app.study.selection import next_difficulty, pick_topic
 from app.study.service import refresh_weak_topic, weak_topic_ids
@@ -317,6 +323,19 @@ def build_study_graph(
                     QuizAttempt.is_correct.is_(True),
                 )
             )
+            asked = select(SessionQuestion.topic_id).where(
+                SessionQuestion.session_id == row.id
+            )
+            row.weak_topic_ids = [
+                str(t)
+                for t in session.scalars(
+                    select(WeakTopic.topic_id).where(
+                        WeakTopic.space_id == row.space_id,
+                        WeakTopic.is_weak.is_(True),
+                        WeakTopic.topic_id.in_(asked),
+                    )
+                )
+            ]
             session.commit()
         return {}
 

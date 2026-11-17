@@ -41,6 +41,11 @@ class StudySession(Base):
     difficulty: Mapped[str] = mapped_column(String(10), default="medium")
     question_count: Mapped[int] = mapped_column(Integer)
     topic_ids: Mapped[list] = mapped_column(JSON, default=list)
+    # Topics of this session that were weak when it finished (ids as text), for the past
+    # sessions list. Empty for sessions finished before this was kept.
+    weak_topic_ids: Mapped[list] = mapped_column(
+        JSON, default=list, server_default="[]"
+    )
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

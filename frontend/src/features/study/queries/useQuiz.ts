@@ -1,13 +1,18 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { DisputeDecision, StudyKind } from '../schemas/study'
 import { answerQuestion, decideDispute, fetchHistory, fetchPastSessions, fetchRecap, fetchSession, startSession } from './study'
 import { weakKey } from './useWeakTopics'
 
+// Every page of every filter starts with this, so one invalidation refreshes them all.
 export const pastSessionsKey = (studentId: string, spaceId: string) => ['past-sessions', studentId, spaceId] as const
 
-/** Finished Quizzes and Tests of the Study Space, newest first. */
-export const usePastSessions = (studentId: string, spaceId: string) =>
-  useQuery({ queryKey: pastSessionsKey(studentId, spaceId), queryFn: () => fetchPastSessions(spaceId) })
+/** One page of the finished Quizzes and Tests of the Study Space, newest first. The page on screen stays until the next one arrives. */
+export const usePastSessions = (studentId: string, spaceId: string, kind: StudyKind | 'all', page: number) =>
+  useQuery({
+    queryKey: [...pastSessionsKey(studentId, spaceId), kind, page],
+    queryFn: () => fetchPastSessions(spaceId, kind, page),
+    placeholderData: keepPreviousData,
+  })
 
 export const useStartSession = (spaceId: string) =>
   useMutation({ mutationFn: ({ kind, topicIds }: { kind: StudyKind; topicIds: string[] }) => startSession(spaceId, kind, topicIds) })

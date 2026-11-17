@@ -92,6 +92,11 @@ export const pastSessionSchema = z.object({
 })
 export type PastSession = z.infer<typeof pastSessionSchema>
 
+// One page of them: `total` matches the filter, `total_all` does not.
+export const pastSessionsSchema = z.object({ items: z.array(pastSessionSchema), total: z.number(), total_all: z.number() })
+export type PastSessionsPage = z.infer<typeof pastSessionsSchema>
+export const PAST_SESSIONS_PAGE = 10
+
 export const recapSchema = z.object({
   session_id: z.uuid(),
   kind: z.enum(['quiz', 'test']),

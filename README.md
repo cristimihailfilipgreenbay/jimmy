@@ -117,8 +117,8 @@ It builds two Study Spaces, asks a golden set of 20 questions to the real Tutor,
 ## Tests
 
 ```bash
-docker compose exec backend uv run pytest     # unit tests, with a fake model
-docker compose exec backend uv run ruff check
+docker compose exec backend pytest     # unit tests, with a fake model
+docker compose exec backend ruff check
 ```
 
 ## Design decisions

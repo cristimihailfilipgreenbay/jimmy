@@ -37,8 +37,16 @@ class ShelfBook(BaseModel):
 
 
 class LibraryOut(BaseModel):
+    """The state of a Space's Library, without the shelf itself: the books are paged at
+    GET /spaces/{id}/library/books."""
+
     enabled: bool
     # none: no textbook attached; indexing: some chapter is still being embedded;
     # failed: some chapter could not be indexed.
     status: Literal["none", "indexing", "ready", "failed"]
-    books: list[ShelfBook]
+    book_count: int
+    # Chapters indexed so far, and in all, across every book on the shelf.
+    chapters_ready: int
+    chapters_total: int
+    # The textbooks on the shelf, so the catalogue can mark the ones already added.
+    pack_ids: list[uuid.UUID]

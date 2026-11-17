@@ -342,3 +342,21 @@ def test_a_test_keeps_one_difficulty_and_finishes_with_a_score(db):
         row = s.get(StudySession, sid)
         assert row.difficulty == "medium"  # a Quiz would have gone to hard
         assert row.status == "finished" and row.score == 2
+
+
+def test_a_finished_session_remembers_the_topics_that_were_weak(db):
+    graph, config, sid, topic = _start(db, total=2, kind="quiz")
+    _answer(db, graph, config, sid, False)
+    _answer(db, graph, config, sid, False)
+    with Session(db) as s:
+        row = s.get(StudySession, sid)
+        assert row.status == "finished"
+        assert row.weak_topic_ids == [str(topic)]
+
+
+def test_a_session_without_weak_topics_remembers_none(db):
+    graph, config, sid, _topic = _start(db, total=2, kind="quiz")
+    _answer(db, graph, config, sid, True)
+    _answer(db, graph, config, sid, True)
+    with Session(db) as s:
+        assert s.get(StudySession, sid).weak_topic_ids == []

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, Check, GraduationCap, Loader2, TriangleAlert, Upload } from 'lucide-react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { Placeholder } from '@/components/Placeholder'
@@ -9,9 +9,10 @@ import { useTopics } from '@/features/topics/queries/useTopics'
 import { errorMessage } from '@/lib/http'
 import { cardClass } from '@/lib/styles'
 import { cn } from '@/lib/utils'
+import { PastSessions } from './components/PastSessions'
 import { QuestionCard } from './components/QuestionCard'
 import { Recap } from './components/Recap'
-import { useAnswerQuestion, useDecideDispute, useRecap, useReloadQuiz, useStartSession, useStoredSession } from './queries/useQuiz'
+import { useAnswerQuestion, useDecideDispute, usePastSessions, useRecap, useReloadQuiz, useStartSession, useStoredSession } from './queries/useQuiz'
 import { useWeakTopics } from './queries/useWeakTopics'
 import { QUIZ_LENGTH, TEST_LENGTH, type AnswerOut, type Feedback, type Question, type StudyKind, type StudySession } from './schemas/study'
 
@@ -41,7 +42,18 @@ export function StudyPage() {
   const [slide, setSlide] = useState<'q-next' | 'q-prev' | ''>('')
   const [recapOpen, setRecapOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const recap = useRecap(recapOpen ? session?.id : undefined)
+  // A past session's recap is opened from the list and kept in the address (?past=…).
+  const pastId = params.get('past')
+  const past = usePastSessions(student.id, spaceId)
+  const recap = useRecap(recapOpen ? session?.id : (pastId ?? undefined))
+  const [backToList, setBackToList] = useState(false)
+  const opened = useRef<string | null>(null)
+  // Going back puts focus on the row that was opened.
+  useEffect(() => {
+    if (pastId || !opened.current) return
+    document.querySelector<HTMLElement>(`[data-session="${opened.current}"]`)?.focus()
+    opened.current = null
+  }, [pastId, past.data])
   // The session in progress is kept in the address (?session=…), so a reload goes on where it was.
   const storedId = params.get('session')
   const stored = useStoredSession(session ? null : storedId)
@@ -98,8 +110,22 @@ export function StudyPage() {
     )
   }
 
-  const frame = (children: React.ReactNode, narrow = true) => (
-    <main id="main" className={cn('mx-auto px-4 py-8 pb-28', narrow ? 'max-w-3xl' : 'max-w-4xl')}>
+  const openPast = (id: string | null) => {
+    opened.current = pastId ?? id
+    setBackToList(id === null)
+    setParams(
+      (old) => {
+        const next = new URLSearchParams(old)
+        if (id) next.set('past', id)
+        else next.delete('past')
+        return next
+      },
+      { replace: false },
+    )
+  }
+
+  const frame = (children: React.ReactNode, narrow = true, slide = '') => (
+    <main id="main" className={cn('mx-auto px-4 py-8 pb-28', narrow ? 'max-w-3xl' : 'max-w-4xl', slide)}>
       {children}
     </main>
   )
@@ -117,6 +143,18 @@ export function StudyPage() {
         </Link>
       </div>,
       false,
+    )
+  }
+
+  if (!session && pastId) {
+    return frame(
+      recap.data ? (
+        <Recap recap={recap.data} kind={recap.data.kind} spaceName={space.name} past={{ onBack: () => openPast(null), weakHref: `/spaces/${space.id}?tab=weak` }} />
+      ) : (
+        <p className="text-sm text-muted-foreground">{recap.isError ? 'Could not load the recap.' : 'Loading the recap…'}</p>
+      ),
+      true,
+      'q-next',
     )
   }
 
@@ -173,8 +211,10 @@ export function StudyPage() {
             </p>
           </button>
         </div>
+        <PastSessions sessions={past.data ?? []} loading={past.isPending} onOpen={(id) => openPast(id)} onStart={() => begin('quiz')} />
       </>,
       false,
+      backToList ? 'q-prev' : '',
     )
   }
 

@@ -139,8 +139,26 @@ class TopicBreakdown(BaseModel):
     weak: bool
 
 
+class PastSessionOut(BaseModel):
+    """A finished Quiz or Test, one row of the past sessions list."""
+
+    id: uuid.UUID
+    kind: str
+    finished_at: datetime
+    score: int
+    # Questions asked.
+    total: int
+    # Topic names, in the order they were first asked.
+    topics: list[str]
+    # Names of the Topics that were weak when the session finished.
+    weak_left: list[str]
+
+
 class RecapOut(BaseModel):
     session_id: uuid.UUID
+    kind: str
+    finished_at: datetime | None
+    weak_left: list[str]
     score: int
     total: int
     by_topic: list[TopicBreakdown]

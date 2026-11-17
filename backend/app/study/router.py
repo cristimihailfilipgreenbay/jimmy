@@ -32,6 +32,7 @@ from app.study.schemas import (
     DisputeRecordOut,
     FeedbackOut,
     HistoryOut,
+    PastSessionOut,
     QuestionOut,
     RecapOut,
     SessionIn,
@@ -262,6 +263,41 @@ def start_session(
     return _session_out(session, study)
 
 
+@router.get("/spaces/{space_id}/sessions", response_model=list[PastSessionOut])
+def list_sessions(space: SpaceDep, session: SessionDep):
+    """The Study Space's finished Quizzes and Tests, newest first."""
+    finished = session.scalars(
+        select(StudySession)
+        .where(StudySession.space_id == space.id, StudySession.status == "finished")
+        .order_by(StudySession.finished_at.desc())
+        .limit(200)
+    ).all()
+    asked: dict[uuid.UUID, list[uuid.UUID]] = {s.id: [] for s in finished}
+    for session_id, topic_id in session.execute(
+        select(SessionQuestion.session_id, SessionQuestion.topic_id)
+        .where(SessionQuestion.session_id.in_(asked))
+        .order_by(SessionQuestion.session_id, SessionQuestion.position)
+    ):
+        asked[session_id].append(topic_id)
+    wanted = {t for ids in asked.values() for t in ids}
+    wanted |= {uuid.UUID(t) for s in finished for t in s.weak_topic_ids}
+    names = topic_names(session, list(wanted))
+    return [
+        PastSessionOut(
+            id=s.id,
+            kind=s.kind,
+            finished_at=s.finished_at,
+            score=s.score or 0,
+            total=len(asked[s.id]),
+            topics=[names[t] for t in dict.fromkeys(asked[s.id]) if t in names],
+            weak_left=[
+                names[uuid.UUID(t)] for t in s.weak_topic_ids if uuid.UUID(t) in names
+            ],
+        )
+        for s in finished
+    ]
+
+
 @router.get("/sessions/{session_id}", response_model=SessionOut)
 def get_session(study: StudySessionDep, session: SessionDep):
     if study.status == "active" and _current(session, study) is None:
@@ -386,8 +422,16 @@ def recap(study: StudySessionDep, session: SessionDep):
         )
         row.total += 1
         row.correct += int(f.correct)
+    weak_names = topic_names(session, [uuid.UUID(t) for t in study.weak_topic_ids])
     return RecapOut(
         session_id=study.id,
+        kind=study.kind,
+        finished_at=study.finished_at,
+        weak_left=[
+            weak_names[uuid.UUID(t)]
+            for t in study.weak_topic_ids
+            if uuid.UUID(t) in weak_names
+        ],
         score=study.score or 0,
         total=len(feedback),
         by_topic=list(by_topic.values()),

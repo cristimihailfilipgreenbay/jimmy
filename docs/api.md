@@ -55,8 +55,8 @@ The app is closed to a Student who has not finished onboarding: the frontend sen
 ### Profile
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/profile` | The current Student's Profile (`language`, `explanation_style`, `adaptive_difficulty`) |
-| PATCH | `/profile` | Update `language` (free text, up to 40 characters; empty answers in the Student's own language), `explanation_style` (`short`, `balanced`, `detailed`) or `adaptive_difficulty` (off: a Quiz or Test is written up front at one difficulty; on: each question follows the last answer) |
+| GET | `/profile` | The current Student's Profile: `name`, `course`, `university`, `year`, `web_search`, `remember_weak_topics`, `language`, `explanation_style`, `adaptive_difficulty` |
+| PATCH | `/profile` | Only what is sent changes: `name` (not blank, up to 80), `course` and `university` (up to 120; blank clears), `year` (`1st`, `2nd`, `3rd`, `4th+`, `Master's`), `web_search`, `remember_weak_topics` (off pauses Weak Topics, see docs/domain.md), `language` (free text, up to 40 characters; empty answers in the Student's own language), `explanation_style` (`short`, `balanced`, `detailed`) or `adaptive_difficulty` (off: a Quiz or Test is written up front at one difficulty; on: each question follows the last answer) |
 | GET | `/profile/facts` | Stored facts and style preferences, with status |
 | POST | `/profile/facts/{id}/approve` | Approve a proposed fact or style change |
 | DELETE | `/profile/facts/{id}` | Delete a fact |
@@ -134,6 +134,7 @@ A pending Dispute is answered with `POST /threads/{session.thread_id}/resume` (`
 | GET | `/spaces/{space_id}/weak-topics` | Current Weak Topics by name, thirty at a time (`limit`, `cursor`). Returns `{items, next_cursor, total}` |
 | DELETE | `/spaces/{space_id}/weak-topics` | Clear every weak Topic of the Space |
 | DELETE | `/spaces/{space_id}/weak-topics/{topic_id}` | Clear one |
+| DELETE | `/weak-topics` | Clear every weak Topic in every one of the Student's Study Spaces (`204`) |
 | GET | `/spaces/{space_id}/conflicts` | Stored Conflict decisions, each with the two passages' documents and excerpts |
 | DELETE | `/spaces/{space_id}/conflicts/{id}` | Forget a decision so it is asked again |
 | GET | `/spaces/{space_id}/disputes` | Past Disputes, newest first: the Topic, question, the Student's answer, the automatic score and confidence, and the decision |

@@ -38,7 +38,11 @@ from app.study.models import (
 )
 from app.study.routing import DISPUTE_CONFIDENCE, DISPUTE_MARGIN, needs_dispute
 from app.study.selection import next_difficulty, pick_topic
-from app.study.service import refresh_weak_topic, weak_topic_ids
+from app.study.service import (
+    refresh_weak_topic,
+    remembers_weak_topics,
+    weak_topic_ids,
+)
 from app.study.sources import PassageFinder
 from app.topics.models import Topic
 
@@ -285,7 +289,9 @@ def build_study_graph(
                 session.add(attempt)
             session.flush()
             topic_id = row.topic_id
-            refresh_weak_topic(session, uuid.UUID(state["space_id"]), topic_id)
+            # Paused in Settings: the answer is kept, the Topic's state is not updated.
+            if remembers_weak_topics(session, uuid.UUID(state["space_id"])):
+                refresh_weak_topic(session, uuid.UUID(state["space_id"]), topic_id)
             session.commit()
         return {
             "answered": state["answered"] + 1,
@@ -326,16 +332,18 @@ def build_study_graph(
             asked = select(SessionQuestion.topic_id).where(
                 SessionQuestion.session_id == row.id
             )
-            row.weak_topic_ids = [
-                str(t)
-                for t in session.scalars(
+            weak_asked = (
+                session.scalars(
                     select(WeakTopic.topic_id).where(
                         WeakTopic.space_id == row.space_id,
                         WeakTopic.is_weak.is_(True),
                         WeakTopic.topic_id.in_(asked),
                     )
                 )
-            ]
+                if remembers_weak_topics(session, row.space_id)
+                else []
+            )
+            row.weak_topic_ids = [str(t) for t in weak_asked]
             session.commit()
         return {}
 

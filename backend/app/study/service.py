@@ -6,6 +6,8 @@ from datetime import UTC, datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.spaces.models import Space
+from app.students.models import Profile
 from app.study.models import QuizAttempt, SessionQuestion, StudySession, WeakTopic
 from app.study.weak import weak_state
 from app.topics.models import Topic
@@ -37,7 +39,20 @@ def refresh_weak_topic(session: Session, space_id: uuid.UUID, topic_id: uuid.UUI
     return row
 
 
+def remembers_weak_topics(session: Session, space_id: uuid.UUID) -> bool:
+    """False while the Student has paused Weak Topics in Settings."""
+    paused = session.scalar(
+        select(Profile.student_id)
+        .join(Space, Space.student_id == Profile.student_id)
+        .where(Space.id == space_id, Profile.remember_weak_topics.is_(False))
+    )
+    return paused is None
+
+
 def weak_topic_ids(session: Session, space_id: uuid.UUID) -> set[uuid.UUID]:
+    """The Topics to weight toward. None while Weak Topics are paused."""
+    if not remembers_weak_topics(session, space_id):
+        return set()
     return set(
         session.scalars(
             select(WeakTopic.topic_id).where(

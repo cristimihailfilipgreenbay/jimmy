@@ -61,3 +61,39 @@ def test_difficulty_follows_how_the_student_is_doing():
     assert next_difficulty("medium", [T, F]) == "easy"
     assert next_difficulty("easy", [F]) == "easy"
     assert next_difficulty("medium", [T]) == "medium"
+
+
+# Pausing Weak Topics in Settings: what is already weak stays, but nothing uses it.
+def test_a_paused_student_has_no_topics_to_weight_toward():
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import Session
+    from sqlalchemy.pool import StaticPool
+
+    from app.db import Base
+    from app.spaces.models import Space
+    from app.students.models import Profile
+    from app.study.models import WeakTopic
+    from app.study.service import remembers_weak_topics, weak_topic_ids
+
+    engine = create_engine(
+        "sqlite://", poolclass=StaticPool, connect_args={"check_same_thread": False}
+    )
+    Base.metadata.create_all(
+        engine, tables=[Space.__table__, Profile.__table__, WeakTopic.__table__]
+    )
+    student, space, topic = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+    with Session(engine) as s:
+        s.add(Space(id=space, student_id=student, name="Biology"))
+        s.add(WeakTopic(space_id=space, topic_id=topic, is_weak=True))
+        # No Profile row yet: remembering is the default.
+        s.flush()
+        assert remembers_weak_topics(s, space)
+        assert weak_topic_ids(s, space) == {topic}
+        profile = Profile(student_id=student, remember_weak_topics=False)
+        s.add(profile)
+        s.flush()
+        assert not remembers_weak_topics(s, space)
+        assert weak_topic_ids(s, space) == set()
+        profile.remember_weak_topics = True
+        s.flush()
+        assert weak_topic_ids(s, space) == {topic}

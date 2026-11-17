@@ -15,7 +15,9 @@ from app.chat import models as _chat  # noqa: F401  (tables the FKs point to)
 from app.chunks import models as _chunks  # noqa: F401
 from app.db import Base
 from app.spaces import models as _spaces  # noqa: F401
+from app.spaces.models import Space
 from app.students import models as _students  # noqa: F401
+from app.students.models import Profile
 from app.study.graph import build_study_graph
 from app.study.models import (
     Dispute,
@@ -88,6 +90,8 @@ def db():
     Base.metadata.create_all(
         engine,
         tables=[
+            Space.__table__,
+            Profile.__table__,
             Topic.__table__,
             StudySession.__table__,
             SessionQuestion.__table__,

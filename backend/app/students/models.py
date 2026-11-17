@@ -51,6 +51,11 @@ class Profile(Base):
     web_search_enabled: Mapped[bool] = mapped_column(
         Boolean, default=True, server_default="true"
     )
+    # Off: Weak Topics are neither updated nor used to pick questions. What is already
+    # marked weak stays, and can still be cleared.
+    remember_weak_topics: Mapped[bool] = mapped_column(
+        Boolean, default=True, server_default="true"
+    )
     # Off: a Quiz or Test writes every question up front, at one difficulty, so answering
     # never waits. On: each question is written after the last answer and follows it.
     adaptive_difficulty: Mapped[bool] = mapped_column(

@@ -14,6 +14,8 @@ type Shown = { prompt: string; type: string; topic: string; options: string[] | 
 export function QuestionCard({
   question,
   feedback,
+  test,
+  submitted,
   dispute,
   checking,
   deciding,
@@ -27,6 +29,10 @@ export function QuestionCard({
 }: {
   question: Question | null
   feedback: Feedback | null
+  // A Test shows no feedback and no Dispute; `submitted` is the answer already given
+  // to this question (an option number or the text), shown read-only when going back.
+  test: boolean
+  submitted: string | null
   // Set while the grader waits for the Student's decision on this question.
   dispute: Dispute | null
   checking: boolean
@@ -45,10 +51,11 @@ export function QuestionCard({
   const [text, setText] = useState('')
   const answered = multiple ? choice !== undefined : text.trim() !== ''
   const revealed = !!feedback
-  const locked = revealed || !!dispute
+  const locked = revealed || !!dispute || submitted !== null
   // The option the Student chose, as the number the backend takes.
-  const picked = feedback && multiple ? shown.options?.indexOf(feedback.answer).toString() : choice
-  const written = feedback?.answer ?? dispute?.answer ?? text
+  const picked = feedback && multiple ? shown.options?.indexOf(feedback.answer).toString() : (submitted ?? choice)
+  const written = feedback?.answer ?? dispute?.answer ?? submitted ?? text
+  const last = isLast ? (test ? 'Finish test' : 'See summary') : 'Next question'
 
   return (
     <div className={cn(cardClass, 'p-5 md:p-6', className)}>
@@ -128,7 +135,17 @@ export function QuestionCard({
         </Button>
         {revealed ? (
           <Button onClick={onNext} variant="space">
-            {isLast ? 'See summary' : 'Next question'}
+            {last}
+            <ArrowRight />
+          </Button>
+        ) : submitted !== null ? (
+          <Button onClick={onNext} variant="space">
+            Next question
+            <ArrowRight />
+          </Button>
+        ) : test ? (
+          <Button variant="space" disabled={!answered || checking} onClick={() => onCheck(multiple ? choice! : text.trim())}>
+            {checking ? 'Saving…' : last}
             <ArrowRight />
           </Button>
         ) : dispute ? null : (

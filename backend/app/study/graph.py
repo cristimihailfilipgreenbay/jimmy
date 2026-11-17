@@ -1,9 +1,11 @@
-"""The Study Session graph (docs/architecture.md, section 4.2), for a Quiz.
+"""The Study Session graph (docs/architecture.md, section 4.2), for a Quiz or a Test.
 
-    pick Topic (Weak Topics weighted) -> write a question from a passage
-      -> wait for the Student's answer (interrupt) -> grade
-      -> unsure? wait for the Student's Dispute decision (interrupt)
-      -> record -> more? adapt difficulty -> pick ... / done -> finish
+    adaptive:     pick Topic (Weak Topics weighted) -> write a question from a passage
+                    -> wait for the Student's answer (interrupt) -> grade
+                    -> unsure? wait for the Student's Dispute decision (interrupt)
+                    -> record -> more? adapt difficulty -> pick ... / done -> finish
+    not adaptive: write every question at once (model calls in parallel), then the same
+                  answer -> grade -> record loop over the written questions
 
 The graph runs on the Postgres checkpointer, one LangGraph thread per session. It stops at
 `await_answer`; `POST /sessions/{id}/answers` resumes it with the answer. An uncertain
@@ -17,6 +19,7 @@ State holds plain data only. Everything before `interrupt()` runs again on resum
 import random
 import uuid
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from typing import TypedDict
 
@@ -35,11 +38,19 @@ from app.topics.models import Topic
 
 SessionFactory = Callable[[], Session]
 MC_SHARE = 0.6
+# Questions written at the same time when the difficulty does not adapt.
+MAX_PARALLEL = 10
 
 
 class StudyState(TypedDict, total=False):
     session_id: str
     space_id: str
+    # "quiz" or "test": a Test shows nothing until the recap, so it never pauses for a
+    # Dispute.
+    kind: str
+    # Whether the difficulty follows the answers (the Student's setting). Not adaptive
+    # means every question is written up front. Missing means adaptive.
+    adaptive: bool
     topic_ids: list[str]
     total: int
     answered: int
@@ -80,6 +91,77 @@ def build_study_graph(
             rng,
         )
         return {"topic_id": str(chosen)}
+
+    def write_all(state: StudyState) -> StudyState:
+        """Every question of the session, written together. Topics and passages are
+        chosen one after another (no passage twice), the model calls run in parallel and
+        nothing is saved unless every question was written."""
+        space_id = uuid.UUID(state["space_id"])
+        topic_ids = [uuid.UUID(t) for t in state["topic_ids"]]
+        with factory() as session:
+            weak = weak_topic_ids(session, space_id)
+            used = {uuid.UUID(c) for c in state["used_chunks"]}
+            plan = []
+            previous = None
+            for _ in range(state["total"]):
+                topic_id = pick_topic(topic_ids, weak, previous, rng)
+                name = session.get(Topic, topic_id).name
+                source = find_passage(session, space_id, name, used)
+                used.add(uuid.UUID(source["chunk_id"]))
+                qtype = q.MULTIPLE_CHOICE if rng.random() < MC_SHARE else q.SHORT_ANSWER
+                plan.append(
+                    (topic_id, name, source, qtype, random.Random(rng.random()))
+                )
+                previous = topic_id
+
+            def write(item):
+                _topic_id, name, source, qtype, own_rng = item
+                return q.generate_question(
+                    question_model,
+                    passage=source["passage"],
+                    topic=name,
+                    qtype=qtype,
+                    difficulty=state["difficulty"],
+                    rng=own_rng,
+                )
+
+            with ThreadPoolExecutor(max_workers=min(len(plan), MAX_PARALLEL)) as pool:
+                written = list(pool.map(write, plan))
+            rows = []
+            for position, ((topic_id, _name, source, _t, _r), question) in enumerate(
+                zip(plan, written, strict=True), start=1
+            ):
+                row = SessionQuestion(
+                    session_id=uuid.UUID(state["session_id"]),
+                    topic_id=topic_id,
+                    position=position,
+                    question_type=question.type,
+                    prompt=question.prompt,
+                    options=question.options,
+                    answer_key=question.answer_key,
+                    explanation=question.explanation,
+                    difficulty=state["difficulty"],
+                    source_chunk_id=uuid.UUID(source["chunk_id"]),
+                    source={k: v for k, v in source.items() if k != "chunk_id"},
+                )
+                session.add(row)
+                rows.append(row)
+            session.commit()
+            return {
+                "question_id": str(rows[0].id),
+                "used_chunks": [str(c) for c in used],
+            }
+
+    def next_question(state: StudyState) -> StudyState:
+        """The next question that was written up front."""
+        with factory() as session:
+            row = session.scalar(
+                select(SessionQuestion).where(
+                    SessionQuestion.session_id == uuid.UUID(state["session_id"]),
+                    SessionQuestion.position == state["answered"] + 1,
+                )
+            )
+            return {"question_id": str(row.id)}
 
     def generate(state: StudyState) -> StudyState:
         space_id = uuid.UUID(state["space_id"])
@@ -146,6 +228,8 @@ def build_study_graph(
 
     def route(state: StudyState) -> str:
         grade_ = state["grade"]
+        if state.get("kind") == "test":
+            return "record"
         unsure = needs_dispute(
             grade_["score"],
             grade_["confidence"],
@@ -194,17 +278,23 @@ def build_study_graph(
             else:
                 session.add(attempt)
             session.flush()
-            refresh_weak_topic(session, uuid.UUID(state["space_id"]), row.topic_id)
+            topic_id = row.topic_id
+            refresh_weak_topic(session, uuid.UUID(state["space_id"]), topic_id)
             session.commit()
         return {
             "answered": state["answered"] + 1,
             "recent": [*state["recent"], result["correct"]][-5:],
-            "previous_topic": state["topic_id"],
+            "previous_topic": str(topic_id),
             "decision": None,
         }
 
+    def start(state: StudyState) -> str:
+        return "pick" if state.get("adaptive", True) else "write_all"
+
     def more(state: StudyState) -> str:
-        return "adapt" if state["answered"] < state["total"] else "finish"
+        if state["answered"] >= state["total"]:
+            return "finish"
+        return "adapt" if state.get("adaptive", True) else "next_question"
 
     def adapt(state: StudyState) -> StudyState:
         level = next_difficulty(state["difficulty"], state["recent"])
@@ -232,6 +322,8 @@ def build_study_graph(
 
     graph = StateGraph(StudyState)
     for name, node in [
+        ("write_all", write_all),
+        ("next_question", next_question),
         ("pick", pick),
         ("generate", generate),
         ("await_answer", await_answer),
@@ -242,13 +334,15 @@ def build_study_graph(
         ("finish", finish),
     ]:
         graph.add_node(name, node)
-    graph.add_edge(START, "pick")
+    graph.add_conditional_edges(START, start, ["pick", "write_all"])
+    graph.add_edge("write_all", "await_answer")
+    graph.add_edge("next_question", "await_answer")
     graph.add_edge("pick", "generate")
     graph.add_edge("generate", "await_answer")
     graph.add_edge("await_answer", "grade")
     graph.add_conditional_edges("grade", route, ["await_dispute", "record"])
     graph.add_edge("await_dispute", "record")
-    graph.add_conditional_edges("record", more, ["adapt", "finish"])
+    graph.add_conditional_edges("record", more, ["adapt", "next_question", "finish"])
     graph.add_edge("adapt", "pick")
     graph.add_edge("finish", END)
     return graph.compile(checkpointer=checkpointer)

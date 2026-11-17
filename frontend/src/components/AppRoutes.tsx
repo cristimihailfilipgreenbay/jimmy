@@ -8,6 +8,7 @@ import { OnboardingPage } from '@/features/onboarding/OnboardingPage'
 import { RequireOnboarded } from '@/features/onboarding/components/RequireOnboarded'
 import { ApiStatus } from '@/features/health/components/ApiStatus'
 import { FlashcardsPage } from '@/features/flashcards/FlashcardsPage'
+import { SettingsPage } from '@/features/settings/SettingsPage'
 import { StudyPage } from '@/features/study/StudyPage'
 import { SpaceDashboardPage } from '@/features/spaces/SpaceDashboardPage'
 import { SpacesPage } from '@/features/spaces/SpacesPage'
@@ -28,7 +29,7 @@ export function AppRoutes() {
             <Route path="spaces/:spaceId/chat" element={<ChatPage />} />
             <Route path="spaces/:spaceId/study" element={<StudyPage />} />
             <Route path="spaces/:spaceId/flashcards" element={<FlashcardsPage />} />
-            <Route path="settings" element={<Placeholder title="Settings" note="Profile and preferences." />} />
+            <Route path="settings" element={<SettingsPage />} />
             <Route
               path="developer"
               element={

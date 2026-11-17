@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 
 class SessionIn(BaseModel):
-    kind: Literal["quiz"] = "quiz"
+    kind: Literal["quiz", "test"] = "quiz"
     # Empty means every Topic in the Study Space.
     topic_ids: list[uuid.UUID] = []
     question_count: int = Field(default=5, ge=1, le=20)
@@ -113,6 +113,22 @@ class AnswerOut(BaseModel):
     # None while a Dispute waits for the Student; the decision returns the feedback.
     feedback: FeedbackOut | None
     session: SessionOut
+
+
+class TakenOut(BaseModel):
+    """A Test question the Student already answered, with their answer (an option number
+    for multiple choice). A Test shows nothing more until the recap."""
+
+    question: QuestionOut
+    answer: str
+
+
+class HistoryOut(BaseModel):
+    """What a session already showed the Student, so a reloaded page can go on where it
+    was: the feedback of a Quiz, or the answers given in a Test."""
+
+    feedback: list[FeedbackOut]
+    taken: list[TakenOut]
 
 
 class TopicBreakdown(BaseModel):

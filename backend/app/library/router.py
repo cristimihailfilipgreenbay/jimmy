@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Query
-from sqlalchemy import select, text
+from sqlalchemy import and_, func, or_, select, text, tuple_
 
 from app.chat.models import Message, Thread
 from app.db import SessionDep
@@ -14,8 +14,15 @@ from app.errors import ApiError
 from app.library.ingest import ingest_library_document
 from app.library.models import LibraryPack
 from app.library.schemas import LibraryIn, LibraryOut, PackOut, ShelfBook
-from app.library.search import TYPO_THRESHOLD, build_pack_search
+from app.library.search import TYPO_THRESHOLD, pack_match
 from app.library.seed import seed_root
+from app.pagination import (
+    CursorPage,
+    CursorQuery,
+    LimitQuery,
+    decode_cursor,
+    next_cursor,
+)
 from app.spaces.dependencies import get_owned_space
 from app.spaces.models import Space
 from app.students.dependencies import StudentDep
@@ -78,14 +85,61 @@ def _status(documents: list[Document]) -> str:
 def _state(session, space: Space) -> LibraryOut:
     documents = _library_documents(session, space)
     if not documents:
-        return LibraryOut(enabled=False, status="none", books=[])
+        return LibraryOut(
+            enabled=False,
+            status="none",
+            book_count=0,
+            chapters_ready=0,
+            chapters_total=0,
+            pack_ids=[],
+        )
+    pack_ids = list(dict.fromkeys(d.pack_id for d in documents))
+    return LibraryOut(
+        enabled=space.library_enabled,
+        status=_status(documents),
+        book_count=len(pack_ids),
+        chapters_ready=sum(d.status == "ready" for d in documents),
+        chapters_total=len(documents),
+        pack_ids=pack_ids,
+    )
+
+
+def _invalid_cursor() -> ApiError:
+    return ApiError(422, "invalid_cursor", "That page link is not valid.")
+
+
+@router.get("/spaces/{space_id}/library/books", response_model=CursorPage[ShelfBook])
+def list_books(
+    space: SpaceDep,
+    session: SessionDep,
+    limit: LimitQuery = 20,
+    cursor: CursorQuery = None,
+):
+    """The textbooks on the Space's shelf by title, twenty at a time."""
+    documents = _library_documents(session, space)
+    on_shelf = {d.pack_id for d in documents}
+    after = ()
+    if cursor:
+        title, pack_id = decode_cursor(cursor, 2)
+        try:
+            after = (
+                tuple_(LibraryPack.title, LibraryPack.id)
+                > tuple_(title, uuid.UUID(pack_id)),
+            )
+        except ValueError as exc:
+            raise _invalid_cursor() from exc
+    packs = list(
+        session.scalars(
+            select(LibraryPack)
+            .where(LibraryPack.id.in_(on_shelf), *after)
+            .order_by(LibraryPack.title, LibraryPack.id)
+            .limit(limit + 1)
+        )
+    )
     answers = _answer_citations(session, space)
     books = []
-    for pack_id in dict.fromkeys(d.pack_id for d in documents):
-        pack = session.get(LibraryPack, pack_id)
-        if pack is None:
-            continue
-        mine = [d for d in documents if d.pack_id == pack_id]
+    for pack in packs[:limit]:
+        mine = [d for d in documents if d.pack_id == pack.id]
         books.append(
             ShelfBook(
                 pack=PackOut.model_validate(pack),
@@ -96,29 +150,86 @@ def _state(session, space: Space) -> LibraryOut:
                 cited_in_answers=_cited_in(answers, pack),
             )
         )
-    return LibraryOut(
-        enabled=space.library_enabled,
-        status=_status(documents),
-        books=books,
+    return CursorPage(
+        items=books,
+        next_cursor=next_cursor(packs, limit, lambda p: [p.title, str(p.id)]),
+        total=len(on_shelf),
     )
 
 
-@router.get("/libraries", response_model=list[PackOut])
+@router.get("/libraries", response_model=CursorPage[PackOut])
 def list_packs(
     session: SessionDep,
     student: StudentDep,
     q: Annotated[str | None, Query(max_length=200)] = None,
+    limit: LimitQuery = 20,
+    cursor: CursorQuery = None,
 ):
-    """The packs the seed command has made available. With `q`, only the packs that
-    match those words (misspellings included), best match first."""
+    """The packs the seed command has made available, by title, twenty at a time. With
+    `q`, only the packs that match those words (misspellings included), best match
+    first."""
     words = (q or "").strip()
     if not words:
-        return session.scalars(select(LibraryPack).order_by(LibraryPack.title))
+        after = ()
+        if cursor:
+            title, pack_id = decode_cursor(cursor, 2)
+            try:
+                after = (
+                    tuple_(LibraryPack.title, LibraryPack.id)
+                    > tuple_(title, uuid.UUID(pack_id)),
+                )
+            except ValueError as exc:
+                raise _invalid_cursor() from exc
+        packs = list(
+            session.scalars(
+                select(LibraryPack)
+                .where(*after)
+                .order_by(LibraryPack.title, LibraryPack.id)
+                .limit(limit + 1)
+            )
+        )
+        total = session.scalar(select(func.count()).select_from(LibraryPack))
+        return CursorPage(
+            items=packs[:limit],
+            next_cursor=next_cursor(packs, limit, lambda p: [p.title, str(p.id)]),
+            total=total,
+        )
     # Applies to this transaction only; the `<%` operator reads it.
     session.execute(
         text(f"SET LOCAL pg_trgm.word_similarity_threshold = {TYPO_THRESHOLD}")
     )
-    return session.scalars(build_pack_search(words))
+    score, match = pack_match(words)
+    after = ()
+    if cursor:
+        last_score, title, pack_id = decode_cursor(cursor, 3)
+        try:
+            ranked = float(last_score)
+            after = (
+                or_(
+                    score < ranked,
+                    and_(
+                        score == ranked,
+                        tuple_(LibraryPack.title, LibraryPack.id)
+                        > tuple_(title, uuid.UUID(pack_id)),
+                    ),
+                ),
+            )
+        except ValueError as exc:
+            raise _invalid_cursor() from exc
+    rows = session.execute(
+        select(LibraryPack, score.label("score"))
+        .where(match, *after)
+        .order_by(score.desc(), LibraryPack.title, LibraryPack.id)
+        .limit(limit + 1)
+    ).all()
+    total = session.scalar(select(func.count()).select_from(LibraryPack).where(match))
+    return CursorPage(
+        items=[pack for pack, _ in rows[:limit]],
+        next_cursor=next_cursor(
+            rows, limit, lambda r: [repr(float(r[1])), r[0].title, str(r[0].id)]
+        ),
+        total=total,
+    )
 
 
 @router.get("/spaces/{space_id}/library", response_model=LibraryOut)

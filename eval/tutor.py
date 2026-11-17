@@ -36,6 +36,8 @@ class Answer:
     contexts: list[str] = field(default_factory=list)
     cited: list[dict] = field(default_factory=list)
     problems: list[str] = field(default_factory=list)
+    # This answer's Ragas scores, by metric name.
+    ragas: dict[str, float] = field(default_factory=dict)
     error: str = ""
 
 

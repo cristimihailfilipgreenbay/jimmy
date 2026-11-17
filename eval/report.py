@@ -43,13 +43,14 @@ def render(scores: list[Score], answers: list[Answer], models: dict[str, str]) -
         "",
         "## Golden set",
         "",
-        "| Id | Space | Kind | Question | Citations | Answer |",
-        "|---|---|---|---|---|---|",
+        "| Id | Space | Kind | Question | Faith. | Prec. | Recall | Citations | Answer |",
+        "|---|---|---|---|---|---|---|---|---|",
     ]
     for a in answers:
         shown = f"error: {a.error}" if a.error else _cell(a.text)
         lines.append(
             f"| {a.id} | {a.space} | {a.category} | {_cell(a.question, 80)} "
-            f"| {len(a.cited)} | {shown} |"
+            f"| {pct(a.ragas.get('Faithfulness'))} | {pct(a.ragas.get('Context precision'))} "
+            f"| {pct(a.ragas.get('Context recall'))} | {len(a.cited)} | {shown} |"
         )
     return "\n".join(lines) + "\n"

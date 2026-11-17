@@ -106,6 +106,11 @@ def ragas_scores(answers: list[Answer], chat_model) -> list[Score]:
             raise_exceptions=False,
             show_progress=False,
         )
+    for answer, row in zip(rows, result.scores, strict=True):
+        for key, name in names.items():
+            v = row.get(key)
+            if isinstance(v, (int, float)) and v == v:
+                answer.ragas[name] = v
     scores = []
     for key, name in names.items():
         values = [

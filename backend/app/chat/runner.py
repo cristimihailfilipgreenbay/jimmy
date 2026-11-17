@@ -67,14 +67,19 @@ def redirect_turn(*, thread_id: uuid.UUID, reply: str) -> Iterator[Event]:
     )
 
 
-def config_for(thread_id, turn_id, space_id) -> dict:
+def config_for(thread_id, turn_id, space_id, run_id=None) -> dict:
     # Each turn is its own LangGraph thread: the history is passed in, and a paused turn
     # waits in the checkpointer under this id until the Student answers.
-    return {
+    config = {
         "configurable": {"thread_id": f"{thread_id}:{turn_id}"},
         "run_name": "tutor-chat",
         "metadata": {"thread_id": str(thread_id), "space_id": str(space_id)},
     }
+    if run_id:
+        # The run's id is the LangSmith trace id, kept with the answer so a 👍/👎 can
+        # be sent as feedback on that trace.
+        config["run_id"] = run_id
+    return config
 
 
 def pending_interrupt(agent, config) -> tuple[str, dict] | None:
@@ -103,6 +108,7 @@ def run_turn(
     checkpointer=None,
     turn_id: uuid.UUID | None = None,
     compare_model=None,
+    preferences: str = "",
 ) -> Iterator[Event]:
     """Stream the answer, then store it. Never raises: failures become `error` events."""
     sources = RunSources()
@@ -117,6 +123,7 @@ def run_turn(
             checkpointer,
             compare_model,
             flashcards=True,
+            preferences=preferences,
         )
     except ModelNotConfigured as exc:
         yield Event("error", {"code": "upstream_unavailable", "message": str(exc)})
@@ -125,7 +132,7 @@ def run_turn(
         agent,
         sources,
         {"messages": [*history, HumanMessage(question)]},
-        config_for(thread_id, turn_id or uuid.uuid4(), space_id),
+        config_for(thread_id, turn_id or uuid.uuid4(), space_id, uuid.uuid4()),
         thread_id=thread_id,
         space_id=space_id,
         space_name=space_name,
@@ -146,6 +153,7 @@ def resume_turn(
     learned: bool = False,
     checkpointer=None,
     compare_model=None,
+    preferences: str = "",
 ) -> Iterator[Event]:
     """Continue a paused turn with the Student's decision."""
     sources = RunSources()
@@ -160,11 +168,14 @@ def resume_turn(
             checkpointer,
             compare_model,
             flashcards=True,
+            preferences=preferences,
         )
     except ModelNotConfigured as exc:
         yield Event("error", {"code": "upstream_unavailable", "message": str(exc)})
         return
     config = config_for(thread_id, turn_id, space_id)
+    # The resumed part of a turn is a run of its own: it is the one that wrote the answer.
+    config["run_id"] = uuid.uuid4()
     # The Citations found before the pause travel with the paused turn.
     for message in agent.get_state(config).values.get("messages", []):
         if isinstance(message, ToolMessage) and isinstance(message.artifact, list):
@@ -314,6 +325,7 @@ def _stream(
             citations=[c.as_json() for c in citations],
             tokens_in=tokens_in or None,
             tokens_out=tokens_out or None,
+            trace_id=str(config["run_id"]) if config.get("run_id") else None,
         )
         session.add(message)
         session.commit()
@@ -326,5 +338,10 @@ def _stream(
         )
     yield Event("cost", {"tokens_in": tokens_in, "tokens_out": tokens_out, "usd": None})
     yield Event(
-        "done", {"message_id": str(message_id), "trace_id": None, "content": text}
+        "done",
+        {
+            "message_id": str(message_id),
+            "trace_id": str(config["run_id"]) if config.get("run_id") else None,
+            "content": text,
+        },
     )

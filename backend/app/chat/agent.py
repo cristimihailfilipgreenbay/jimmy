@@ -106,6 +106,7 @@ def build_agent(
     checkpointer=None,
     compare_model=None,
     flashcards: bool = False,
+    preferences: str = "",
 ):
     """`library`: the Space has a Subject Library attached and switched on.
     `learned`: the Space has Learned Material.
@@ -132,7 +133,7 @@ def build_agent(
         model or make_model(),
         tools=tools,
         system_prompt=build_prompt(
-            library, web, use_tavily, learned, compare, flashcards
+            library, web, use_tavily, learned, compare, flashcards, preferences
         ),
         middleware=[
             ModelCallLimitMiddleware(run_limit=MAX_MODEL_CALLS, exit_behavior="error"),

@@ -53,6 +53,9 @@ class MessageOut(BaseModel):
     cost_usd: float | None
     trace_id: str | None
     created_at: datetime
+    # The Student's 👍/👎 on this answer, and why, if given.
+    rating: str | None = None
+    rating_comment: str | None = None
 
     model_config = {"from_attributes": True}
 

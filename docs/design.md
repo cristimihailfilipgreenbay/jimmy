@@ -56,7 +56,7 @@ The empty Chat (`features/chat/components/ChatEmpty.tsx`) follows the prototype 
 
 | Element | Prototype behaviour | Built in |
 | --- | --- | --- |
-| New chat | "New chat" button in the conversation header, and "Back to your previous conversation" under the empty card. The app keeps one conversation per Study Space today. | Not assigned yet |
+| Chats | A Study Space has several chats. The right column of the Chat screen holds "Chats" (newest first, grouped by day, twenty at a time) beside "Sources"; on a phone a "Chats" button in the chat header opens the list in a bottom sheet. "New chat" sits in the chat header and at the top of the list, with "Back to your last chat" under the empty card. A chat can be renamed (empty goes back to the first question) and deleted after a confirmation, from its "⋯" menu or by right-click. | [#60](https://github.com/cristimihailfilipgreenbay/jimmy/issues/60) |
 
 ## 6. Feedback and personalisation
 

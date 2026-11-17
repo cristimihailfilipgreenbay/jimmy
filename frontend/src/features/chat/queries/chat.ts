@@ -1,9 +1,13 @@
 import { z } from 'zod'
 import { ApiError, request, requestStream, requestVoid } from '@/lib/http'
 import { pageQuery } from '@/lib/pagination'
-import { MESSAGES_PAGE, messagesPageSchema, storedConflictSchema, streamEventSchema, threadSchema, type ConflictDecision, type StreamEvent } from '../schemas/chat'
+import { MESSAGES_PAGE, THREADS_PAGE, messagesPageSchema, storedConflictSchema, threadItemSchema, threadsPageSchema, streamEventSchema, threadSchema, type ConflictDecision, type StreamEvent } from '../schemas/chat'
 
-export const listThreads = (spaceId: string) => request(`/spaces/${spaceId}/threads`, z.array(threadSchema))
+/** A page of the Space's chats, the most recently active first. */
+export const listThreads = (spaceId: string, cursor: string | null) => request(`/spaces/${spaceId}/threads${pageQuery(cursor, { limit: THREADS_PAGE })}`, threadsPageSchema)
+/** Rename a chat; an empty name goes back to the first question. */
+export const renameThread = (threadId: string, title: string) => request(`/threads/${threadId}`, threadItemSchema, { method: 'PATCH', body: JSON.stringify({ title }) })
+export const deleteThread = (threadId: string) => requestVoid(`/threads/${threadId}`, { method: 'DELETE' })
 export const createThread = (spaceId: string) => request(`/spaces/${spaceId}/threads`, threadSchema, { method: 'POST' })
 /** The newest messages when `cursor` is null, else the ones before it; each page is oldest first. */
 export const listMessages = (threadId: string, cursor: string | null) =>

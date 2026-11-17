@@ -46,8 +46,8 @@ const SOURCES: { chip: ReactNode; desc: string }[] = [
 export function SourceGuide({ space }: { space: Space }) {
   // Notes search is always on; the Subject Library follows the Space's switch; web search comes with its feature.
   return (
-    <aside className="hidden lg:block" aria-label="Source guide">
-      <div className="sticky top-20 space-y-4">
+    <div className="space-y-4">
+      <div className="space-y-4">
         <div className={`${card} p-4`}>
           <h2 className="text-sm font-semibold">How to read sources</h2>
           <ul className="mt-3 space-y-3">
@@ -77,6 +77,6 @@ export function SourceGuide({ space }: { space: Space }) {
           </ul>
         </div>
       </div>
-    </aside>
+    </div>
   )
 }

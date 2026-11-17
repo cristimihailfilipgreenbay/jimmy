@@ -5,7 +5,7 @@ import type { ToolPill } from '../components/AnswerMessage'
 import type { ConflictCardState } from '../components/ConflictCard'
 import { useResumeThread } from '../queries/useResumeThread'
 import { useSendMessage } from '../queries/useSendMessage'
-import { messagesKey, threadsKey, useCreateThread, useMessages, useThreads } from '../queries/useThreads'
+import { messagesKey, threadsKey, useCreateThread, useMessages } from '../queries/useThreads'
 import type { Citation, ConflictDecision, StreamEvent } from '../schemas/chat'
 
 export type Step = { tool: string; state: 'run' | 'done'; found?: number }
@@ -32,14 +32,11 @@ export function chatStatus(run: Pending): { label: string; working: boolean } {
 }
 
 /** One Study Space's conversation: its stored messages plus the answer being streamed. */
-export function useChat(studentId: string, spaceId: string) {
+export function useChat(studentId: string, spaceId: string, threadId: string | undefined, onThread: (id: string) => void) {
   const qc = useQueryClient()
-  const { data: threads } = useThreads(studentId, spaceId)
   const createThread = useCreateThread(studentId, spaceId)
   const send = useSendMessage()
   const resume = useResumeThread()
-  const [chosenThread, setChosenThread] = useState<string>()
-  const threadId = chosenThread ?? threads?.[0]?.id
   const stored = useMessages(threadId)
   const messages = stored.data?.messages ?? []
   const loadingMessages = stored.isPending
@@ -112,7 +109,7 @@ export function useChat(studentId: string, spaceId: string) {
     let id = threadId
     await drive(() => id, async (signal) => {
       id = id ?? (await createThread.mutateAsync()).id
-      setChosenThread(id)
+      onThread(id)
       await send.mutateAsync({ threadId: id, content: question, onEvent: apply, signal })
     })
   }
@@ -135,5 +132,5 @@ export function useChat(studentId: string, spaceId: string) {
     }
   }
 
-  return { messages, hasOlder: !!stored.hasNextPage, loadingOlder: stored.isFetchingNextPage, loadOlder: () => stored.fetchNextPage().then((r) => !r.isError), loadingMessages: !!threadId && loadingMessages, pending, error, pills, conflicts, ask, decide, stop }
+  return { messages, total: stored.data?.total ?? 0, hasOlder: !!stored.hasNextPage, loadingOlder: stored.isFetchingNextPage, loadOlder: () => stored.fetchNextPage().then((r) => !r.isError), loadingMessages: !!threadId && loadingMessages, pending, error, pills, conflicts, ask, decide, stop }
 }

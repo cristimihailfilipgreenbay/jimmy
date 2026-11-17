@@ -102,9 +102,11 @@ Topic review after an upload is not a plain edit; it is a pause in the ingestion
 ### Threads and chat
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/spaces/{space_id}/threads` | List conversations |
-| POST | `/spaces/{space_id}/threads` | Start a conversation |
+| GET | `/spaces/{space_id}/threads` | The Space's chats, the most recently active first, twenty at a time (`limit`, `cursor`). Returns `{items, next_cursor, total}`; each item has `title` (the Student's name, else the first question trimmed), `created_at`, `updated_at` (its last message) and `message_count`. A chat with no message yet is not listed |
+| POST | `/spaces/{space_id}/threads` | Start a chat (the app does it with the first question) |
 | GET | `/threads/{thread_id}` | Metadata and any pending pause |
+| PATCH | `/threads/{thread_id}` | Rename a chat (`title`, up to 80 characters); an empty or missing title goes back to the first question. Returns the list item |
+| DELETE | `/threads/{thread_id}` | Delete a chat, its messages and what its run saved at its pauses (`204`). Notes, Flashcards and Weak Topics stay |
 | GET | `/threads/{thread_id}/messages` | Message history with Citations, cost and trace id. The newest thirty first (`limit`, `cursor`): a page is oldest first and `next_cursor` fetches the ones before it. Returns `{items, next_cursor, total}` |
 | POST | `/threads/{thread_id}/messages` | Send a message. Response is an event stream (section 3) |
 | POST | `/threads/{thread_id}/cancel` | Stop a run in progress |

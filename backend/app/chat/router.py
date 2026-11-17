@@ -44,6 +44,7 @@ from app.pagination import (
     decode_cursor,
     next_cursor,
 )
+from app.settings.service import load_tutor_settings
 from app.spaces.dependencies import get_owned_space
 from app.spaces.models import Space
 from app.students.dependencies import StudentDep
@@ -282,6 +283,7 @@ def send_message(
         checkpointer=get_checkpointer(),
         turn_id=question.id,
         preferences=_preferences(session, student.id, profile),
+        tutor=load_tutor_settings(session, student.id),
     )
     return StreamingResponse(
         _sse(events),
@@ -333,6 +335,7 @@ def resume_chat(
         "web": bool(profile and profile.web_search_enabled),
         "learned": _has_learned(session, thread.space_id),
         "preferences": _preferences(session, student.id, profile),
+        "tutor": load_tutor_settings(session, student.id),
     }
     checkpointer = get_checkpointer()
     try:

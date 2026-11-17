@@ -13,11 +13,16 @@ from sqlalchemy.orm import Session
 
 from app.chat.agent import ModelNotConfigured, build_agent
 from app.chat.citations import check_answer, cited_ids, enforce, strip_markers
+from app.chat.cost import calculate_cost
 from app.chat.guards import StepLimitReached
 from app.chat.models import Message
 from app.chat.tools import RunSources
+from app.config import get_settings
 from app.db import engine
+from app.guardrails.classify import openrouter_model
 from app.learned.promotion import promote_in_background
+from app.settings.openrouter import prices_for
+from app.settings.service import TutorSettings
 
 log = logging.getLogger(__name__)
 
@@ -67,6 +72,31 @@ def redirect_turn(*, thread_id: uuid.UUID, reply: str) -> Iterator[Event]:
     )
 
 
+def _model_name(tutor: TutorSettings | None, model) -> str:
+    """The model that writes the answer; empty for a model handed in (a test's fake)."""
+    return "" if model is not None else (tutor.tutor_model if tutor else "")
+
+
+def _background_model(tutor: TutorSettings | None):
+    """The Student's own background model, for the tools that use one; None means the
+    tool uses the environment's."""
+    if (
+        tutor
+        and tutor.background_model
+        and tutor.background_model != get_settings().background_model
+    ):
+        return openrouter_model(tutor.background_model)
+    return None
+
+
+def answer_cost(model_name: str, tokens_in: int, tokens_out: int) -> float | None:
+    """The answer's estimated cost; None when the model's price is not known."""
+    if not model_name or not (tokens_in or tokens_out):
+        return None
+    price_in, price_out = prices_for(model_name)
+    return calculate_cost(tokens_in, tokens_out, price_in, price_out)
+
+
 def config_for(thread_id, turn_id, space_id, run_id=None) -> dict:
     # Each turn is its own LangGraph thread: the history is passed in, and a paused turn
     # waits in the checkpointer under this id until the Student answers.
@@ -109,9 +139,11 @@ def run_turn(
     turn_id: uuid.UUID | None = None,
     compare_model=None,
     preferences: str = "",
+    tutor: TutorSettings | None = None,
 ) -> Iterator[Event]:
     """Stream the answer, then store it. Never raises: failures become `error` events."""
     sources = RunSources()
+    compare_model = compare_model or _background_model(tutor)
     try:
         agent = build_agent(
             space_id,
@@ -124,6 +156,7 @@ def run_turn(
             compare_model,
             flashcards=True,
             preferences=preferences,
+            tutor=tutor,
         )
     except ModelNotConfigured as exc:
         yield Event("error", {"code": "upstream_unavailable", "message": str(exc)})
@@ -137,6 +170,7 @@ def run_turn(
         space_id=space_id,
         space_name=space_name,
         checkpointer=checkpointer,
+        model_name=_model_name(tutor, model),
     )
 
 
@@ -154,9 +188,11 @@ def resume_turn(
     checkpointer=None,
     compare_model=None,
     preferences: str = "",
+    tutor: TutorSettings | None = None,
 ) -> Iterator[Event]:
     """Continue a paused turn with the Student's decision."""
     sources = RunSources()
+    compare_model = compare_model or _background_model(tutor)
     try:
         agent = build_agent(
             space_id,
@@ -169,6 +205,7 @@ def resume_turn(
             compare_model,
             flashcards=True,
             preferences=preferences,
+            tutor=tutor,
         )
     except ModelNotConfigured as exc:
         yield Event("error", {"code": "upstream_unavailable", "message": str(exc)})
@@ -189,6 +226,7 @@ def resume_turn(
         space_id=space_id,
         space_name=space_name,
         checkpointer=checkpointer,
+        model_name=_model_name(tutor, model),
     )
 
 
@@ -202,11 +240,19 @@ def _drive(
     space_id: uuid.UUID,
     space_name: str,
     checkpointer,
+    model_name: str = "",
 ) -> Iterator[Event]:
     paused = False
     try:
         for event in _stream(
-            agent, sources, agent_input, config, thread_id, space_id, space_name
+            agent,
+            sources,
+            agent_input,
+            config,
+            thread_id,
+            space_id,
+            space_name,
+            model_name,
         ):
             paused = paused or event.type == "interrupt"
             yield event
@@ -229,8 +275,10 @@ def _stream(
     thread_id: uuid.UUID,
     space_id: uuid.UUID,
     space_name: str,
+    model_name: str = "",
 ) -> Iterator[Event]:
     text, has_tools, current_id = "", False, None
+    tools_used: list[str] = []
     tokens_in = tokens_out = 0
     try:
         stream = agent.stream(agent_input, config=config, stream_mode="messages")
@@ -262,6 +310,8 @@ def _stream(
             for call in getattr(chunk, "tool_call_chunks", None) or chunk.tool_calls:
                 if call.get("name"):
                     has_tools = True
+                    if call["name"] not in tools_used:
+                        tools_used.append(call["name"])
                     yield Event(
                         "tool_call",
                         {
@@ -317,6 +367,7 @@ def _stream(
     if check_answer(text, valid):
         text = enforce(text, valid)
     citations = [sources.citations[n] for n in cited_ids(text, valid)]
+    usd = answer_cost(model_name, tokens_in, tokens_out)
     with Session(engine) as session:
         message = Message(
             thread_id=thread_id,
@@ -326,6 +377,9 @@ def _stream(
             tokens_in=tokens_in or None,
             tokens_out=tokens_out or None,
             trace_id=str(config["run_id"]) if config.get("run_id") else None,
+            model=model_name or None,
+            tools=tools_used,
+            cost_usd=usd,
         )
         session.add(message)
         session.commit()
@@ -336,7 +390,7 @@ def _stream(
         yield Event(
             "citation", {k: v for k, v in c.as_json().items() if k != "chunk_id"}
         )
-    yield Event("cost", {"tokens_in": tokens_in, "tokens_out": tokens_out, "usd": None})
+    yield Event("cost", {"tokens_in": tokens_in, "tokens_out": tokens_out, "usd": usd})
     yield Event(
         "done",
         {

@@ -29,6 +29,7 @@ from app.chat.tools import (
 from app.config import get_settings
 from app.conflicts.tool import make_compare_sources
 from app.flashcards.tool import make_save_flashcards
+from app.settings.service import TutorSettings
 
 OPENROUTER_BASE = "https://openrouter.ai/api/v1"
 CITATION_RETRIES = 1
@@ -39,14 +40,21 @@ class ModelNotConfigured(Exception):
     pass
 
 
-def make_model() -> ChatOpenAI:
+def make_model(tutor: TutorSettings | None = None) -> ChatOpenAI:
     settings = get_settings()
-    if not settings.tutor_model:
+    name = (tutor.tutor_model if tutor else "") or settings.tutor_model
+    if not name:
         raise ModelNotConfigured("TUTOR_MODEL is not set.")
     if not settings.openrouter_api_key:
         raise ModelNotConfigured("OPENROUTER_API_KEY is not set.")
+    options = (
+        {"temperature": tutor.temperature, "max_tokens": tutor.max_tokens}
+        if tutor
+        else {}
+    )
     return ChatOpenAI(
-        model=settings.tutor_model,
+        model=name,
+        **options,
         base_url=OPENROUTER_BASE,
         api_key=settings.openrouter_api_key,
         streaming=True,
@@ -107,33 +115,41 @@ def build_agent(
     compare_model=None,
     flashcards: bool = False,
     preferences: str = "",
+    tutor: TutorSettings | None = None,
 ):
     """`library`: the Space has a Subject Library attached and switched on.
     `learned`: the Space has Learned Material.
     `web`: the Student allows web search (Wikipedia, and Tavily when it has a key).
     `checkpointer`: where a run waits when it pauses for the Student (a Conflict).
-    `flashcards`: the Tutor may draft Flashcards for the Student to review."""
+    `flashcards`: the Tutor may draft Flashcards for the Student to review.
+    `tutor`: the Student's model, sampling and tool switches; a tool they switched off is
+    not offered, and the prompt does not mention it."""
+    off = tutor.disabled if tutor else frozenset()
+    library = library and "search_library" not in off
+    learned = learned and "search_learned_material" not in off
+    flashcards = flashcards and "save_flashcards" not in off
     tools = [make_search_notes(space_id, sources)]
     if library:
         tools.append(make_search_library(space_id, sources))
     if learned:
         tools.append(make_search_learned(space_id, sources))
     # A Conflict needs Notes and a second Source from the Space to compare.
-    compare = library or learned
+    compare = (library or learned) and "compare_sources" not in off
     if compare:
         tools.append(make_compare_sources(space_id, sources, compare_model))
-    use_tavily = web and bool(get_settings().tavily_api_key)
-    if web:
+    use_tavily = web and bool(get_settings().tavily_api_key) and "search_web" not in off
+    wikipedia = web and "search_wikipedia" not in off
+    if wikipedia:
         tools.append(make_search_wikipedia(sources))
     if use_tavily:
         tools.append(make_search_web(sources))
     if flashcards:
         tools.append(make_save_flashcards(space_id))
     return create_agent(
-        model or make_model(),
+        model or make_model(tutor),
         tools=tools,
         system_prompt=build_prompt(
-            library, web, use_tavily, learned, compare, flashcards, preferences
+            library, wikipedia, use_tavily, learned, compare, flashcards, preferences
         ),
         middleware=[
             ModelCallLimitMiddleware(run_limit=MAX_MODEL_CALLS, exit_behavior="error"),

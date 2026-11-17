@@ -52,6 +52,7 @@ class MessageOut(BaseModel):
     tokens_out: int | None
     cost_usd: float | None
     trace_id: str | None
+    model: str | None = None
     created_at: datetime
     # The Student's 👍/👎 on this answer, and why, if given.
     rating: str | None = None

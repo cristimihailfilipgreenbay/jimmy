@@ -4,7 +4,7 @@ from collections.abc import Iterator
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 from fastapi.responses import StreamingResponse
 from sqlalchemy import case, func, select, tuple_
 
@@ -19,7 +19,14 @@ from app.chat.runner import (
     resume_turn,
     run_turn,
 )
-from app.chat.schemas import MessageIn, MessageOut, ThreadOut
+from app.chat.schemas import (
+    MessageIn,
+    MessageOut,
+    ThreadItemOut,
+    ThreadOut,
+    ThreadRename,
+)
+from app.chat.titles import clean_custom_title, trim_title
 from app.chat.tools import RunSources
 from app.checkpointer import get_checkpointer
 from app.conflicts.service import DECISIONS
@@ -44,13 +51,103 @@ router = APIRouter(tags=["chat"])
 SpaceDep = Annotated[Space, Depends(get_owned_space)]
 
 
-@router.get("/spaces/{space_id}/threads", response_model=list[ThreadOut])
-def list_threads(space: SpaceDep, session: SessionDep):
-    return session.scalars(
-        select(Thread)
-        .where(Thread.space_id == space.id, Thread.kind == "chat")
-        .order_by(Thread.created_at.desc())
+def _activity():
+    """How many messages each chat has and when the last one was written."""
+    return (
+        select(
+            Message.thread_id.label("thread_id"),
+            func.count().label("messages"),
+            func.max(Message.created_at).label("last"),
+        )
+        .group_by(Message.thread_id)
+        .subquery()
     )
+
+
+def _item(thread: Thread, messages: int, last: datetime) -> ThreadItemOut:
+    return ThreadItemOut(
+        id=thread.id,
+        title=thread.custom_title or thread.title,
+        created_at=thread.created_at,
+        updated_at=last,
+        message_count=messages,
+    )
+
+
+@router.get("/spaces/{space_id}/threads", response_model=CursorPage[ThreadItemOut])
+def list_threads(
+    space: SpaceDep,
+    session: SessionDep,
+    limit: LimitQuery = 20,
+    cursor: CursorQuery = None,
+):
+    """The Space's chats, the most recently active first, twenty at a time. A chat with
+    no message yet is not listed."""
+    activity = _activity()
+    mine = (Thread.space_id == space.id, Thread.kind == "chat")
+    older = ()
+    if cursor:
+        last, thread_id = decode_cursor(cursor, 2)
+        try:
+            older = (
+                tuple_(activity.c.last, Thread.id)
+                < tuple_(datetime.fromisoformat(last), uuid.UUID(thread_id)),
+            )
+        except ValueError as exc:
+            raise ApiError(
+                422, "invalid_cursor", "That page link is not valid."
+            ) from exc
+    rows = session.execute(
+        select(Thread, activity.c.messages, activity.c.last)
+        .join(activity, activity.c.thread_id == Thread.id)
+        .where(*mine, *older)
+        .order_by(activity.c.last.desc(), Thread.id.desc())
+        .limit(limit + 1)
+    ).all()
+    total = session.scalar(
+        select(func.count())
+        .select_from(Thread)
+        .join(activity, activity.c.thread_id == Thread.id)
+        .where(*mine)
+    )
+    return CursorPage(
+        items=[_item(t, n, last) for t, n, last in rows[:limit]],
+        next_cursor=next_cursor(
+            rows, limit, lambda r: [r[2].isoformat(), str(r[0].id)]
+        ),
+        total=total,
+    )
+
+
+def _chat(thread: Thread) -> Thread:
+    if thread.kind != "chat":
+        raise ApiError(404, "thread_not_found", "That chat does not exist.")
+    return thread
+
+
+@router.patch("/threads/{thread_id}", response_model=ThreadItemOut)
+def rename_thread(body: ThreadRename, thread: ThreadDep, session: SessionDep):
+    """Rename a chat. An empty name goes back to using the first question."""
+    _chat(thread).custom_title = clean_custom_title(body.title)
+    session.commit()
+    messages, last = session.execute(
+        select(func.count(), func.max(Message.created_at)).where(
+            Message.thread_id == thread.id
+        )
+    ).one()
+    return _item(thread, messages, last or thread.created_at)
+
+
+@router.delete("/threads/{thread_id}", status_code=204)
+def delete_thread(thread: ThreadDep, session: SessionDep):
+    """Delete a chat and its messages. Notes, Flashcards and Weak Topics stay."""
+    _chat(thread)
+    thread_id = thread.id
+    session.delete(thread)
+    session.commit()
+    # What the run saved at its pauses goes with it.
+    get_checkpointer().delete_thread(str(thread_id))
+    return Response(status_code=204)
 
 
 @router.post("/spaces/{space_id}/threads", response_model=ThreadOut, status_code=201)
@@ -146,7 +243,7 @@ def send_message(
             "Jimmy can't help with that message. Ask a study question instead.",
         )
     if not earlier:
-        thread.title = body.content.strip().replace("\n", " ")[:60]
+        thread.title = trim_title(body.content)
     question = Message(thread_id=thread.id, role="user", content=body.content)
     session.add(question)
     session.commit()

@@ -33,6 +33,8 @@ class Thread(Base):
     )
     kind: Mapped[str] = mapped_column(String(20), default="chat")
     title: Mapped[str] = mapped_column(String(200), default="New conversation")
+    # A name the Student chose; empty means the title (the first question) is used.
+    custom_title: Mapped[str | None] = mapped_column(String(80))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

@@ -14,6 +14,23 @@ class ThreadOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ThreadItemOut(BaseModel):
+    """A chat in the list: its name, when it was last active and how long it is."""
+
+    id: uuid.UUID
+    # The Student's own name, else the first question trimmed.
+    title: str
+    created_at: datetime
+    # When its last message was written.
+    updated_at: datetime
+    message_count: int
+
+
+class ThreadRename(BaseModel):
+    # Empty or missing: use the first question again.
+    title: str | None = None
+
+
 class CitationOut(BaseModel):
     id: int
     source_type: str

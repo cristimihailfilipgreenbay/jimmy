@@ -27,7 +27,7 @@ Postgres schema, conventions and migrations. See [architecture.md](./architectur
 | `students` | One row per account | `id`, `email` (unique, stored lower-cased), `password_hash` (argon2), `display_name` (optional until onboarding), `onboarded_at` (null until onboarding is finished), `created_at` |
 | `profiles` | What the Student told Jimmy; shared across Spaces | `student_id` (PK, FK, cascades), `course`, `university`, `year`, `goals` (array), `explanation_style` (short, balanced, detailed), `web_search_enabled`, `adaptive_difficulty` (default off); `language` (nullable free text: the language answers come in) |
 | `profile_facts` | Remembered facts and style preferences | `id`, `student_id`, `kind` (fact, style), `text`, `status` (proposed, approved), `origin` (student, feedback, flashcard_edits) |
-| `settings` | Per-Student model and tool settings; an empty value means the default | `student_id` (PK, FK), `tutor_model`, `background_model`, `temperature`, `max_tokens`, `tools` (JSON of name to on or off; a tool not listed is on), `show_usage` (default on). The dispute thresholds stay in the environment |
+| `settings` | Per-Student model and tool settings; an empty value means the default | `student_id` (PK, FK), `tutor_model`, `temperature`, `max_tokens`, `tools` (JSON of name to on or off; a tool not listed is on), `show_usage` (default on). The dispute thresholds stay in the environment |
 | `app_config` | Installation-wide values | `key` (PK), `value`. Holds `embedding_model`, `embedding_dimensions`, `embedding_locked_at` |
 
 ### Study Spaces and knowledge

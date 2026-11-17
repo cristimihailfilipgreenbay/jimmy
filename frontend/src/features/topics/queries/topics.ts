@@ -24,5 +24,7 @@ export const answerTopicReview = (threadId: string, interruptId: string, decisio
     body: JSON.stringify({ interrupt_id: interruptId, decision }),
   })
 
+/** Every Topic of the Space at once. */
+export const deleteAllTopics = (spaceId: string) => requestVoid(`/spaces/${spaceId}/topics`, { method: 'DELETE' })
 export const deleteTopic = (spaceId: string, topicId: string) =>
   requestVoid(`/spaces/${spaceId}/topics/${topicId}`, { method: 'DELETE' })

@@ -64,10 +64,16 @@ export function LearnedTab({ studentId, spaceId, spaceName }: { studentId: strin
                 <p className="font-medium">{item.title}</p>
                 <p className="mt-1 font-serif text-[15px] leading-relaxed text-foreground/90">“{item.excerpt}”</p>
                 <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  <span className="chip chip-web ml-0">
+                  <a
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="chip chip-web ml-0 hover:underline"
+                      aria-label={`Unreviewed web, ${item.publisher ?? new URL(item.url).host}. Open the page.`}
+                    >
                     <TriangleAlert className="size-3.5" aria-hidden />
                     Unreviewed web · {item.publisher ?? new URL(item.url).host}
-                  </span>
+                  </a>
                   Fetched {item.fetched_at ?? '–'} · used in {item.used_in_answers} answer{item.used_in_answers === 1 ? '' : 's'}
                 </p>
               </div>
@@ -97,10 +103,16 @@ export function LearnedTab({ studentId, spaceId, spaceName }: { studentId: strin
               <p className="font-medium">{item.title}</p>
               <p className="mt-1 line-clamp-1 font-serif text-[15px] leading-relaxed text-foreground/90">“{item.excerpt}”</p>
               <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <span className="chip chip-web ml-0">
+                <a
+                    href={item.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="chip chip-web ml-0 hover:underline"
+                    aria-label={`Approved web, ${item.publisher ?? new URL(item.url).host}. Open the page.`}
+                  >
                   <Check className="size-3.5" aria-hidden />
                   Approved web · {item.publisher ?? new URL(item.url).host}
-                </span>
+                </a>
                 Approved {item.approved_at ? new Date(item.approved_at).toLocaleDateString() : '–'} · used in {item.used_in_answers} answer{item.used_in_answers === 1 ? '' : 's'}
               </p>
             </div>

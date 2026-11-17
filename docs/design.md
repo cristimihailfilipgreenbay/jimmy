@@ -62,6 +62,8 @@ The empty Chat (`features/chat/components/ChatEmpty.tsx`) follows the prototype 
 
 The student can rate each answer 👍/👎. Repeated feedback may propose a Profile style change (for example "shorter explanations"), which needs Approval. The Profile also holds language and explanation style, shared across Study Spaces. Answers follow the language set in the Profile; the UI is English.
 
+Two things in this feature are not in the prototype, because the issue asks for them: the Settings "Answers" section (language, answer length, and the styles the Student approved, each with a remove button), and the "Jimmy noticed what you rate down" card above the chat composer, which looks like the Flashcards style notice and asks "Use this style" or "No thanks". The 👎 reason chips are the prototype's; the chosen one stays highlighted, and "Too long" is the one that counts toward a proposal.
+
 ## 7. Evaluation
 
 - **Demo data.** A seed script downloads 2–3 OpenStax chapters each for Biology and Physics into `data/seed/` (not committed), with `ATTRIBUTION.md` giving title, author and licence.

@@ -1,12 +1,23 @@
 import type { ReactNode } from 'react'
+import { Info } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 // One line of a settings card: a label with its explanation, and the control.
-export function SettingRow({ id, title, description, children }: { id: string; title: string; description: ReactNode; children: ReactNode }) {
+// `info` is a longer explanation, shown in a tooltip beside the label.
+export function SettingRow({ id, title, description, info, children }: { id: string; title: string; description: ReactNode; info?: string; children: ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-6 py-4">
       <div>
-        <p className="text-sm font-medium" id={id}>
-          {title}
+        <p className="flex items-center gap-1.5 text-sm font-medium">
+          <span id={id}>{title}</span>
+          {info && (
+            <Tooltip>
+              <TooltipTrigger render={<button type="button" aria-label={`About: ${title}`} className="grid size-5 place-items-center rounded-full text-muted-foreground hover:text-foreground" />}>
+                <Info className="size-4" aria-hidden />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-72">{info}</TooltipContent>
+            </Tooltip>
+          )}
         </p>
         <p className="text-sm text-muted-foreground">{description}</p>
       </div>

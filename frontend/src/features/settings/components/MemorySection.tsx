@@ -25,7 +25,8 @@ export function MemorySection({ studentId }: { studentId: string }) {
         <SettingRow
           id="r-weak"
           title="Remember weak topics"
-          description="Jimmy tracks topics you struggle with to focus your practice. Paused, it stops tracking and picking questions by them; the ones already marked stay until you clear them."
+          description="Jimmy notes topics you keep getting wrong and asks about them more in quizzes. Switch it off to pause that."
+          info="Switched off, your quiz answers are still saved, but Jimmy stops marking new topics as weak and stops asking about weak ones more often. Topics already marked weak stay in the list until you clear them. Switch it back on and Jimmy counts every answer since you last cleared a topic, including the ones you gave while it was off."
         >
           <Switch
             checked={profile?.remember_weak_topics ?? true}

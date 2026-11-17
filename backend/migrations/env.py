@@ -12,6 +12,7 @@ from app.jobs import models as _jobs_models  # noqa: F401
 from app.learned import models as _learned_models  # noqa: F401
 from app.library import models as _library_models  # noqa: F401
 from app.profile import models as _profile_models  # noqa: F401
+from app.settings import models as _settings_models  # noqa: F401
 from app.spaces import models as _spaces_models  # noqa: F401
 from app.students import models as _students_models  # noqa: F401
 from app.study import models as _study_models  # noqa: F401

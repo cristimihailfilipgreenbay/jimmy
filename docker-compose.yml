@@ -44,6 +44,8 @@ services:
         condition: service_healthy
     volumes:
       - ./backend:/app
+      # The evaluation (`python -m eval.run`) imports the app and writes eval/report.md.
+      - ./eval:/app/eval
       # The seed command writes the Subject Library chapters to /data/seed.
       - ./data:/data
 

@@ -1,16 +1,17 @@
 import logging
 import uuid
-from typing import Annotated
+from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Query, Response
 from langgraph.types import Command
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.chat.agent import ModelNotConfigured
 from app.chat.models import Thread
 from app.db import SessionDep
 from app.errors import ApiError
+from app.pagination import PageDep
 from app.spaces.dependencies import get_owned_space
 from app.spaces.models import Space
 from app.students.dependencies import StudentDep
@@ -33,6 +34,7 @@ from app.study.schemas import (
     FeedbackOut,
     HistoryOut,
     PastSessionOut,
+    PastSessionsOut,
     QuestionOut,
     RecapOut,
     SessionIn,
@@ -263,14 +265,31 @@ def start_session(
     return _session_out(session, study)
 
 
-@router.get("/spaces/{space_id}/sessions", response_model=list[PastSessionOut])
-def list_sessions(space: SpaceDep, session: SessionDep):
-    """The Study Space's finished Quizzes and Tests, newest first."""
+@router.get("/spaces/{space_id}/sessions", response_model=PastSessionsOut)
+def list_sessions(
+    space: SpaceDep,
+    session: SessionDep,
+    page: PageDep,
+    kind: Annotated[Literal["quiz", "test"] | None, Query()] = None,
+):
+    """One page of the Study Space's finished Quizzes and Tests, newest first."""
+    finished_in_space = (
+        StudySession.space_id == space.id,
+        StudySession.status == "finished",
+    )
+    matching = finished_in_space + ((StudySession.kind == kind,) if kind else ())
+    total_all = session.scalar(
+        select(func.count()).select_from(StudySession).where(*finished_in_space)
+    )
+    total = session.scalar(
+        select(func.count()).select_from(StudySession).where(*matching)
+    )
     finished = session.scalars(
         select(StudySession)
-        .where(StudySession.space_id == space.id, StudySession.status == "finished")
-        .order_by(StudySession.finished_at.desc())
-        .limit(200)
+        .where(*matching)
+        .order_by(StudySession.finished_at.desc(), StudySession.id)
+        .limit(page.page_size)
+        .offset(page.offset)
     ).all()
     asked: dict[uuid.UUID, list[uuid.UUID]] = {s.id: [] for s in finished}
     for session_id, topic_id in session.execute(
@@ -282,7 +301,7 @@ def list_sessions(space: SpaceDep, session: SessionDep):
     wanted = {t for ids in asked.values() for t in ids}
     wanted |= {uuid.UUID(t) for s in finished for t in s.weak_topic_ids}
     names = topic_names(session, list(wanted))
-    return [
+    items = [
         PastSessionOut(
             id=s.id,
             kind=s.kind,
@@ -296,6 +315,7 @@ def list_sessions(space: SpaceDep, session: SessionDep):
         )
         for s in finished
     ]
+    return PastSessionsOut(items=items, total=total, total_all=total_all)
 
 
 @router.get("/sessions/{session_id}", response_model=SessionOut)

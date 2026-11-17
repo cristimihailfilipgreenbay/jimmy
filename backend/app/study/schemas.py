@@ -154,6 +154,16 @@ class PastSessionOut(BaseModel):
     weak_left: list[str]
 
 
+class PastSessionsOut(BaseModel):
+    """One page of past sessions."""
+
+    items: list[PastSessionOut]
+    # Sessions that match the filter, across all pages.
+    total: int
+    # Every finished session, whatever the filter.
+    total_all: int
+
+
 class RecapOut(BaseModel):
     session_id: uuid.UUID
     kind: str

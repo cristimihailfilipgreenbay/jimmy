@@ -67,6 +67,8 @@ A Citation names the document or book, author, and page or section.
 
 **Weak Topic:** normal → weak (2 of the last 5 wrong) → normal (3 correct in a row), or cleared by the Student.
 
+**Remember weak topics (Profile setting, on by default):** while it is off, an answer is still stored but no Topic's state is updated, Quizzes and Tests pick Topics without weighting, and answers and recaps do not call a Topic weak. Topics already marked weak stay in the list and can still be cleared. When it is turned on again, the next recorded answer for a Topic recomputes its state from all its answers since it was last cleared, including those given while paused.
+
 **Conflict:** detected by `compare_sources` (Notes versus Subject Library or Learned Material; Tutor Knowledge is not compared yet) → paused → the Student keeps Notes, accepts the other Source, or marks it unsure → decision stored for that pair of passages, and used without asking again until the Student forgets it.
 
 **Flashcard:** drafted from one passage of Notes, the Subject Library or approved Learned Material → waiting in the review queue (a pause) → the Student approves, edits (which approves the edited card) or rejects it → once the whole batch is decided, the edits are read for a card style, proposed as a style fact, and used for later batches only after the Student approves it.

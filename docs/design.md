@@ -60,6 +60,8 @@ The empty Chat (`features/chat/components/ChatEmpty.tsx`) follows the prototype 
 
 The Developer screen (`features/developer/`, at `/developer`, linked from Settings) follows the prototype, with the real tools in place of its example list, and two additions the issue needs: the model picker is a shadcn select with three models (it replaces the prototype's native select), an info icon beside Temperature explains that some models ignore it (the slider is then switched off), and a line under the controls says the embedding model is locked. `search_notes` is listed with its switch on and disabled, because every answer starts with it. Under each answer, the grey "tokens in · out · ≈ cost" pill shows while "Show under each answer" is on (the default).
 
+Settings follows the prototype's sections: Profile, Sources and Memory are built, with the Study and Answers sections added before them. "Review web content before saving" is shown on and disabled: web material always waits in Learned Material (ADR 0002), so it cannot be turned off. While "Remember weak topics" is off, the Weak topics tab says so and links to Settings. Reading (theme, larger text, reduce motion) is not built yet.
+
 ## 6. Feedback and personalisation
 
 The student can rate each answer 👍/👎. Repeated feedback may propose a Profile style change (for example "shorter explanations"), which needs Approval. The Profile also holds language and explanation style, shared across Study Spaces. Answers follow the language set in the Profile; the UI is English.

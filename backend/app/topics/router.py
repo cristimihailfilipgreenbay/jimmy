@@ -3,7 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Response
 from fastapi.responses import JSONResponse
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import delete, func, select, tuple_, update
 from sqlalchemy.exc import IntegrityError
 
 from app.chat.dependencies import ThreadDep
@@ -14,6 +14,13 @@ from app.documents.models import Document
 from app.documents.schemas import DocumentOut
 from app.errors import ApiError
 from app.flashcards.router import resume_flashcards
+from app.pagination import (
+    CursorPage,
+    CursorQuery,
+    LimitQuery,
+    decode_cursor,
+    next_cursor,
+)
 from app.spaces.dependencies import get_owned_space
 from app.spaces.models import Space
 from app.students.dependencies import StudentDep
@@ -65,9 +72,39 @@ def _name_taken(session, space: Space, name: str, *, except_ids=()) -> bool:
     )
 
 
-@router.get("/spaces/{space_id}/topics", response_model=list[TopicOut])
-def list_topics(space: SpaceDep, session: SessionDep):
-    return session.scalars(select(Topic).where(*_in_use(space.id)).order_by(Topic.name))
+@router.get("/spaces/{space_id}/topics", response_model=CursorPage[TopicOut])
+def list_topics(
+    space: SpaceDep,
+    session: SessionDep,
+    limit: LimitQuery = 30,
+    cursor: CursorQuery = None,
+):
+    """The Space's Topics by name, thirty at a time."""
+    after = ()
+    if cursor:
+        name, topic_id = decode_cursor(cursor, 2)
+        try:
+            after = (tuple_(Topic.name, Topic.id) > tuple_(name, uuid.UUID(topic_id)),)
+        except ValueError as exc:
+            raise ApiError(
+                422, "invalid_cursor", "That page link is not valid."
+            ) from exc
+    rows = list(
+        session.scalars(
+            select(Topic)
+            .where(*_in_use(space.id), *after)
+            .order_by(Topic.name, Topic.id)
+            .limit(limit + 1)
+        )
+    )
+    total = session.scalar(
+        select(func.count()).select_from(Topic).where(*_in_use(space.id))
+    )
+    return CursorPage(
+        items=rows[:limit],
+        next_cursor=next_cursor(rows, limit, lambda t: [t.name, str(t.id)]),
+        total=total,
+    )
 
 
 @router.patch("/spaces/{space_id}/topics/{topic_id}", response_model=TopicOut)

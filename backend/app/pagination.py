@@ -3,6 +3,7 @@ browses by page number. Lists that only grow at one end use a cursor instead."""
 
 import base64
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Annotated
 
@@ -70,6 +71,14 @@ def decode_cursor(cursor: str, size: int) -> list[str]:
     raise ApiError(
         422, "invalid_cursor", "That page link is not valid. Reload the list."
     )
+
+
+def next_cursor[R](
+    rows: list[R], limit: int, key: Callable[[R], list[str]]
+) -> str | None:
+    """The cursor for the page after `rows[:limit]`, given one more row than the page
+    holds (to know there is one); None when there is no next page."""
+    return encode_cursor(*key(rows[limit - 1])) if len(rows) > limit else None
 
 
 LimitQuery = Annotated[int, Query(ge=1, le=MAX_PAGE_SIZE)]

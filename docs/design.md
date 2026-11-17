@@ -58,6 +58,8 @@ The empty Chat (`features/chat/components/ChatEmpty.tsx`) follows the prototype 
 | --- | --- | --- |
 | Chats | A Study Space has several chats. The right column of the Chat screen holds "Chats" (newest first, grouped by day, twenty at a time) beside "Sources"; on a phone a "Chats" button in the chat header opens the list in a bottom sheet. "New chat" sits in the chat header and at the top of the list, with "Back to your last chat" under the empty card. A chat can be renamed (empty goes back to the first question) and deleted after a confirmation, from its "⋯" menu or by right-click. | [#60](https://github.com/cristimihailfilipgreenbay/jimmy/issues/60) |
 
+The Developer screen (`features/developer/`, at `/developer`, linked from Settings) follows the prototype, with the real tools in place of its example list, and two additions the issue needs: the model picker is two (Tutor and Background), and a line under the controls says the embedding model is locked. `search_notes` is listed with its switch on and disabled, because every answer starts with it. Under each answer, the grey "tokens in · out · ≈ cost" pill shows while "Show under each answer" is on (the default).
+
 ## 6. Feedback and personalisation
 
 The student can rate each answer 👍/👎. Repeated feedback may propose a Profile style change (for example "shorter explanations"), which needs Approval. The Profile also holds language and explanation style, shared across Study Spaces. Answers follow the language set in the Profile; the UI is English.

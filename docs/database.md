@@ -27,7 +27,7 @@ Postgres schema, conventions and migrations. See [architecture.md](./architectur
 | `students` | One row per account | `id`, `email` (unique, stored lower-cased), `password_hash` (argon2), `display_name` (optional until onboarding), `onboarded_at` (null until onboarding is finished), `created_at` |
 | `profiles` | What the Student told Jimmy; shared across Spaces | `student_id` (PK, FK, cascades), `course`, `university`, `year`, `goals` (array), `explanation_style` (short, balanced, detailed), `web_search_enabled`, `adaptive_difficulty` (default off); `language` (nullable free text: the language answers come in) |
 | `profile_facts` | Remembered facts and style preferences | `id`, `student_id`, `kind` (fact, style), `text`, `status` (proposed, approved), `origin` (student, feedback, flashcard_edits) |
-| `settings` | Per-Student model and tool settings | `student_id` (PK, FK), `tutor_model`, `background_model`, `temperature`, `max_tokens`, `tools` (JSON of toggles), `dispute_confidence_threshold`, `dispute_margin` |
+| `settings` | Per-Student model and tool settings; an empty value means the default | `student_id` (PK, FK), `tutor_model`, `background_model`, `temperature`, `max_tokens`, `tools` (JSON of name to on or off; a tool not listed is on), `show_usage` (default on). The dispute thresholds stay in the environment |
 | `app_config` | Installation-wide values | `key` (PK), `value`. Holds `embedding_model`, `embedding_dimensions`, `embedding_locked_at` |
 
 ### Study Spaces and knowledge
@@ -65,7 +65,7 @@ Postgres schema, conventions and migrations. See [architecture.md](./architectur
 | Table | Purpose | Key columns *(proposed)* |
 |---|---|---|
 | `threads` | A conversation or run | `id`, `space_id`, `kind` (chat, session, ingestion, flashcard_draft), `title` (the first question of a chat), `custom_title` (a name the Student chose; empty means `title` is used). The `id` is also the LangGraph thread id |
-| `messages` | What the Student sees in the chat | `id`, `thread_id`, `role`, `content`, `citations` (JSON), `tokens_in`, `tokens_out`, `cost_usd`, `trace_id` |
+| `messages` | What the Student sees in the chat | `id`, `thread_id`, `role`, `content`, `citations` (JSON), `tokens_in`, `tokens_out`, `cost_usd` (estimated, null if the price is unknown), `trace_id`, `model` (that wrote the answer), `tools` (JSON list of the tools it called) |
 | `feedback` | 👍/👎 on an answer; one row per answer | `id`, `message_id` (unique), `student_id`, `rating` (up, down), `comment` (the reason chosen, or free text), `synced_to_langsmith_at` (empty if tracing is off or the send failed), `proposed_at` (when the rating was counted in a proposed style change), `created_at`. The answer's `messages.trace_id` is the LangSmith run id the rating is sent to |
 | `jobs` | Background work such as Promotion | `id`, `space_id`, `kind`, `status` (queued, running, succeeded, failed, cancelled), `payload` (JSON, with the Promotion `outcome`), `message`, `error`, `created_at`, `updated_at`, `finished_at` |
 

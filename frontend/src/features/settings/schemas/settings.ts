@@ -29,3 +29,8 @@ export const factSchema = z.object({
   created_at: z.string(),
 })
 export type Fact = z.infer<typeof factSchema>
+
+// The languages Jimmy can answer in. The value is the name the Tutor is told to write in.
+// "Same as I write in" stores nothing.
+export const SAME_LANGUAGE = 'same'
+export const LANGUAGES = ['English', 'German', 'French', 'Spanish', 'Italian', 'Portuguese', 'Dutch', 'Polish', 'Romanian', 'Turkish']

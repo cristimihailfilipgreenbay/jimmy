@@ -1,13 +1,12 @@
-import { useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import { SegmentedControl } from '@/components/SegmentedControl'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { cardClass } from '@/lib/styles'
 import { cn } from '@/lib/utils'
 import { useDecideFact, useFacts } from '../queries/useFacts'
 import { useProfile, useUpdateProfile } from '../queries/useProfile'
-import { EXPLANATION_STYLES } from '../schemas/settings'
+import { EXPLANATION_STYLES, LANGUAGES, SAME_LANGUAGE } from '../schemas/settings'
 
 // How Jimmy writes answers in every Study Space: language, length, and the style changes
 // the Student approved after rating answers down.
@@ -16,9 +15,7 @@ export function AnswerStyleSection({ studentId }: { studentId: string }) {
   const update = useUpdateProfile(studentId)
   const { data: facts = [] } = useFacts(studentId)
   const decide = useDecideFact(studentId)
-  // What is typed until the field is left; then the saved value shows again.
-  const [draft, setDraft] = useState<string | null>(null)
-  const language = draft ?? profile?.language ?? ''
+  const language = profile?.language ?? SAME_LANGUAGE
   const approved = facts.filter((f) => f.kind === 'style' && f.origin === 'feedback' && f.status === 'approved')
   const hint = EXPLANATION_STYLES.find((s) => s.value === profile?.explanation_style)?.hint
   return (
@@ -28,22 +25,28 @@ export function AnswerStyleSection({ studentId }: { studentId: string }) {
       </h2>
       <div className="mt-4 space-y-4">
         <div>
-          <label className="mb-1.5 block text-sm font-medium" htmlFor="answer-language">
-            Language <span className="font-normal text-muted-foreground">(optional)</span>
+          <label className="mb-1.5 block text-sm font-medium" id="answer-language-label">
+            Language
           </label>
-          <Input
-            id="answer-language"
-            className="h-10 text-[15px]"
+          <Select
             value={language}
-            maxLength={40}
             disabled={!profile}
-            placeholder="e.g. German. Empty answers in the language you write in."
-            onChange={(e) => setDraft(e.target.value)}
-            onBlur={() => {
-              if (draft !== null && draft.trim() !== (profile?.language ?? '')) update.mutate({ language: draft.trim() })
-              setDraft(null)
-            }}
-          />
+            onValueChange={(value) => value && update.mutate({ language: value === SAME_LANGUAGE ? '' : value })}
+          >
+            <SelectTrigger className="h-10 w-full text-[15px]" aria-labelledby="answer-language-label">
+              <SelectValue>{(value: string) => (value === SAME_LANGUAGE ? 'Same as I write in' : value)}</SelectValue>
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false}>
+              <SelectItem value={SAME_LANGUAGE}>Same as I write in</SelectItem>
+              {/* A language saved before this was a list stays selectable. */}
+              {profile?.language && !LANGUAGES.includes(profile.language) && <SelectItem value={profile.language}>{profile.language}</SelectItem>}
+              {LANGUAGES.map((l) => (
+                <SelectItem key={l} value={l}>
+                  {l}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <fieldset>
           <legend className="mb-1.5 text-sm font-medium">Answer length</legend>

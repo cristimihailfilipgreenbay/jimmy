@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Check, Globe, Trash2, TriangleAlert } from 'lucide-react'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { Button } from '@/components/ui/button'
 import { errorMessage } from '@/lib/http'
 import { cardClass } from '@/lib/styles'
@@ -20,6 +21,7 @@ export function LearnedTab({ studentId, spaceId, spaceName }: { studentId: strin
   const approve = useApproveLearned(studentId, spaceId)
   const remove = useDeleteLearned(studentId, spaceId)
   const [view, setView] = useState<View>('review')
+  const [deleting, setDeleting] = useState<LearnedMaterial | null>(null)
   const waiting = data.filter((m) => m.status === 'unreviewed')
   const approved = data.filter((m) => m.status === 'approved')
   const error = approve.error ?? remove.error
@@ -30,8 +32,15 @@ export function LearnedTab({ studentId, spaceId, spaceName }: { studentId: strin
 
   const onApprove = (item: LearnedMaterial) =>
     approve.mutate(item.id, { onSuccess: () => toast(`Saved to ${spaceName} library · “${item.title}”`, Check) })
-  const onDelete = (item: LearnedMaterial) =>
-    remove.mutate(item.id, { onSuccess: () => toast(`Deleted “${item.title}”. Answers that used it are now marked.`, Trash2) })
+  const onDelete = (item: LearnedMaterial) => setDeleting(item)
+  const confirmDelete = () =>
+    deleting &&
+    remove.mutate(deleting.id, {
+      onSuccess: () => {
+        toast(`Deleted “${deleting.title}”. Answers that used it are now marked.`, Trash2)
+        setDeleting(null)
+      },
+    })
 
   const empty = (title: string, note: string) => (
     <div className={`${cardClass} px-6 py-12 text-center`}>
@@ -64,10 +73,16 @@ export function LearnedTab({ studentId, spaceId, spaceName }: { studentId: strin
                 <p className="font-medium">{item.title}</p>
                 <p className="mt-1 font-serif text-[15px] leading-relaxed text-foreground/90">“{item.excerpt}”</p>
                 <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  <span className="chip chip-web ml-0">
+                  <a
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="chip chip-web ml-0 hover:underline"
+                      aria-label={`Unreviewed web, ${item.publisher ?? new URL(item.url).host}. Open the page.`}
+                    >
                     <TriangleAlert className="size-3.5" aria-hidden />
                     Unreviewed web · {item.publisher ?? new URL(item.url).host}
-                  </span>
+                  </a>
                   Fetched {item.fetched_at ?? '–'} · used in {item.used_in_answers} answer{item.used_in_answers === 1 ? '' : 's'}
                 </p>
               </div>
@@ -92,21 +107,34 @@ export function LearnedTab({ studentId, spaceId, spaceName }: { studentId: strin
     <ul role="list" className="space-y-3">
       {approved.map((item) => (
         <li key={item.id} className={`${cardClass} p-4`}>
-          <div className="flex flex-wrap items-start gap-3">
+          <div className="flex items-center gap-3">
             <div className="min-w-0 flex-1">
               <p className="font-medium">{item.title}</p>
-              <p className="mt-1 font-serif text-[15px] leading-relaxed text-foreground/90">“{item.excerpt}”</p>
+              <p className="mt-1 line-clamp-1 font-serif text-[15px] leading-relaxed text-foreground/90">“{item.excerpt}”</p>
               <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <span className="chip chip-web ml-0">
+                <a
+                    href={item.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="chip chip-web ml-0 hover:underline"
+                    aria-label={`Approved web, ${item.publisher ?? new URL(item.url).host}. Open the page.`}
+                  >
                   <Check className="size-3.5" aria-hidden />
                   Approved web · {item.publisher ?? new URL(item.url).host}
-                </span>
+                </a>
                 Approved {item.approved_at ? new Date(item.approved_at).toLocaleDateString() : '–'} · used in {item.used_in_answers} answer{item.used_in_answers === 1 ? '' : 's'}
               </p>
             </div>
-            <Button variant="outline" size="sm" onClick={() => onDelete(item)} disabled={remove.isPending}>
-              <Trash2 /> Delete
-            </Button>
+            <Button
+                variant="outline"
+                size="icon-sm"
+                aria-label={`Delete “${item.title}”`}
+                className="border-destructive/30 text-destructive enabled:hover:bg-destructive-soft enabled:hover:text-destructive"
+                onClick={() => onDelete(item)}
+                disabled={remove.isPending}
+              >
+                <Trash2 />
+              </Button>
           </div>
         </li>
       ))}
@@ -145,6 +173,15 @@ export function LearnedTab({ studentId, spaceId, spaceName }: { studentId: strin
       <div className="fade-in" key={view}>
         {view === 'review' ? review : approvedList}
       </div>
+      <ConfirmDialog
+        open={!!deleting}
+        onOpenChange={(open) => !open && setDeleting(null)}
+        title={`Delete “${deleting?.title ?? ''}”?`}
+        description="It is removed from this Study Space for good, with its saved text. Answers that used it are marked."
+        confirmLabel="Delete"
+        pending={remove.isPending}
+        onConfirm={confirmDelete}
+      />
     </>
   )
 }

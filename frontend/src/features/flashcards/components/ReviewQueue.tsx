@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Check, CircleCheck, Pencil, X } from 'lucide-react'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { CitationChip } from '@/features/chat/components/CitationChip'
@@ -24,6 +25,7 @@ export function ReviewQueue({
   onDecide: (draft: Draft, decision: CardDecision) => void
 }) {
   const [editing, setEditing] = useState<string | null>(null)
+  const [rejecting, setRejecting] = useState<Draft | null>(null)
   if (!drafts.length) {
     return (
       <div className={`${cardClass} px-6 py-12 text-center`}>
@@ -104,7 +106,7 @@ export function ReviewQueue({
                     <Button variant="outline" size="sm" disabled={deciding} onClick={() => setEditing(d.id)}>
                       <Pencil /> Edit
                     </Button>
-                    <Button variant="ghost" size="sm" className="text-destructive" disabled={deciding} onClick={() => onDecide(d, { id: d.id, action: 'reject' })}>
+                    <Button variant="ghost" size="sm" className="text-destructive" disabled={deciding} onClick={() => setRejecting(d)}>
                       <X /> Reject
                     </Button>
                   </div>
@@ -114,6 +116,18 @@ export function ReviewQueue({
           </li>
         ))}
       </ul>
+      <ConfirmDialog
+        open={!!rejecting}
+        onOpenChange={(open) => !open && setRejecting(null)}
+        title="Reject this draft?"
+        description="It is thrown away and never joins your deck."
+        confirmLabel="Reject"
+        pending={deciding}
+        onConfirm={() => {
+          if (rejecting) onDecide(rejecting, { id: rejecting.id, action: 'reject' })
+          setRejecting(null)
+        }}
+      />
     </>
   )
 }

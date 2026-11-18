@@ -10,15 +10,15 @@ import { longDate, shortDate, tile, weekLabel } from '../lib/dates'
 import { usePastSessions } from '../queries/useQuiz'
 import { modeOf, PAST_SESSIONS_PAGE, STUDY_MODES, type PastSession, type StudyMode } from '../schemas/study'
 
-type Filter = 'all' | StudyMode
+// The Quick Quiz and the Short Quiz share one tab.
+type Filter = 'all' | Exclude<StudyMode, 'short'>
 const FILTERS: { value: Filter; label: string }[] = [
   { value: 'all', label: 'All' },
-  { value: 'quiz', label: 'Quick Quizzes' },
-  { value: 'short', label: 'Short Quizzes' },
+  { value: 'quiz', label: 'Quizzes' },
   { value: 'essay', label: 'Essays' },
   { value: 'test', label: 'Tests' },
 ]
-const NONE_YET: Record<StudyMode, string> = { quiz: 'quick quizzes', short: 'short quizzes', essay: 'essays', test: 'tests' }
+const NONE_YET: Record<Exclude<Filter, 'all'>, string> = { quiz: 'quizzes', essay: 'essays', test: 'tests' }
 
 const plural = (n: number) => `${n} weak topic${n === 1 ? '' : 's'}`
 

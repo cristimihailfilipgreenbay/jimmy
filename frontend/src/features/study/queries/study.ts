@@ -23,7 +23,7 @@ export const decideDispute = (threadId: string, interruptId: string, decision: D
     body: JSON.stringify({ interrupt_id: interruptId, decision }),
   })
 
-export const fetchPastSessions = (spaceId: string, mode: StudyMode | 'all', page: number) =>
+export const fetchPastSessions = (spaceId: string, mode: Exclude<StudyMode, 'short'> | 'all', page: number) =>
   request(`/spaces/${spaceId}/sessions?page=${page}&page_size=${PAST_SESSIONS_PAGE}${mode === 'all' ? '' : `&mode=${mode}`}`, pastSessionsSchema)
 export const fetchRecap = (sessionId: string) => request(`/sessions/${sessionId}/recap`, recapSchema)
 export const fetchWeakTopics = (spaceId: string, cursor: string | null) => request(`/spaces/${spaceId}/weak-topics${pageQuery(cursor, { limit: WEAK_PAGE })}`, weakTopicsPageSchema)

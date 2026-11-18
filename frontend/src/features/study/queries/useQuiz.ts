@@ -7,7 +7,7 @@ import { weakKey } from './useWeakTopics'
 export const pastSessionsKey = (studentId: string, spaceId: string) => ['past-sessions', studentId, spaceId] as const
 
 /** One page of the finished Quizzes and Tests of the Study Space, newest first. The page on screen stays until the next one arrives. */
-export const usePastSessions = (studentId: string, spaceId: string, mode: StudyMode | 'all', page: number) =>
+export const usePastSessions = (studentId: string, spaceId: string, mode: Exclude<StudyMode, 'short'> | 'all', page: number) =>
   useQuery({
     queryKey: [...pastSessionsKey(studentId, spaceId), mode, page],
     queryFn: () => fetchPastSessions(spaceId, mode, page),

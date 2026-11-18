@@ -140,6 +140,12 @@ def test_the_last_question_of_a_session_of_five_or_more_is_an_essay():
     assert all(question_type_for(n, 5, rng) != ESSAY for n in range(1, 5))
 
 
+@pytest.mark.parametrize("fmt", [MULTIPLE_CHOICE, SHORT_ANSWER, ESSAY])
+def test_a_session_of_one_format_asks_only_that_kind(fmt):
+    rng = random.Random(1)
+    assert {question_type_for(n, 5, rng, fmt) for n in range(1, 6)} == {fmt}
+
+
 def test_a_short_session_has_no_essay():
     rng = random.Random(1)
     assert all(question_type_for(n, 4, rng) != ESSAY for n in range(1, 5))

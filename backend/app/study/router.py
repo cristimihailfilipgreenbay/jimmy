@@ -141,6 +141,7 @@ def _session_out(session: Session, study: StudySession) -> SessionOut:
         thread_id=study.thread_id,
         space_id=study.space_id,
         kind=study.kind,
+        format=study.format,
         status=study.status,
         question_count=study.question_count,
         answered=_answered(session, study),
@@ -212,6 +213,12 @@ def _run(study: StudySession, payload) -> None:
         ) from exc
 
 
+def _title(body: SessionIn) -> str:
+    if body.kind == "test":
+        return "Test"
+    return {"short_answer": "Short answers", "essay": "Essay"}.get(body.format, "Quiz")
+
+
 @router.post("/spaces/{space_id}/sessions", response_model=SessionOut, status_code=201)
 def start_session(
     body: SessionIn, space: SpaceDep, student: StudentDep, session: SessionDep
@@ -241,7 +248,7 @@ def start_session(
     thread = Thread(
         space_id=space.id,
         kind="session",
-        title="Test" if body.kind == "test" else "Quiz",
+        title=_title(body),
     )
     session.add(thread)
     session.flush()
@@ -249,6 +256,7 @@ def start_session(
         space_id=space.id,
         thread_id=thread.id,
         kind=body.kind,
+        format="mixed" if body.kind == "test" else body.format,
         question_count=body.question_count,
         topic_ids=[str(t) for t in chosen],
     )
@@ -262,6 +270,7 @@ def start_session(
                 "session_id": str(study.id),
                 "space_id": str(space.id),
                 "kind": study.kind,
+                "format": study.format,
                 "adaptive": bool(profile and profile.adaptive_difficulty),
                 "topic_ids": study.topic_ids,
                 "total": study.question_count,

@@ -212,9 +212,19 @@ def parse_grade(data: dict) -> Grade:
     )
 
 
-def question_type_for(position: int, total: int, rng: random.Random) -> str:
-    """The kind of question at `position` (1-based): the last question of a session of
-    five or more is an Essay, the others are multiple choice or short answer."""
+# What a session asks: one kind of question, or a mix.
+MIXED = "mixed"
+FORMATS = (MULTIPLE_CHOICE, SHORT_ANSWER, ESSAY, MIXED)
+
+
+def question_type_for(
+    position: int, total: int, rng: random.Random, fmt: str = MIXED
+) -> str:
+    """The kind of question at `position` (1-based). A session of one format asks only
+    that kind. A mixed one (a Test) ends with an Essay when it has five or more
+    questions; the others are multiple choice or short answer."""
+    if fmt != MIXED:
+        return fmt
     if total >= ESSAY_MIN_SESSION and position == total:
         return ESSAY
     return MULTIPLE_CHOICE if rng.random() < MC_SHARE else SHORT_ANSWER

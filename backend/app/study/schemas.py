@@ -9,6 +9,8 @@ from app.study.questions import MAX_ESSAY_CHARS
 
 class SessionIn(BaseModel):
     kind: Literal["quiz", "test"] = "quiz"
+    # The kind of question: one, or a mix (a Test is always mixed).
+    format: Literal["multiple_choice", "short_answer", "essay", "mixed"] = "mixed"
     # Empty means every Topic in the Study Space.
     topic_ids: list[uuid.UUID] = []
     question_count: int = Field(default=5, ge=1, le=20)
@@ -106,6 +108,7 @@ class SessionOut(BaseModel):
     thread_id: uuid.UUID
     space_id: uuid.UUID
     kind: str
+    format: str
     status: str
     question_count: int
     answered: int

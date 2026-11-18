@@ -57,6 +57,9 @@ class StudyState(TypedDict, total=False):
     # "quiz" or "test": a Test shows nothing until the recap, so it never pauses for a
     # Dispute.
     kind: str
+    # What kind of question: "multiple_choice", "short_answer", "essay" or "mixed".
+    # Missing means mixed.
+    format: str
     # Whether the difficulty follows the answers (the Student's setting). Not adaptive
     # means every question is written up front. Missing means adaptive.
     adaptive: bool
@@ -117,7 +120,9 @@ def build_study_graph(
                 name = session.get(Topic, topic_id).name
                 source = find_passage(session, space_id, name, used)
                 used.add(uuid.UUID(source["chunk_id"]))
-                qtype = q.question_type_for(len(plan) + 1, state["total"], rng)
+                qtype = q.question_type_for(
+                    len(plan) + 1, state["total"], rng, state.get("format", q.MIXED)
+                )
                 plan.append(
                     (topic_id, name, source, qtype, random.Random(rng.random()))
                 )
@@ -180,7 +185,12 @@ def build_study_graph(
             source = find_passage(
                 session, space_id, name, {uuid.UUID(c) for c in state["used_chunks"]}
             )
-            qtype = q.question_type_for(state["answered"] + 1, state["total"], rng)
+            qtype = q.question_type_for(
+                state["answered"] + 1,
+                state["total"],
+                rng,
+                state.get("format", q.MIXED),
+            )
             question = q.generate_question(
                 question_model,
                 passage=source["passage"],

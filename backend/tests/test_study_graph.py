@@ -116,7 +116,7 @@ def db():
     return engine
 
 
-def _start(engine, total=3, grader=None, kind="quiz", adaptive=True):
+def _start(engine, total=3, grader=None, kind="quiz", adaptive=True, fmt="mixed"):
     with Session(engine) as s:
         topic = Topic(space_id=SPACE, name="Photosynthesis")
         s.add(topic)
@@ -148,6 +148,7 @@ def _start(engine, total=3, grader=None, kind="quiz", adaptive=True):
             "kind": kind,
             "adaptive": adaptive,
             "topic_ids": [str(topic_id)],
+            "format": fmt,
             "total": total,
             "answered": 0,
             "difficulty": "medium",
@@ -440,3 +441,18 @@ def test_an_unsure_essay_grade_goes_to_a_dispute_and_the_decision_overrides_it(d
         assert attempt.graded_by == "student" and attempt.is_correct
         assert attempt.criteria is not None
         assert dispute.decision == "correct"
+
+
+@pytest.mark.parametrize(
+    ("fmt", "expected"),
+    [
+        ("multiple_choice", "multiple_choice"),
+        ("short_answer", "short_answer"),
+        ("essay", "essay"),
+    ],
+)
+def test_a_session_of_one_format_asks_only_that_kind(db, fmt, expected):
+    graph, config, sid, _topic = _start(db, total=5, kind="test", fmt=fmt)
+    for _ in range(5):
+        assert _current(db, sid).question_type == expected
+        _answer(db, graph, config, sid, True)

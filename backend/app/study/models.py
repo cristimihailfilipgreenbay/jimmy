@@ -26,6 +26,10 @@ class StudySession(Base):
     __table_args__ = (
         CheckConstraint("kind IN ('quiz', 'test')", name="kind"),
         CheckConstraint("status IN ('active', 'finished')", name="status"),
+        CheckConstraint(
+            "format IN ('multiple_choice', 'short_answer', 'essay', 'mixed')",
+            name="format",
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
@@ -36,6 +40,10 @@ class StudySession(Base):
         ForeignKey("threads.id", ondelete="CASCADE")
     )
     kind: Mapped[str] = mapped_column(String(10), default="quiz")
+    # The kind of question it asks: multiple_choice, short_answer, essay or mixed.
+    format: Mapped[str] = mapped_column(
+        String(15), default="mixed", server_default="mixed"
+    )
     status: Mapped[str] = mapped_column(String(10), default="active")
     # The difficulty of the next question; it adapts to how the Student is doing.
     difficulty: Mapped[str] = mapped_column(String(10), default="medium")

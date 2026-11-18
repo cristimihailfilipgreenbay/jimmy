@@ -1,6 +1,6 @@
 import { request, requestVoid } from '@/lib/http'
 import { pageQuery } from '@/lib/pagination'
-import { answerOutSchema, historySchema, pastSessionsSchema, PAST_SESSIONS_PAGE, recapSchema, sessionSchema, weakTopicsPageSchema, WEAK_PAGE, STUDY_MODES, type DisputeDecision, type StudyKind, type StudyMode } from '../schemas/study'
+import { answerOutSchema, historySchema, pastSessionsSchema, PAST_SESSIONS_PAGE, recapSchema, sessionSchema, weakTopicsPageSchema, WEAK_PAGE, STUDY_MODES, type DisputeDecision, type StudyMode } from '../schemas/study'
 
 export const startSession = (spaceId: string, mode: StudyMode, topicIds: string[]) => {
   const { kind, format, count } = STUDY_MODES[mode]
@@ -23,8 +23,8 @@ export const decideDispute = (threadId: string, interruptId: string, decision: D
     body: JSON.stringify({ interrupt_id: interruptId, decision }),
   })
 
-export const fetchPastSessions = (spaceId: string, kind: StudyKind | 'all', page: number) =>
-  request(`/spaces/${spaceId}/sessions?page=${page}&page_size=${PAST_SESSIONS_PAGE}${kind === 'all' ? '' : `&kind=${kind}`}`, pastSessionsSchema)
+export const fetchPastSessions = (spaceId: string, mode: StudyMode | 'all', page: number) =>
+  request(`/spaces/${spaceId}/sessions?page=${page}&page_size=${PAST_SESSIONS_PAGE}${mode === 'all' ? '' : `&mode=${mode}`}`, pastSessionsSchema)
 export const fetchRecap = (sessionId: string) => request(`/sessions/${sessionId}/recap`, recapSchema)
 export const fetchWeakTopics = (spaceId: string, cursor: string | null) => request(`/spaces/${spaceId}/weak-topics${pageQuery(cursor, { limit: WEAK_PAGE })}`, weakTopicsPageSchema)
 export const clearAllWeakTopics = (spaceId: string) => requestVoid(`/spaces/${spaceId}/weak-topics`, { method: 'DELETE' })

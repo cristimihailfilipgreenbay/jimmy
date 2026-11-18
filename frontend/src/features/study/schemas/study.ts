@@ -88,6 +88,7 @@ export type AnswerOut = z.infer<typeof answerOutSchema>
 export const pastSessionSchema = z.object({
   id: z.uuid(),
   kind: z.enum(['quiz', 'test']),
+  format: z.string().default('mixed'),
   finished_at: z.string(),
   score: z.number(),
   total: z.number(),
@@ -105,6 +106,7 @@ export const PAST_SESSIONS_PAGE = 10
 export const recapSchema = z.object({
   session_id: z.uuid(),
   kind: z.enum(['quiz', 'test']),
+  format: z.string().default('mixed'),
   finished_at: z.string().nullable(),
   weak_left: z.array(z.string()),
   score: z.number(),

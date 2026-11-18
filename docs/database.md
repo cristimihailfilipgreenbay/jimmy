@@ -59,7 +59,7 @@ Postgres schema, conventions and migrations. See [architecture.md](./architectur
 | `flashcards` | Cards in a Space | `id`, `space_id`, `topic_id`, `thread_id` (the run that drafted it, which waits for review), `front`, `back`, `source_chunk_id`, `source` (the passage and its Citation fields as drafted, so nothing outside retrieval reads chunks), `status` (draft, approved, rejected), `was_edited`, `created_at` |
 | `conflicts` | Stored Conflict decisions | `id`, `space_id`, `topic` (as the Tutor named it), `topic_id` (when the Space has a Topic of that name), `notes_chunk_id`, `other_chunk_id`, `other_source_type` (library, learned), `decision` (keep_notes, accept_other, unsure), `notes_document`, `other_document`, `notes_excerpt`, `other_excerpt` (so the list reads without querying chunks), `decided_at`. One row per pair of passages |
 
-`weak_topics` caches the state; the rule itself (weak after two wrong answers in the last five, recovered after three correct in a row) is applied to `quiz_attempts` by one function, so the state can always be recomputed. Essay questions use the same `session_questions` and `quiz_attempts` tables; no schema change is planned for them.
+`weak_topics` caches the state; the rule itself (weak after two wrong answers in the last five, recovered after three correct in a row) is applied to `quiz_attempts` by one function, so the state can always be recomputed. Essay questions use the same `session_questions` and `quiz_attempts` tables: the rubric is the question's `answer_key` (a JSON list of lines), and `quiz_attempts.criteria` (JSON, nullable) keeps how each line was met.
 
 ### Conversations, feedback, jobs
 | Table | Purpose | Key columns *(proposed)* |

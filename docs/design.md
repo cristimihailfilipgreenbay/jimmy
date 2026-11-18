@@ -28,7 +28,7 @@ After answering from a Finding, the agent returns a structured decision: save pe
 - **Quiz:** short, interactive, feedback after every answer. Multiple choice and short written answers.
 - **Test:** longer, across Topics, results and explanations only at the end.
 - **Flashcards:** drafted from Notes and Library, reviewed by the student. **Known limitation:** in the deck viewer, Again and Hard turn the card back to its front and Got it moves to the next card. Ratings are not stored and do not schedule reviews (the prototype implies spaced repetition: again in 1 minute, hard in 10, got it in 3 days). Adding it needs a stored rating and a due time per card, and a Study deck that shows due cards first.
-- **Essay:** graded against a rubric derived from the Sources. This is the last story.
+- **Essay:** the last question of a Quiz or Test of five or more questions. It is written from one passage of the Sources, with a rubric of three to five criteria, each an idea the passage states. The Student writes a paragraph or two (up to 6000 characters); the grader marks each criterion covered, partly covered or missing, with a comment that points to the passage, and the score is their mean (pass line 0.6). The Citation of the passage is shown with the feedback, and a grade the grader is unsure of can be Disputed like a short answer. The prototype has no Essay screen: it reuses the question card (a taller text box) and the feedback panel (a rubric list).
 
 Weak Topics are weighted into Quiz and Test selection. Questions, answers and flashcards use only Notes, the Subject Library and approved Learned Material.
 

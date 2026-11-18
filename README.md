@@ -2,7 +2,7 @@
 
 An AI study tutor for university students, built with FastAPI, LangGraph and React. This README is for developers: how to get the project running and where things live. For what Jimmy is and does, start with [docs/overview.md](docs/overview.md).
 
-> **Status:** all issues up to #17 are built (the Essay questions in #19 come last). The build is tracked in [GitHub issues](https://github.com/cristimihailfilipgreenbay/jimmy/issues). For what Jimmy does, see [docs/overview.md](docs/overview.md); to try it, follow the [demo](#demo) below.
+> **Status:** all issues are built except the Reading settings. The build is tracked in [GitHub issues](https://github.com/cristimihailfilipgreenbay/jimmy/issues). For what Jimmy does, see [docs/overview.md](docs/overview.md); to try it, follow the [demo](#demo) below.
 
 ## Stack
 
@@ -139,7 +139,7 @@ docker compose exec backend ruff check
 - The guardrail classifier is a general model and fails open when unreachable.
 - Answers depend on the chosen model; the evaluation shows weak spots, for example some web answers have low faithfulness and context precision.
 - The embedding model is locked once chunks exist.
-- Essay questions ([#19](https://github.com/cristimihailfilipgreenbay/jimmy/issues/19)) and the Reading settings (theme, larger text) are not built.
+- The Reading settings (theme, larger text) are not built.
 
 ## Improvement ideas
 

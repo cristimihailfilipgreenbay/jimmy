@@ -227,7 +227,7 @@ _MODE_FILTERS = {
 def _title(body: SessionIn) -> str:
     if body.kind == "test":
         return "Test"
-    return {"short_answer": "Short answers", "essay": "Essay"}.get(
+    return {"short_answer": "Short Quiz", "essay": "Essay"}.get(
         body.format, "Quick Quiz"
     )
 

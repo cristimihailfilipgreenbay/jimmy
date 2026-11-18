@@ -14,11 +14,11 @@ type Filter = 'all' | StudyMode
 const FILTERS: { value: Filter; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'quiz', label: 'Quick Quizzes' },
-  { value: 'short', label: 'Short answers' },
+  { value: 'short', label: 'Short Quizzes' },
   { value: 'essay', label: 'Essays' },
   { value: 'test', label: 'Tests' },
 ]
-const NONE_YET: Record<StudyMode, string> = { quiz: 'quick quizzes', short: 'short answer sessions', essay: 'essays', test: 'tests' }
+const NONE_YET: Record<StudyMode, string> = { quiz: 'quick quizzes', short: 'short quizzes', essay: 'essays', test: 'tests' }
 
 const plural = (n: number) => `${n} weak topic${n === 1 ? '' : 's'}`
 

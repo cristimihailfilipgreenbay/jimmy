@@ -146,7 +146,7 @@ export type StudyKind = 'quiz' | 'test'
 export type StudyMode = 'quiz' | 'short' | 'essay' | 'test'
 export const STUDY_MODES: Record<StudyMode, { kind: StudyKind; format: string; count: number; title: string }> = {
   quiz: { kind: 'quiz', format: 'multiple_choice', count: QUIZ_LENGTH, title: 'Quick Quiz' },
-  short: { kind: 'quiz', format: 'short_answer', count: QUIZ_LENGTH, title: 'Short answers' },
+  short: { kind: 'quiz', format: 'short_answer', count: QUIZ_LENGTH, title: 'Short Quiz' },
   essay: { kind: 'quiz', format: 'essay', count: ESSAY_LENGTH, title: 'Essay' },
   test: { kind: 'test', format: 'mixed', count: TEST_LENGTH, title: 'Test' },
 }

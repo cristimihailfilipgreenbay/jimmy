@@ -1,5 +1,7 @@
 import { Book, File, Lightbulb, TriangleAlert } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { useSignedInStudent } from '@/features/auth/hooks/useSignedInStudent'
+import { useProfile } from '@/features/settings/queries/useProfile'
 import type { Space } from '@/features/spaces/schemas/space'
 
 const card = 'rounded-lg border border-border bg-card shadow-[0_1px_2px_rgba(20,20,30,.04)]'
@@ -44,7 +46,9 @@ const SOURCES: { chip: ReactNode; desc: string }[] = [
 ]
 
 export function SourceGuide({ space }: { space: Space }) {
-  // Notes search is always on; the Subject Library follows the Space's switch; web search comes with its feature.
+  // Notes search is always on; the Subject Library follows the Space's switch; web search follows the Student's preference.
+  const student = useSignedInStudent()
+  const { data: profile } = useProfile(student.id)
   return (
     <div className="space-y-4">
       <div className="space-y-4">
@@ -72,7 +76,7 @@ export function SourceGuide({ space }: { space: Space }) {
               Subject Library <span>{space.library_enabled ? 'On' : 'Off'}</span>
             </li>
             <li className="flex justify-between">
-              Web search <span>Off</span>
+              Web search <span>{profile?.web_search ? 'On' : 'Off'}</span>
             </li>
           </ul>
         </div>

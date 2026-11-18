@@ -213,6 +213,17 @@ def _run(study: StudySession, payload) -> None:
         ) from exc
 
 
+_MODE_FILTERS = {
+    "quiz": (
+        StudySession.kind == "quiz",
+        StudySession.format.in_(["multiple_choice", "mixed"]),
+    ),
+    "short": (StudySession.format == "short_answer",),
+    "essay": (StudySession.format == "essay",),
+    "test": (StudySession.kind == "test",),
+}
+
+
 def _title(body: SessionIn) -> str:
     if body.kind == "test":
         return "Test"
@@ -297,14 +308,16 @@ def list_sessions(
     space: SpaceDep,
     session: SessionDep,
     page: PageDep,
-    kind: Annotated[Literal["quiz", "test"] | None, Query()] = None,
+    mode: Annotated[Literal["quiz", "short", "essay", "test"] | None, Query()] = None,
 ):
-    """One page of the Study Space's finished Quizzes and Tests, newest first."""
+    """One page of the Study Space's finished sessions, newest first. `mode` keeps one
+    card's sessions: a Quick Quiz (multiple choice, or a mixed one saved before formats
+    existed), short answers, an Essay or a Test."""
     finished_in_space = (
         StudySession.space_id == space.id,
         StudySession.status == "finished",
     )
-    matching = finished_in_space + ((StudySession.kind == kind,) if kind else ())
+    matching = finished_in_space + _MODE_FILTERS.get(mode, ())
     total_all = session.scalar(
         select(func.count()).select_from(StudySession).where(*finished_in_space)
     )
@@ -332,6 +345,7 @@ def list_sessions(
         PastSessionOut(
             id=s.id,
             kind=s.kind,
+            format=s.format,
             finished_at=s.finished_at,
             score=s.score or 0,
             total=len(asked[s.id]),
@@ -475,6 +489,7 @@ def recap(study: StudySessionDep, session: SessionDep):
     return RecapOut(
         session_id=study.id,
         kind=study.kind,
+        format=study.format,
         finished_at=study.finished_at,
         weak_left=[
             weak_names[uuid.UUID(t)]

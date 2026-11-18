@@ -159,6 +159,7 @@ class PastSessionOut(BaseModel):
 
     id: uuid.UUID
     kind: str
+    format: str
     finished_at: datetime
     score: int
     # Questions asked.
@@ -182,6 +183,7 @@ class PastSessionsOut(BaseModel):
 class RecapOut(BaseModel):
     session_id: uuid.UUID
     kind: str
+    format: str
     finished_at: datetime | None
     weak_left: list[str]
     score: int

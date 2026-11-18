@@ -88,7 +88,7 @@ export function PastSessions({ studentId, spaceId, onOpen, onStart }: { studentI
           </p>
         </div>
         {!isPending && totalAll > 0 && (
-          <div className="sm:w-64">
+          <div className="sm:w-80">
             <SegmentedControl
               label="Show"
               options={FILTERS}

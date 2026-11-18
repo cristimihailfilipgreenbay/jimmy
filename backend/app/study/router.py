@@ -216,7 +216,9 @@ def _run(study: StudySession, payload) -> None:
 def _title(body: SessionIn) -> str:
     if body.kind == "test":
         return "Test"
-    return {"short_answer": "Short answers", "essay": "Essay"}.get(body.format, "Quiz")
+    return {"short_answer": "Short answers", "essay": "Essay"}.get(
+        body.format, "Quick Quiz"
+    )
 
 
 @router.post("/spaces/{space_id}/sessions", response_model=SessionOut, status_code=201)

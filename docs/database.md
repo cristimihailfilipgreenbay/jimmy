@@ -51,7 +51,7 @@ Postgres schema, conventions and migrations. See [architecture.md](./architectur
 ### Studying
 | Table | Purpose | Key columns *(proposed)* |
 |---|---|---|
-| `study_sessions` | One Quiz or Test | `id`, `space_id`, `thread_id`, `kind` (quiz, test), `status` (active, finished), `difficulty` (of the next question), `question_count`, `topic_ids`, `weak_topic_ids` (Topics that were weak when it finished), `started_at`, `finished_at`, `score` (correct answers) |
+| `study_sessions` | One Quiz or Test | `id`, `space_id`, `thread_id`, `kind` (quiz, test), `format` (multiple_choice, short_answer, essay, mixed), `status` (active, finished), `difficulty` (of the next question), `question_count`, `topic_ids`, `weak_topic_ids` (Topics that were weak when it finished), `started_at`, `finished_at`, `score` (correct answers) |
 | `session_questions` | Questions in a session | `id`, `session_id`, `topic_id`, `position`, `question_type` (multiple_choice, short_answer, essay), `prompt`, `options` (JSON), `answer_key`, `explanation`, `source_chunk_id`, `source` (the passage and its Citation fields as asked, so nothing outside retrieval reads chunks), `difficulty` |
 | `quiz_attempts` | The Student's answer and its grade | `id`, `question_id`, `answer`, `score`, `confidence`, `is_correct`, `graded_by` (auto, student), `explanation` |
 | `disputes` | A Student's decision on a grade | `id`, `attempt_id`, `auto_score`, `auto_confidence`, `decision` (correct, incorrect, unsure) |

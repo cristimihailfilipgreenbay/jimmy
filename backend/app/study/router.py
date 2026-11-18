@@ -107,7 +107,11 @@ def _pending_dispute(
                 topic=name,
                 prompt=question.prompt,
                 answer=state.values["answer"],
-                correct_answer=question.answer_key,
+                correct_answer=(
+                    "\n".join(q.rubric_of(question.answer_key))
+                    if question.question_type == q.ESSAY
+                    else question.answer_key
+                ),
                 score=grade["score"],
                 confidence=grade["confidence"],
                 source=SourceOut(**question.source),
@@ -156,6 +160,9 @@ def _feedback(
     if question.question_type == q.MULTIPLE_CHOICE:
         correct_answer = question.options[int(question.answer_key)]
         shown = _option_text(question, attempt.answer)
+    elif question.question_type == q.ESSAY:
+        correct_answer = "\n".join(q.rubric_of(question.answer_key))
+        shown = attempt.answer
     else:
         correct_answer, shown = question.answer_key, attempt.answer
     return FeedbackOut(
@@ -174,6 +181,7 @@ def _feedback(
         correct_answer=correct_answer,
         explanation=question.explanation,
         note=attempt.explanation,
+        criteria=attempt.criteria,
         source=SourceOut(**question.source),
         topic_weak=bool(weak and weak.is_weak)
         and remembers_weak_topics(session, space_id),
@@ -346,6 +354,8 @@ def answer(body: AnswerIn, study: StudySessionDep, session: SessionDep):
         str(i) for i in range(len(question.options))
     }:
         raise ApiError(422, "invalid_answer", "Choose one of the options.")
+    if question.question_type != q.ESSAY and len(body.answer) > q.MAX_ANSWER_CHARS:
+        raise ApiError(422, "invalid_answer", "That answer is too long.")
     if _pending_dispute(session, study, question):
         raise ApiError(
             409, "dispute_pending", "Decide on the grade before the next answer."

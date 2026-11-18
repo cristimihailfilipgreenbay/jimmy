@@ -38,9 +38,22 @@ class FakeModel:
 
     def invoke(self, messages):
         system, human = messages[0].content, messages[1].content
-        if system.startswith("You grade"):
+        if system.startswith("You grade a Student's essay"):
+            met = 1 if "Student's essay: right" in human else 0
+            data = {
+                "criteria": [{"met": met, "comment": "See the passage."}] * 3,
+                "confidence": 1,
+                "feedback": "Noted.",
+            }
+        elif system.startswith("You grade"):
             ok = "Student's answer: right" in human
             data = {"score": 1 if ok else 0, "confidence": 1, "feedback": "Noted."}
+        elif "essay" in system:
+            data = {
+                "question": "Explain it.",
+                "rubric": ["One", "Two", "Three"],
+                "explanation": "Because.",
+            }
         elif "short-answer" in system:
             data = {"question": "What?", "answer": "right", "explanation": "Because."}
         else:
@@ -162,7 +175,7 @@ def _current(engine, sid):
 
 def _answer(engine, graph, config, sid, right: bool):
     q = _current(engine, sid)
-    if q.question_type == "short_answer":
+    if q.question_type in ("short_answer", "essay"):
         choice = "right" if right else "wrong"
     else:
         # The options are shuffled; the key says which one is right.
@@ -210,7 +223,7 @@ def test_the_session_finishes_with_a_score_and_adapts(db):
 @pytest.fixture
 def written(monkeypatch):
     """Every question is a written one, so the grader is always consulted."""
-    monkeypatch.setattr("app.study.graph.MC_SHARE", 0.0)
+    monkeypatch.setattr("app.study.questions.MC_SHARE", 0.0)
 
 
 def _pending(graph, config):
@@ -364,3 +377,66 @@ def test_a_session_without_weak_topics_remembers_none(db):
     _answer(db, graph, config, sid, True)
     with Session(db) as s:
         assert s.get(StudySession, sid).weak_topic_ids == []
+
+
+def test_the_last_question_of_a_session_of_five_is_an_essay_graded_on_its_rubric(db):
+    graph, config, sid, _topic = _start(db, total=5)
+    for _ in range(4):
+        assert _current(db, sid).question_type != "essay"
+        _answer(db, graph, config, sid, True)
+    essay = _current(db, sid)
+    assert essay.question_type == "essay"
+    assert json.loads(essay.answer_key) == ["One", "Two", "Three"]
+    _answer(db, graph, config, sid, True)
+    with Session(db) as s:
+        attempt = s.scalar(
+            select(QuizAttempt).where(QuizAttempt.question_id == essay.id)
+        )
+        assert attempt.is_correct and attempt.score == 1
+        assert [c["met"] for c in attempt.criteria] == [1, 1, 1]
+        assert s.get(StudySession, sid).status == "finished"
+
+
+def test_a_weak_essay_is_marked_wrong_and_keeps_its_criteria(db):
+    graph, config, sid, _topic = _start(db, total=5, kind="test", adaptive=False)
+    for _ in range(4):
+        _answer(db, graph, config, sid, True)
+    essay = _current(db, sid)
+    _answer(db, graph, config, sid, False)
+    with Session(db) as s:
+        attempt = s.scalar(
+            select(QuizAttempt).where(QuizAttempt.question_id == essay.id)
+        )
+        assert not attempt.is_correct
+        assert [c["met"] for c in attempt.criteria] == [0, 0, 0]
+
+
+class UnsureEssayGrader(FakeModel):
+    """Marks half of an essay's rubric with little confidence; other grades are normal."""
+
+    def invoke(self, messages):
+        if messages[0].content.startswith("You grade a Student's essay"):
+            data = {
+                "criteria": [{"met": 1, "comment": "x"}, {"met": 0, "comment": "y"}]
+                * 2,
+                "confidence": 0.4,
+                "feedback": "Maybe.",
+            }
+            text = json.dumps(data)
+            return type("R", (), {"content": text, "text": text})()
+        return super().invoke(messages)
+
+
+def test_an_unsure_essay_grade_goes_to_a_dispute_and_the_decision_overrides_it(db):
+    graph, config, sid, _topic = _start(db, total=5, grader=UnsureEssayGrader())
+    for _ in range(4):
+        _answer(db, graph, config, sid, True)
+    _answer(db, graph, config, sid, True)
+    assert [p["kind"] for p in _pending(graph, config)] == ["dispute"]
+    graph.invoke(Command(resume="correct"), config)
+    with Session(db) as s:
+        dispute = s.scalar(select(Dispute))
+        attempt = s.get(QuizAttempt, dispute.attempt_id)
+        assert attempt.graded_by == "student" and attempt.is_correct
+        assert attempt.criteria is not None
+        assert dispute.decision == "correct"

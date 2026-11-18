@@ -20,9 +20,9 @@ import { modeOf, STUDY_MODES, type AnswerOut, type Feedback, type Question, type
 // A Study Space's Study screen: choose Quiz, answer questions with feedback after each
 // one, then read the recap. A Test answers everything first and shows nothing until its results.
 const START_CARDS: { mode: StudyMode; Icon: typeof Check; blurb: string; pills: string[] }[] = [
-  { mode: 'quiz', Icon: Check, blurb: 'Feedback after every question, with the source passage. Good for learning.', pills: ['Multiple choice'] },
-  { mode: 'short', Icon: PenLine, blurb: 'Write a sentence or two for each question and see how it was marked, with the source passage.', pills: ['Short written'] },
-  { mode: 'essay', Icon: NotebookPen, blurb: 'Write a paragraph or two and get feedback on each point of a rubric, with the source passage.', pills: ['Essay'] },
+  { mode: 'quiz', Icon: Check, blurb: 'Feedback after every question, with the source passage. Good for learning.', pills: ['Multiple choice', '5 questions'] },
+  { mode: 'short', Icon: PenLine, blurb: 'Write a sentence or two for each question and see how it was marked, with the source passage.', pills: ['Short written', '5 questions'] },
+  { mode: 'essay', Icon: NotebookPen, blurb: 'Write a paragraph or two and get feedback on each point of a rubric, with the source passage.', pills: ['Essay', '1 question'] },
   { mode: 'test', Icon: GraduationCap, blurb: 'Answer everything first. Results and sources only at the end. Good for checking yourself.', pills: ['Multiple choice', 'Short written', 'Essay'] },
 ]
 
@@ -172,7 +172,7 @@ export function StudyPage() {
       <>
         <h1 className="text-2xl font-semibold tracking-tight">Study {space.name}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          A quiz has {STUDY_MODES.quiz.count} questions, an essay session {STUDY_MODES.essay.count} and a test {STUDY_MODES.test.count}, from your notes, weighted towards your weak topics: {weak.length ? `${weak.slice(0, 5).map((w) => w.name).join(', ')}${(weakData?.total ?? 0) > 5 ? ` and ${(weakData?.total ?? 0) - 5} more` : ''}` : 'none'}.
+          Questions come from your notes, weighted towards your weak topics: {weak.length ? `${weak.slice(0, 5).map((w) => w.name).join(', ')}${(weakData?.total ?? 0) > 5 ? ` and ${(weakData?.total ?? 0) - 5} more` : ''}` : 'none'}.
         </p>
         {error && (
           <p role="alert" className="mt-4 flex items-start gap-2 text-sm text-destructive">
@@ -202,7 +202,7 @@ export function StudyPage() {
                       {p}
                     </span>
                   ))}
-                  <span className="rounded-full bg-muted px-2 py-0.5">~{STUDY_MODES[mode].count * (mode === 'essay' ? 5 : 2)} min</span>
+                  <span className="rounded-full bg-muted px-2 py-0.5">~{STUDY_MODES[mode].count * (mode === 'essay' ? 10 : 2)} min</span>
                 </p>
               </button>
             )
@@ -251,7 +251,7 @@ export function StudyPage() {
         <Button variant="ghost" size="sm" className="-ml-2" onClick={reset}>
           <ArrowLeft /> Exit
         </Button>
-        <span className="rounded-full bg-space-soft px-2.5 py-0.5 text-xs font-semibold text-space-ink">{test ? 'Test · results at the end' : 'Quiz'}</span>
+        <span className="rounded-full bg-space-soft px-2.5 py-0.5 text-xs font-semibold text-space-ink">{test ? 'Test · results at the end' : STUDY_MODES[modeOf(session)].title}</span>
         <span className="ml-auto text-sm text-muted-foreground">
           Question {Math.min(viewing + 1, total)} of {total}
         </span>

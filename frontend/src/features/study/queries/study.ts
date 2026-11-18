@@ -1,12 +1,14 @@
 import { request, requestVoid } from '@/lib/http'
 import { pageQuery } from '@/lib/pagination'
-import { answerOutSchema, historySchema, pastSessionsSchema, PAST_SESSIONS_PAGE, recapSchema, sessionSchema, weakTopicsPageSchema, WEAK_PAGE, QUIZ_LENGTH, TEST_LENGTH, type DisputeDecision, type StudyKind } from '../schemas/study'
+import { answerOutSchema, historySchema, pastSessionsSchema, PAST_SESSIONS_PAGE, recapSchema, sessionSchema, weakTopicsPageSchema, WEAK_PAGE, STUDY_MODES, type DisputeDecision, type StudyKind, type StudyMode } from '../schemas/study'
 
-export const startSession = (spaceId: string, kind: StudyKind, topicIds: string[]) =>
-  request(`/spaces/${spaceId}/sessions`, sessionSchema, {
+export const startSession = (spaceId: string, mode: StudyMode, topicIds: string[]) => {
+  const { kind, format, count } = STUDY_MODES[mode]
+  return request(`/spaces/${spaceId}/sessions`, sessionSchema, {
     method: 'POST',
-    body: JSON.stringify({ kind, topic_ids: topicIds, question_count: kind === 'test' ? TEST_LENGTH : QUIZ_LENGTH }),
+    body: JSON.stringify({ kind, format, topic_ids: topicIds, question_count: count }),
   })
+}
 
 export const answerQuestion = (sessionId: string, questionId: string, answer: string) =>
   request(`/sessions/${sessionId}/answers`, answerOutSchema, {

@@ -44,6 +44,8 @@ export const sessionSchema = z.object({
   thread_id: z.uuid(),
   space_id: z.uuid(),
   kind: z.string(),
+  // The kind of question it asks; a session saved before this was kept counts as mixed.
+  format: z.string().default('mixed'),
   status: z.enum(['active', 'finished']),
   question_count: z.number(),
   answered: z.number(),
@@ -131,8 +133,22 @@ export const weakTopicsPageSchema = cursorPage(weakTopicSchema)
 /** How many weak Topics load at a time. */
 export const WEAK_PAGE = 30
 
-/** How many questions a Quiz asks, and a Test. */
+/** How many questions a Quiz asks, an Essay session, and a Test. */
 export const QUIZ_LENGTH = 5
+export const ESSAY_LENGTH = 3
 export const TEST_LENGTH = 10
 
 export type StudyKind = 'quiz' | 'test'
+
+/** What the Student can start: a Quiz (multiple choice), short written answers, an Essay, or a Test (a mix). */
+export type StudyMode = 'quiz' | 'short' | 'essay' | 'test'
+export const STUDY_MODES: Record<StudyMode, { kind: StudyKind; format: string; count: number; title: string }> = {
+  quiz: { kind: 'quiz', format: 'multiple_choice', count: QUIZ_LENGTH, title: 'Quiz' },
+  short: { kind: 'quiz', format: 'short_answer', count: QUIZ_LENGTH, title: 'Short answers' },
+  essay: { kind: 'quiz', format: 'essay', count: ESSAY_LENGTH, title: 'Essay' },
+  test: { kind: 'test', format: 'mixed', count: TEST_LENGTH, title: 'Test' },
+}
+
+/** The mode a session was started in (one saved before formats existed was a Quiz). */
+export const modeOf = (s: { kind: string; format: string }): StudyMode =>
+  s.kind === 'test' ? 'test' : s.format === 'short_answer' ? 'short' : s.format === 'essay' ? 'essay' : 'quiz'

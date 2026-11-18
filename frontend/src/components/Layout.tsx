@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useLayoutEffect, useState } from 'react'
 import { Outlet, useLocation, useParams } from 'react-router'
 import { Header } from '@/components/Header'
 import { MobileSpaceNav } from '@/components/SpaceTabs'
@@ -17,6 +17,11 @@ export function Layout() {
   // The chat keeps its composer at the bottom of the screen, so it needs no room below it
   // (on a phone, only the space for the bottom bar).
   const chat = pathname.endsWith('/chat')
+  // A new screen opens at its top, not where the last one was scrolled to (the chat sits at the
+  // bottom). The chat then scrolls to its latest message itself, in a later effect.
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' })
+  }, [pathname])
   const student = useSignedInStudent()
   const { data: all } = useSpaces(student.id)
   const spaces = all?.spaces ?? []

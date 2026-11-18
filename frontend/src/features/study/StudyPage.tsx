@@ -190,6 +190,7 @@ export function StudyPage() {
             <p className="mt-4 flex gap-2 text-xs text-muted-foreground">
               <span className="rounded-full bg-muted px-2 py-0.5">Multiple choice</span>
               <span className="rounded-full bg-muted px-2 py-0.5">Short written</span>
+              <span className="rounded-full bg-muted px-2 py-0.5">Essay</span>
               <span className="rounded-full bg-muted px-2 py-0.5">~{QUIZ_LENGTH * 2} min</span>
             </p>
           </button>
@@ -209,6 +210,7 @@ export function StudyPage() {
             <p className="mt-4 flex gap-2 text-xs text-muted-foreground">
               <span className="rounded-full bg-muted px-2 py-0.5">Multiple choice</span>
               <span className="rounded-full bg-muted px-2 py-0.5">Short written</span>
+              <span className="rounded-full bg-muted px-2 py-0.5">Essay</span>
               <span className="rounded-full bg-muted px-2 py-0.5">~{TEST_LENGTH * 2} min</span>
             </p>
           </button>

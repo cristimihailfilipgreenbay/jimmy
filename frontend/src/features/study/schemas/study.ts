@@ -68,6 +68,8 @@ export const feedbackSchema = z.object({
   correct_answer: z.string(),
   explanation: z.string(),
   note: z.string().nullable(),
+  // An Essay: each rubric line, how well it was met (0, 0.5 or 1) and why.
+  criteria: z.array(z.object({ criterion: z.string(), met: z.number(), comment: z.string() })).nullish(),
   source: sourceSchema,
   topic_weak: z.boolean(),
   graded_by: z.string(),

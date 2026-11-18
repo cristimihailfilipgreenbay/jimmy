@@ -2,7 +2,7 @@
 
 An AI study tutor for university students, built with FastAPI, LangGraph and React. This README is for developers: how to get the project running and where things live. For what Jimmy is and does, start with [docs/overview.md](docs/overview.md).
 
-> **Status:** all issues up to #17 are built (the Essay questions in #19 come last). The build is tracked in [GitHub issues](https://github.com/cristimihailfilipgreenbay/jimmy/issues). For what Jimmy does, see [docs/overview.md](docs/overview.md); to try it, follow the [demo](#demo) below.
+> **Status:** all issues are built except the Reading settings. The build is tracked in [GitHub issues](https://github.com/cristimihailfilipgreenbay/jimmy/issues). For what Jimmy does, see [docs/overview.md](docs/overview.md); to try it, follow the [demo](#demo) below.
 
 ## Stack
 
@@ -88,7 +88,7 @@ A walk-through for a reviewer, about 15 minutes. It needs the three API keys and
 7. **Check the isolation.** In Biology ask "State Newton's second law." Physics material is not used. Then ask the same in Physics and it is answered from the book.
 8. **Use the web fallback.** "What is CRISPR-Cas9 used for?" Jimmy searches Wikipedia or the web; the Citation is labelled "Unreviewed web". A good Finding is saved in the background (toast), and appears under Learned Material, where you approve or reject it. Until approved it never feeds a Quiz.
 9. **Trigger a Conflict.** Upload `data/sample-notes/study-group-summary.md` (it is wrong on purpose) and ask "Where does the Calvin cycle take place?" Jimmy pauses and shows both statements; choose which to trust. Ask again: the choice is remembered for that Topic.
-10. **Be tested.** Open Study, take a Quiz on the Space. Answer a few questions wrongly on purpose: the Topic appears on the Weak topics tab and is picked more often. Write a borderline short answer and, if the grader is unsure, dispute or accept the grade.
+10. **Be tested.** Open Study. The Quick Quiz is multiple choice; Short Quiz and Essay have their own cards, and the Test mixes all three. Take a Quick Quiz on the Space. Answer a few questions wrongly on purpose: the Topic appears on the Weak topics tab and is picked more often. Write a borderline short answer and, if the grader is unsure, dispute or accept the grade.
 11. **Make Flashcards.** Ask the Tutor to make flashcards, review the draft (approve, edit, reject), then study the deck.
 12. **Give feedback.** Rate answers 👍/👎; give "Too long" three times and Jimmy proposes a shorter answer style for you to approve.
 13. **Look inside.** Open Settings > Developer: change model, temperature and tool switches, and see the tokens and estimated cost under each answer. Traces are in LangSmith.
@@ -139,7 +139,7 @@ docker compose exec backend ruff check
 - The guardrail classifier is a general model and fails open when unreachable.
 - Answers depend on the chosen model; the evaluation shows weak spots, for example some web answers have low faithfulness and context precision.
 - The embedding model is locked once chunks exist.
-- Essay questions ([#19](https://github.com/cristimihailfilipgreenbay/jimmy/issues/19)) and the Reading settings (theme, larger text) are not built.
+- The Reading settings (theme, larger text) are not built.
 
 ## Improvement ideas
 

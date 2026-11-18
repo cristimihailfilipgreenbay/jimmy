@@ -47,6 +47,7 @@ export function QuestionCard({
 }) {
   const shown: Shown = feedback ?? question!
   const multiple = shown.type === 'multiple_choice'
+  const essay = shown.type === 'essay'
   const [choice, setChoice] = useState<string>()
   const [text, setText] = useState('')
   const answered = multiple ? choice !== undefined : text.trim() !== ''
@@ -60,7 +61,7 @@ export function QuestionCard({
   return (
     <div className={cn(cardClass, 'p-5 md:p-6', className)}>
       <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-        {multiple ? 'Multiple choice' : 'Short written answer'} · {shown.topic}
+        {multiple ? 'Multiple choice' : essay ? 'Essay' : 'Short written answer'} · {shown.topic}
       </p>
       <h1 className="mt-2 font-serif text-xl leading-snug">{shown.prompt}</h1>
       <div className="mt-5">
@@ -115,9 +116,10 @@ export function QuestionCard({
             </label>
             <textarea
               id="short-answer"
-              rows={3}
+              rows={essay ? 10 : 3}
+              maxLength={essay ? 6000 : 2000}
               className="w-full rounded-md border border-input bg-card p-3 text-[15px]"
-              placeholder="Write one or two sentences…"
+              placeholder={essay ? 'Write a paragraph or two…' : 'Write one or two sentences…'}
               value={written}
               disabled={locked}
               onChange={(e) => setText(e.target.value)}

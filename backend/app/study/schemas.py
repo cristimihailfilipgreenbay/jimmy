@@ -4,9 +4,13 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from app.study.questions import MAX_ESSAY_CHARS
+
 
 class SessionIn(BaseModel):
     kind: Literal["quiz", "test"] = "quiz"
+    # The kind of question: one, or a mix (a Test is always mixed).
+    format: Literal["multiple_choice", "short_answer", "essay", "mixed"] = "mixed"
     # Empty means every Topic in the Study Space.
     topic_ids: list[uuid.UUID] = []
     question_count: int = Field(default=5, ge=1, le=20)
@@ -34,6 +38,14 @@ class SourceOut(BaseModel):
     url: str | None = None
 
 
+class CriterionOut(BaseModel):
+    """One rubric line of an Essay: how well it was met (0, 0.5 or 1) and why."""
+
+    criterion: str
+    met: float
+    comment: str
+
+
 class FeedbackOut(BaseModel):
     """What the Student learns after answering: the key, the reason and the passage."""
 
@@ -55,6 +67,8 @@ class FeedbackOut(BaseModel):
     decision: str | None = None
     # The grader's note on a written answer.
     note: str | None
+    # Essay only: the rubric and how the answer did against it.
+    criteria: list[CriterionOut] | None = None
     source: SourceOut
     # Whether the Topic is weak now.
     topic_weak: bool
@@ -94,6 +108,7 @@ class SessionOut(BaseModel):
     thread_id: uuid.UUID
     space_id: uuid.UUID
     kind: str
+    format: str
     status: str
     question_count: int
     answered: int
@@ -106,7 +121,7 @@ class SessionOut(BaseModel):
 
 class AnswerIn(BaseModel):
     question_id: uuid.UUID
-    answer: str = Field(min_length=1, max_length=2000)
+    answer: str = Field(min_length=1, max_length=MAX_ESSAY_CHARS)
 
 
 class AnswerOut(BaseModel):
@@ -144,6 +159,7 @@ class PastSessionOut(BaseModel):
 
     id: uuid.UUID
     kind: str
+    format: str
     finished_at: datetime
     score: int
     # Questions asked.
@@ -167,6 +183,7 @@ class PastSessionsOut(BaseModel):
 class RecapOut(BaseModel):
     session_id: uuid.UUID
     kind: str
+    format: str
     finished_at: datetime | None
     weak_left: list[str]
     score: int

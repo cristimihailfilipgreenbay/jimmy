@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { cardClass } from '@/lib/styles'
 import { cn } from '@/lib/utils'
 import { longDate } from '../lib/dates'
-import type { Recap as RecapData } from '../schemas/study'
+import { modeOf, STUDY_MODES, type Recap as RecapData } from '../schemas/study'
 import { SourceBlock } from './SourceBlock'
 
 // The end of a Quiz or a Test: the score (and for a Test, the score per Topic), then every
@@ -43,7 +43,7 @@ export function Recap({
       {back(false)}
       <div className={cn(cardClass, 'p-6')}>
         <p className="text-sm text-muted-foreground">
-          {past ? `${kind === 'test' ? 'Test' : 'Quiz'} recap · ${recap.finished_at ? longDate(recap.finished_at) : ''}` : `${kind === 'test' ? 'Test results' : 'Quiz summary'} · ${spaceName}`}
+          {past ? `${STUDY_MODES[modeOf(recap)].title} recap · ${recap.finished_at ? longDate(recap.finished_at) : ''}` : `${kind === 'test' ? 'Test results' : `${STUDY_MODES[modeOf(recap)].title} summary`} · ${spaceName}`}
         </p>
         <div className="mt-2 flex flex-wrap items-end gap-4">
           <p className="text-4xl font-semibold tabular-nums">

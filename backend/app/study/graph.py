@@ -47,7 +47,6 @@ from app.study.sources import PassageFinder
 from app.topics.models import Topic
 
 SessionFactory = Callable[[], Session]
-MC_SHARE = 0.6
 # Questions written at the same time when the difficulty does not adapt.
 MAX_PARALLEL = 10
 
@@ -58,6 +57,9 @@ class StudyState(TypedDict, total=False):
     # "quiz" or "test": a Test shows nothing until the recap, so it never pauses for a
     # Dispute.
     kind: str
+    # What kind of question: "multiple_choice", "short_answer", "essay" or "mixed".
+    # Missing means mixed.
+    format: str
     # Whether the difficulty follows the answers (the Student's setting). Not adaptive
     # means every question is written up front. Missing means adaptive.
     adaptive: bool
@@ -118,7 +120,9 @@ def build_study_graph(
                 name = session.get(Topic, topic_id).name
                 source = find_passage(session, space_id, name, used)
                 used.add(uuid.UUID(source["chunk_id"]))
-                qtype = q.MULTIPLE_CHOICE if rng.random() < MC_SHARE else q.SHORT_ANSWER
+                qtype = q.question_type_for(
+                    len(plan) + 1, state["total"], rng, state.get("format", q.MIXED)
+                )
                 plan.append(
                     (topic_id, name, source, qtype, random.Random(rng.random()))
                 )
@@ -181,7 +185,12 @@ def build_study_graph(
             source = find_passage(
                 session, space_id, name, {uuid.UUID(c) for c in state["used_chunks"]}
             )
-            qtype = q.MULTIPLE_CHOICE if rng.random() < MC_SHARE else q.SHORT_ANSWER
+            qtype = q.question_type_for(
+                state["answered"] + 1,
+                state["total"],
+                rng,
+                state.get("format", q.MIXED),
+            )
             question = q.generate_question(
                 question_model,
                 passage=source["passage"],
@@ -219,6 +228,14 @@ def build_study_graph(
             row = session.get(SessionQuestion, uuid.UUID(state["question_id"]))
             if row.question_type == q.MULTIPLE_CHOICE:
                 result = q.grade_multiple_choice(row.answer_key, state["answer"])
+            elif row.question_type == q.ESSAY:
+                result = q.grade_essay(
+                    grader_model,
+                    question=row.prompt,
+                    rubric=q.rubric_of(row.answer_key),
+                    passage=row.source.get("passage", ""),
+                    answer=state["answer"],
+                )
             else:
                 result = q.grade_short_answer(
                     grader_model,
@@ -233,6 +250,7 @@ def build_study_graph(
                 "confidence": result.confidence,
                 "feedback": result.feedback,
                 "correct": result.correct,
+                "criteria": result.criteria,
             }
         }
 
@@ -259,12 +277,13 @@ def build_study_graph(
             row = session.get(SessionQuestion, uuid.UUID(state["question_id"]))
             attempt = QuizAttempt(
                 question_id=row.id,
-                answer=state["answer"][: q.MAX_ANSWER_CHARS],
+                answer=state["answer"][: q.MAX_ESSAY_CHARS],
                 score=result["score"],
                 confidence=result["confidence"],
                 is_correct=result["correct"],
                 graded_by="auto",
                 explanation=result["feedback"] or None,
+                criteria=result.get("criteria"),
             )
             if decision:
                 # The Student's decision overrides the grade (docs/domain.md, rule 7);

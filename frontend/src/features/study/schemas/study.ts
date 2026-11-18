@@ -44,6 +44,8 @@ export const sessionSchema = z.object({
   thread_id: z.uuid(),
   space_id: z.uuid(),
   kind: z.string(),
+  // The kind of question it asks; a session saved before this was kept counts as mixed.
+  format: z.string().default('mixed'),
   status: z.enum(['active', 'finished']),
   question_count: z.number(),
   answered: z.number(),
@@ -68,6 +70,8 @@ export const feedbackSchema = z.object({
   correct_answer: z.string(),
   explanation: z.string(),
   note: z.string().nullable(),
+  // An Essay: each rubric line, how well it was met (0, 0.5 or 1) and why.
+  criteria: z.array(z.object({ criterion: z.string(), met: z.number(), comment: z.string() })).nullish(),
   source: sourceSchema,
   topic_weak: z.boolean(),
   graded_by: z.string(),
@@ -84,6 +88,7 @@ export type AnswerOut = z.infer<typeof answerOutSchema>
 export const pastSessionSchema = z.object({
   id: z.uuid(),
   kind: z.enum(['quiz', 'test']),
+  format: z.string().default('mixed'),
   finished_at: z.string(),
   score: z.number(),
   total: z.number(),
@@ -101,6 +106,7 @@ export const PAST_SESSIONS_PAGE = 10
 export const recapSchema = z.object({
   session_id: z.uuid(),
   kind: z.enum(['quiz', 'test']),
+  format: z.string().default('mixed'),
   finished_at: z.string().nullable(),
   weak_left: z.array(z.string()),
   score: z.number(),
@@ -129,8 +135,22 @@ export const weakTopicsPageSchema = cursorPage(weakTopicSchema)
 /** How many weak Topics load at a time. */
 export const WEAK_PAGE = 30
 
-/** How many questions a Quiz asks, and a Test. */
+/** How many questions a Quick Quiz asks, an Essay session (one essay), and a Test. */
 export const QUIZ_LENGTH = 5
+export const ESSAY_LENGTH = 1
 export const TEST_LENGTH = 10
 
 export type StudyKind = 'quiz' | 'test'
+
+/** What the Student can start: a Quiz (multiple choice), short written answers, an Essay, or a Test (a mix). */
+export type StudyMode = 'quiz' | 'short' | 'essay' | 'test'
+export const STUDY_MODES: Record<StudyMode, { kind: StudyKind; format: string; count: number; title: string }> = {
+  quiz: { kind: 'quiz', format: 'multiple_choice', count: QUIZ_LENGTH, title: 'Quick Quiz' },
+  short: { kind: 'quiz', format: 'short_answer', count: QUIZ_LENGTH, title: 'Short Quiz' },
+  essay: { kind: 'quiz', format: 'essay', count: ESSAY_LENGTH, title: 'Essay' },
+  test: { kind: 'test', format: 'mixed', count: TEST_LENGTH, title: 'Test' },
+}
+
+/** The mode a session was started in (one saved before formats existed was a Quiz). */
+export const modeOf = (s: { kind: string; format: string }): StudyMode =>
+  s.kind === 'test' ? 'test' : s.format === 'short_answer' ? 'short' : s.format === 'essay' ? 'essay' : 'quiz'

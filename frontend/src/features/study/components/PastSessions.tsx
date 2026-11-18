@@ -8,14 +8,17 @@ import { cardClass } from '@/lib/styles'
 import { cn } from '@/lib/utils'
 import { longDate, shortDate, tile, weekLabel } from '../lib/dates'
 import { usePastSessions } from '../queries/useQuiz'
-import { PAST_SESSIONS_PAGE, type PastSession } from '../schemas/study'
+import { modeOf, PAST_SESSIONS_PAGE, STUDY_MODES, type PastSession, type StudyMode } from '../schemas/study'
 
-type Filter = 'all' | 'quiz' | 'test'
+// The Quick Quiz and the Short Quiz share one tab.
+type Filter = 'all' | Exclude<StudyMode, 'short'>
 const FILTERS: { value: Filter; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'quiz', label: 'Quizzes' },
+  { value: 'essay', label: 'Essays' },
   { value: 'test', label: 'Tests' },
 ]
+const NONE_YET: Record<Exclude<Filter, 'all'>, string> = { quiz: 'quizzes', essay: 'essays', test: 'tests' }
 
 const plural = (n: number) => `${n} weak topic${n === 1 ? '' : 's'}`
 
@@ -81,11 +84,11 @@ export function PastSessions({ studentId, spaceId, onOpen, onStart }: { studentI
             Past sessions
           </h2>
           <p className="text-sm text-muted-foreground">
-            {isPending ? 'Loading…' : totalAll ? `${totalAll} finished · newest first` : 'Your finished quizzes and tests will appear here.'}
+            {isPending ? 'Loading…' : totalAll ? `${totalAll} finished · newest first` : 'Your finished sessions will appear here.'}
           </p>
         </div>
         {!isPending && totalAll > 0 && (
-          <div className="sm:w-64">
+          <div className="sm:w-80">
             <SegmentedControl
               label="Show"
               options={FILTERS}
@@ -116,14 +119,14 @@ export function PastSessions({ studentId, spaceId, onOpen, onStart }: { studentI
             <GraduationCap className="size-5" aria-hidden />
           </span>
           <p className="mt-3 font-semibold">No finished sessions yet</p>
-          <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">When you finish a quiz or test, its recap lands here: your score, every answer and the source behind it.</p>
+          <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">When you finish a session, its recap lands here: your score, every answer and the source behind it.</p>
           <Button variant="space" size="sm" className="mt-4" onClick={onStart}>
-            <Check /> Start your first quiz
+            <Check /> Start your first quick quiz
           </Button>
         </div>
       ) : !total ? (
         <div className="rounded-xl border border-dashed border-border px-6 py-8 text-center text-sm text-muted-foreground">
-          No {filter === 'test' ? 'tests' : 'quizzes'} yet.{' '}
+          No {filter === 'all' ? 'sessions' : NONE_YET[filter]} yet.{' '}
           <Button variant="link" size="sm" className="h-auto" onClick={() => setFilter('all')}>
             Show all sessions
           </Button>
@@ -168,6 +171,7 @@ function Row({ session, index, onOpen }: { session: PastSession; index: number; 
   const more = session.topics.length - shown.length
   const weak = session.weak_left
   const test = session.kind === 'test'
+  const title = STUDY_MODES[modeOf(session)].title
   return (
     <li className="ob-pop" style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}>
       <button
@@ -176,7 +180,7 @@ function Row({ session, index, onOpen }: { session: PastSession; index: number; 
         data-session={session.id}
         onClick={onOpen}
         className="group flex w-full items-center gap-4 px-4 py-3.5 text-left transition-colors duration-200 hover:bg-space/5 focus-visible:bg-space/5"
-        aria-label={`${test ? 'Test' : 'Quiz'}, ${longDate(session.finished_at)}, score ${session.score} of ${session.total}${weak.length ? `, left ${plural(weak.length)}` : ''}. Open recap.`}
+        aria-label={`${title}, ${longDate(session.finished_at)}, score ${session.score} of ${session.total}${weak.length ? `, left ${plural(weak.length)}` : ''}. Open recap.`}
       >
         <span className="flex w-12 flex-none flex-col items-center rounded-lg border border-border bg-background py-1 leading-none" aria-hidden>
           <span className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">{month}</span>
@@ -184,7 +188,7 @@ function Row({ session, index, onOpen }: { session: PastSession; index: number; 
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-center gap-2">
-            <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-semibold', test ? 'bg-muted text-foreground' : 'bg-space/12 text-space-ink')}>{test ? 'Test' : 'Quiz'}</span>
+            <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-semibold', test ? 'bg-muted text-foreground' : 'bg-space/12 text-space-ink')}>{title}</span>
             <span className="text-xs text-muted-foreground">{shortDate(session.finished_at)}</span>
           </span>
           <span className="mt-1 block truncate text-sm">

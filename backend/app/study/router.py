@@ -107,7 +107,11 @@ def _pending_dispute(
                 topic=name,
                 prompt=question.prompt,
                 answer=state.values["answer"],
-                correct_answer=question.answer_key,
+                correct_answer=(
+                    "\n".join(q.rubric_of(question.answer_key))
+                    if question.question_type == q.ESSAY
+                    else question.answer_key
+                ),
                 score=grade["score"],
                 confidence=grade["confidence"],
                 source=SourceOut(**question.source),
@@ -137,6 +141,7 @@ def _session_out(session: Session, study: StudySession) -> SessionOut:
         thread_id=study.thread_id,
         space_id=study.space_id,
         kind=study.kind,
+        format=study.format,
         status=study.status,
         question_count=study.question_count,
         answered=_answered(session, study),
@@ -156,6 +161,9 @@ def _feedback(
     if question.question_type == q.MULTIPLE_CHOICE:
         correct_answer = question.options[int(question.answer_key)]
         shown = _option_text(question, attempt.answer)
+    elif question.question_type == q.ESSAY:
+        correct_answer = "\n".join(q.rubric_of(question.answer_key))
+        shown = attempt.answer
     else:
         correct_answer, shown = question.answer_key, attempt.answer
     return FeedbackOut(
@@ -174,6 +182,7 @@ def _feedback(
         correct_answer=correct_answer,
         explanation=question.explanation,
         note=attempt.explanation,
+        criteria=attempt.criteria,
         source=SourceOut(**question.source),
         topic_weak=bool(weak and weak.is_weak)
         and remembers_weak_topics(session, space_id),
@@ -202,6 +211,24 @@ def _run(study: StudySession, payload) -> None:
             "upstream_unavailable",
             "Jimmy could not write the next question. Try again in a moment.",
         ) from exc
+
+
+_MODE_FILTERS = {
+    "quiz": (
+        StudySession.kind == "quiz",
+        StudySession.format.in_(["multiple_choice", "short_answer", "mixed"]),
+    ),
+    "essay": (StudySession.format == "essay",),
+    "test": (StudySession.kind == "test",),
+}
+
+
+def _title(body: SessionIn) -> str:
+    if body.kind == "test":
+        return "Test"
+    return {"short_answer": "Short Quiz", "essay": "Essay"}.get(
+        body.format, "Quick Quiz"
+    )
 
 
 @router.post("/spaces/{space_id}/sessions", response_model=SessionOut, status_code=201)
@@ -233,7 +260,7 @@ def start_session(
     thread = Thread(
         space_id=space.id,
         kind="session",
-        title="Test" if body.kind == "test" else "Quiz",
+        title=_title(body),
     )
     session.add(thread)
     session.flush()
@@ -241,6 +268,7 @@ def start_session(
         space_id=space.id,
         thread_id=thread.id,
         kind=body.kind,
+        format="mixed" if body.kind == "test" else body.format,
         question_count=body.question_count,
         topic_ids=[str(t) for t in chosen],
     )
@@ -254,6 +282,7 @@ def start_session(
                 "session_id": str(study.id),
                 "space_id": str(space.id),
                 "kind": study.kind,
+                "format": study.format,
                 "adaptive": bool(profile and profile.adaptive_difficulty),
                 "topic_ids": study.topic_ids,
                 "total": study.question_count,
@@ -278,14 +307,16 @@ def list_sessions(
     space: SpaceDep,
     session: SessionDep,
     page: PageDep,
-    kind: Annotated[Literal["quiz", "test"] | None, Query()] = None,
+    mode: Annotated[Literal["quiz", "essay", "test"] | None, Query()] = None,
 ):
-    """One page of the Study Space's finished Quizzes and Tests, newest first."""
+    """One page of the Study Space's finished sessions, newest first. `mode` keeps one
+    tab's sessions: the Quizzes (Quick and Short, and a mixed one saved before formats
+    existed), the Essays or the Tests."""
     finished_in_space = (
         StudySession.space_id == space.id,
         StudySession.status == "finished",
     )
-    matching = finished_in_space + ((StudySession.kind == kind,) if kind else ())
+    matching = finished_in_space + _MODE_FILTERS.get(mode, ())
     total_all = session.scalar(
         select(func.count()).select_from(StudySession).where(*finished_in_space)
     )
@@ -313,6 +344,7 @@ def list_sessions(
         PastSessionOut(
             id=s.id,
             kind=s.kind,
+            format=s.format,
             finished_at=s.finished_at,
             score=s.score or 0,
             total=len(asked[s.id]),
@@ -346,6 +378,8 @@ def answer(body: AnswerIn, study: StudySessionDep, session: SessionDep):
         str(i) for i in range(len(question.options))
     }:
         raise ApiError(422, "invalid_answer", "Choose one of the options.")
+    if question.question_type != q.ESSAY and len(body.answer) > q.MAX_ANSWER_CHARS:
+        raise ApiError(422, "invalid_answer", "That answer is too long.")
     if _pending_dispute(session, study, question):
         raise ApiError(
             409, "dispute_pending", "Decide on the grade before the next answer."
@@ -454,6 +488,7 @@ def recap(study: StudySessionDep, session: SessionDep):
     return RecapOut(
         session_id=study.id,
         kind=study.kind,
+        format=study.format,
         finished_at=study.finished_at,
         weak_left=[
             weak_names[uuid.UUID(t)]

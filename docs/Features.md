@@ -12,7 +12,7 @@ What Jimmy can do, grouped by area, with the issue that delivers each one. For t
 
 ## Features (v1)
 
-Cited Q&A · Quizzes and Tests with weak-topic tracking · Flashcards with review · Conflict and Dispute handling · Web lookup with background saving · Developer screen with model settings, tool toggles and cost display · LangSmith tracing · an evaluation report. Essay questions come last.
+Cited Q&A · Quizzes and Tests with weak-topic tracking · Flashcards with review · Conflict and Dispute handling · Web lookup with background saving · Developer screen with model settings, tool toggles and cost display · LangSmith tracing · an evaluation report. Essay questions are built.
 
 ## Feature list by area
 

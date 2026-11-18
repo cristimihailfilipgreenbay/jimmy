@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, Check, GraduationCap, Loader2, TriangleAlert, Upload } from 'lucide-react'
+import { ArrowLeft, Check, GraduationCap, Loader2, NotebookPen, PenLine, TriangleAlert, Upload } from 'lucide-react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { Placeholder } from '@/components/Placeholder'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -15,10 +15,17 @@ import { QuestionCard } from './components/QuestionCard'
 import { Recap } from './components/Recap'
 import { useAnswerQuestion, useDecideDispute, useRecap, useReloadQuiz, useStartSession, useStoredSession } from './queries/useQuiz'
 import { useWeakTopics } from './queries/useWeakTopics'
-import { QUIZ_LENGTH, TEST_LENGTH, type AnswerOut, type Feedback, type Question, type StudyKind, type StudySession } from './schemas/study'
+import { modeOf, STUDY_MODES, type AnswerOut, type Feedback, type Question, type StudyMode, type StudySession } from './schemas/study'
 
 // A Study Space's Study screen: choose Quiz, answer questions with feedback after each
 // one, then read the recap. A Test answers everything first and shows nothing until its results.
+const START_CARDS: { mode: StudyMode; Icon: typeof Check; blurb: string; pills: string[] }[] = [
+  { mode: 'quiz', Icon: Check, blurb: 'Feedback after every question, with the source passage. Good for learning.', pills: ['Multiple choice', '5 questions'] },
+  { mode: 'short', Icon: PenLine, blurb: 'Write a sentence or two for each question and see how it was marked, with the source passage.', pills: ['Short written', '5 questions'] },
+  { mode: 'essay', Icon: NotebookPen, blurb: 'Write a paragraph or two and get feedback on each point of a rubric, with the source passage.', pills: ['Essay', '1 question'] },
+  { mode: 'test', Icon: GraduationCap, blurb: 'Answer everything first. Results and sources only at the end. Good for checking yourself.', pills: ['Multiple choice', 'Short written', 'Essay'] },
+]
+
 export function StudyPage() {
   const { spaceId = '' } = useParams()
   const student = useSignedInStudent()
@@ -93,10 +100,10 @@ export function StudyPage() {
     setError(null)
     remember(null)
   }
-  const begin = (kind: StudyKind) => {
+  const begin = (mode: StudyMode) => {
     setError(null)
     start.mutate(
-      { kind, topicIds: onlyId ? [onlyId] : [] },
+      { mode, topicIds: onlyId ? [onlyId] : [] },
       {
       onSuccess: (s) => {
         setSession(s)
@@ -107,7 +114,7 @@ export function StudyPage() {
         setRecapOpen(false)
         setSlide('')
       },
-      onError: (err) => setError(errorMessage(err, `Jimmy could not start the ${kind === 'test' ? 'Test' : 'Quiz'}. Try again.`)),
+      onError: (err) => setError(errorMessage(err, `Jimmy could not start the ${STUDY_MODES[mode].title}. Try again.`)),
       },
     )
   }
@@ -165,7 +172,7 @@ export function StudyPage() {
       <>
         <h1 className="text-2xl font-semibold tracking-tight">Study {space.name}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          A quiz has {QUIZ_LENGTH} questions and a test {TEST_LENGTH}, from your notes, weighted towards your weak topics: {weak.length ? `${weak.slice(0, 5).map((w) => w.name).join(', ')}${(weakData?.total ?? 0) > 5 ? ` and ${(weakData?.total ?? 0) - 5} more` : ''}` : 'none'}.
+          Questions come from your notes, weighted towards your weak topics: {weak.length ? `${weak.slice(0, 5).map((w) => w.name).join(', ')}${(weakData?.total ?? 0) > 5 ? ` and ${(weakData?.total ?? 0) - 5} more` : ''}` : 'none'}.
         </p>
         {error && (
           <p role="alert" className="mt-4 flex items-start gap-2 text-sm text-destructive">
@@ -174,44 +181,32 @@ export function StudyPage() {
           </p>
         )}
         <div className="mt-6 grid gap-4 md:grid-cols-2">
-          <button
-            type="button"
-            onClick={() => begin('quiz')}
-            disabled={start.isPending}
-            className={cn(cardClass, 'p-5 text-left transition hover:border-space/40 hover:shadow-md disabled:opacity-60')}
-          >
-            <span className="grid size-10 place-items-center rounded-lg bg-space-soft text-space-ink">
-              {start.isPending && start.variables?.kind === 'quiz' ? <Loader2 className="size-5 animate-spin" aria-hidden /> : <Check className="size-5" aria-hidden />}
-            </span>
-            <p className="mt-3 text-lg font-semibold">Quiz</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {start.isPending && start.variables?.kind === 'quiz' ? 'Jimmy is writing your first question…' : 'Feedback after every question, with the source passage. Good for learning.'}
-            </p>
-            <p className="mt-4 flex gap-2 text-xs text-muted-foreground">
-              <span className="rounded-full bg-muted px-2 py-0.5">Multiple choice</span>
-              <span className="rounded-full bg-muted px-2 py-0.5">Short written</span>
-              <span className="rounded-full bg-muted px-2 py-0.5">~{QUIZ_LENGTH * 2} min</span>
-            </p>
-          </button>
-          <button
-            type="button"
-            onClick={() => begin('test')}
-            disabled={start.isPending}
-            className={cn(cardClass, 'p-5 text-left transition hover:border-space/40 hover:shadow-md disabled:opacity-60')}
-          >
-            <span className="grid size-10 place-items-center rounded-lg bg-space-soft text-space-ink">
-              {start.isPending && start.variables?.kind === 'test' ? <Loader2 className="size-5 animate-spin" aria-hidden /> : <GraduationCap className="size-5" aria-hidden />}
-            </span>
-            <p className="mt-3 text-lg font-semibold">Test</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {start.isPending && start.variables?.kind === 'test' ? 'Jimmy is writing your first question…' : 'Answer everything first. Results and sources only at the end. Good for checking yourself.'}
-            </p>
-            <p className="mt-4 flex gap-2 text-xs text-muted-foreground">
-              <span className="rounded-full bg-muted px-2 py-0.5">Multiple choice</span>
-              <span className="rounded-full bg-muted px-2 py-0.5">Short written</span>
-              <span className="rounded-full bg-muted px-2 py-0.5">~{TEST_LENGTH * 2} min</span>
-            </p>
-          </button>
+          {START_CARDS.map(({ mode, Icon, blurb, pills }) => {
+            const starting = start.isPending && start.variables?.mode === mode
+            return (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => begin(mode)}
+                disabled={start.isPending}
+                className={cn(cardClass, 'p-5 text-left transition hover:border-space/40 hover:shadow-md disabled:opacity-60')}
+              >
+                <span className="grid size-10 place-items-center rounded-lg bg-space-soft text-space-ink">
+                  {starting ? <Loader2 className="size-5 animate-spin" aria-hidden /> : <Icon className="size-5" aria-hidden />}
+                </span>
+                <p className="mt-3 text-lg font-semibold">{STUDY_MODES[mode].title}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{starting ? 'Jimmy is writing your first question…' : blurb}</p>
+                <p className="mt-4 flex gap-2 text-xs text-muted-foreground">
+                  {pills.map((p) => (
+                    <span key={p} className="rounded-full bg-muted px-2 py-0.5">
+                      {p}
+                    </span>
+                  ))}
+                  <span className="rounded-full bg-muted px-2 py-0.5">~{STUDY_MODES[mode].count * (mode === 'essay' ? 10 : 2)} min</span>
+                </p>
+              </button>
+            )
+          })}
         </div>
         <PastSessions studentId={student.id} spaceId={spaceId} onOpen={(id) => openPast(id)} onStart={() => begin('quiz')} />
       </>,
@@ -223,7 +218,7 @@ export function StudyPage() {
   if (recapOpen) {
     return frame(
       recap.data ? (
-        <Recap recap={recap.data} kind={session.kind === 'test' ? 'test' : 'quiz'} spaceName={space.name} onAgain={() => begin(session.kind === 'test' ? 'test' : 'quiz')} onDone={reset} />
+        <Recap recap={recap.data} kind={session.kind === 'test' ? 'test' : 'quiz'} spaceName={space.name} onAgain={() => begin(modeOf(session))} onDone={reset} />
       ) : (
         <p className="text-sm text-muted-foreground">{recap.isError ? 'Could not load the summary.' : 'Loading the summary…'}</p>
       ),
@@ -256,7 +251,7 @@ export function StudyPage() {
         <Button variant="ghost" size="sm" className="-ml-2" onClick={reset}>
           <ArrowLeft /> Exit
         </Button>
-        <span className="rounded-full bg-space-soft px-2.5 py-0.5 text-xs font-semibold text-space-ink">{test ? 'Test · results at the end' : 'Quiz'}</span>
+        <span className="rounded-full bg-space-soft px-2.5 py-0.5 text-xs font-semibold text-space-ink">{test ? 'Test · results at the end' : STUDY_MODES[modeOf(session)].title}</span>
         <span className="ml-auto text-sm text-muted-foreground">
           Question {Math.min(viewing + 1, total)} of {total}
         </span>

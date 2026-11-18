@@ -26,6 +26,10 @@ class StudySession(Base):
     __table_args__ = (
         CheckConstraint("kind IN ('quiz', 'test')", name="kind"),
         CheckConstraint("status IN ('active', 'finished')", name="status"),
+        CheckConstraint(
+            "format IN ('multiple_choice', 'short_answer', 'essay', 'mixed')",
+            name="format",
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
@@ -36,6 +40,10 @@ class StudySession(Base):
         ForeignKey("threads.id", ondelete="CASCADE")
     )
     kind: Mapped[str] = mapped_column(String(10), default="quiz")
+    # The kind of question it asks: multiple_choice, short_answer, essay or mixed.
+    format: Mapped[str] = mapped_column(
+        String(15), default="mixed", server_default="mixed"
+    )
     status: Mapped[str] = mapped_column(String(10), default="active")
     # The difficulty of the next question; it adapts to how the Student is doing.
     difficulty: Mapped[str] = mapped_column(String(10), default="medium")
@@ -75,7 +83,8 @@ class SessionQuestion(Base):
     question_type: Mapped[str] = mapped_column(String(20))
     prompt: Mapped[str] = mapped_column(Text)
     options: Mapped[list | None] = mapped_column(JSON)
-    # An option number for multiple choice, a reference answer for a short answer.
+    # An option number for multiple choice, a reference answer for a short answer, a JSON
+    # list of rubric lines for an essay.
     answer_key: Mapped[str] = mapped_column(Text)
     explanation: Mapped[str] = mapped_column(Text)
     difficulty: Mapped[str] = mapped_column(String(10))
@@ -104,6 +113,8 @@ class QuizAttempt(Base):
     graded_by: Mapped[str] = mapped_column(String(10), default="auto")
     # The grader's note on a written answer.
     explanation: Mapped[str | None] = mapped_column(Text)
+    # An Essay: how each rubric line was met, as {"criterion", "met", "comment"}.
+    criteria: Mapped[list | None] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

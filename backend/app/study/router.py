@@ -216,9 +216,8 @@ def _run(study: StudySession, payload) -> None:
 _MODE_FILTERS = {
     "quiz": (
         StudySession.kind == "quiz",
-        StudySession.format.in_(["multiple_choice", "mixed"]),
+        StudySession.format.in_(["multiple_choice", "short_answer", "mixed"]),
     ),
-    "short": (StudySession.format == "short_answer",),
     "essay": (StudySession.format == "essay",),
     "test": (StudySession.kind == "test",),
 }
@@ -308,11 +307,11 @@ def list_sessions(
     space: SpaceDep,
     session: SessionDep,
     page: PageDep,
-    mode: Annotated[Literal["quiz", "short", "essay", "test"] | None, Query()] = None,
+    mode: Annotated[Literal["quiz", "essay", "test"] | None, Query()] = None,
 ):
     """One page of the Study Space's finished sessions, newest first. `mode` keeps one
-    card's sessions: a Quick Quiz (multiple choice, or a mixed one saved before formats
-    existed), short answers, an Essay or a Test."""
+    tab's sessions: the Quizzes (Quick and Short, and a mixed one saved before formats
+    existed), the Essays or the Tests."""
     finished_in_space = (
         StudySession.space_id == space.id,
         StudySession.status == "finished",
